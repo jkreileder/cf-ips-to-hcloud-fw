@@ -1,0 +1,11 @@
+{
+    "recommendations": [
+        "davidanson.vscode-markdownlint",
+        "yzhang.markdown-all-in-one",
+        "ms-python.vscode-pylance",
+        "ms-python.python",
+        "github.vscode-github-actions",
+        "charliermarsh.ruff",
+        "tamasfe.even-better-toml"
+    ]
+}
