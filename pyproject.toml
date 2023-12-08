@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=64.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cf-ips-to-hcloud-fw"
+authors = [{ name = "Jürgen Kreileder", email = "jk@blackdown.de" }]
+description = "Update hcloud firewall rules with Cloudflare IPs"
+keywords = ["cloudflare", "hcloud", "hetzner", "firewall", "cli"]
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.9"
+dynamic = ["version"]
+dependencies = ["cloudflare", "hcloud", "pydantic", "PyYAML"]
+
+[project.scripts]
+cf-ips-to-hcloud-fw = "cf_ips_to_hcloud_fw.__main__:main"
+
+[project.urls]
+Documentation = "https://github.com/jkreileder/cf-ips-to-hcloud-fw"
+Source = "https://github.com/jkreileder/cf-ips-to-hcloud-fw"
+Changelog = "https://github.com/jkreileder/cf-ips-to-hcloud-fw/blob/main/CHANGELOG.md"
+
+[project.optional-dependencies]
+dev = ["build", "ruff"]
+
+[tool.setuptools.dynamic]
+version = { attr = "cf_ips_to_hcloud_fw.__VERSION__" }
+
+[tool.setuptools]
+packages = ["cf_ips_to_hcloud_fw"]
+
+[tool.ruff]
+select = ["B", "C", "E", "F", "W", "B9", "SIM", "C90", "I", "UP"]
+target-version = "py311"

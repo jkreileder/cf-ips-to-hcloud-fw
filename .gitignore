@@ -1,0 +1,20 @@
+config.yaml
+
+__pycache__/
+*.py[cod]
+
+.venv
+venv
+
+build
+dist
+*.egg-info
+
+.idea
+*.swp
+*~
+
+# VS Code but not project setup
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
