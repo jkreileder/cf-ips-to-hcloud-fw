@@ -2,9 +2,11 @@ name: "CodeQL"
 
 on:
   push:
-    branches: ["main"]
+    branches:
+      - "**"
   pull_request:
-    branches: ["main"]
+    branches:
+      - "main"
   schedule:
     - cron: "22 21 * * 6"
 
@@ -45,7 +47,7 @@ jobs:
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v2
         with:
-          languages: ${{matrix.language}}
+          languages: ${{ matrix.language }}
           setup-python-dependencies: false
           queries: security-and-quality
 
@@ -56,4 +58,4 @@ jobs:
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v2
         with:
-          category: "/language:${{matrix.language}}"
+          category: "/language:${{ matrix.language }}"
