@@ -29,13 +29,8 @@ build: $(VENV)
 	rm -rf dist
 	$(BIN)/python3 -m build
 
-# .PHONY: release
-# release: $(VENV) build
-# 	$(BIN)/twine upload dist/*
-
 .PHONY: clean
 clean:
-	rm -rf build dist *.egg-info
-	rm -rf $(VENV)
+	rm -rf build dist *.egg-info .ruff_cache $(VENV)
 	find . -type f -name *.pyc -delete
 	find . -type d -name __pycache__ -delete
