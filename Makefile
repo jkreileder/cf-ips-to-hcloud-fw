@@ -22,6 +22,7 @@ $(VENV): requirements.txt requirements-dev.txt pyproject.toml
 .PHONY: lint
 lint: $(VENV)
 	$(BIN)/ruff check .
+	$(BIN)/pyright --venvpath .
 
 .PHONY: build
 build: $(VENV)

@@ -4,7 +4,7 @@ import sys
 from ipaddress import IPv4Network, IPv6Network
 from typing import NoReturn
 
-import CloudFlare  # type: ignore
+import CloudFlare  # type: ignore[import-untyped]
 import yaml
 from hcloud._client import Client
 from hcloud.firewalls.domain import Firewall, FirewallRule

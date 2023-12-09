@@ -1,9 +1,9 @@
 # syntax = docker/dockerfile:1
 
-ARG PY_VERSION=3.12-alpine
+ARG PY_VERSION=3.12
 
 
-FROM --platform=$BUILDPLATFORM python:$PY_VERSION AS builder
+FROM --platform=$BUILDPLATFORM python:$PY_VERSION-slim AS builder
 
 WORKDIR /usr/src/app
 
@@ -22,10 +22,10 @@ RUN --mount=target=cf_ips_to_hcloud_fw,source=/cf_ips_to_hcloud_fw \
     --mount=target=requirements-dev.txt,source=/requirements-dev.txt \
     --mount=target=requirements.txt,source=/requirements.txt \
     --mount=type=cache,id=pip,target=/root/.cache/pip \
-    python3 -m build
+    ruff check . && pyright && python3 -m build
 
 
-FROM python:$PY_VERSION as final-image
+FROM python:$PY_VERSION-alpine as final-image
 
 WORKDIR /usr/src/app
 

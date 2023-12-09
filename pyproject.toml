@@ -22,13 +22,20 @@ Source = "https://github.com/jkreileder/cf-ips-to-hcloud-fw"
 Changelog = "https://github.com/jkreileder/cf-ips-to-hcloud-fw/blob/main/CHANGELOG.md"
 
 [project.optional-dependencies]
-dev = ["build", "ruff"]
+dev = ["build", "pyright", "ruff", "wheel"]
 
 [tool.setuptools.dynamic]
 version = { attr = "cf_ips_to_hcloud_fw.__VERSION__" }
 
 [tool.setuptools]
 packages = ["cf_ips_to_hcloud_fw"]
+
+[tool.pyright]
+include = ["cf_ips_to_hcloud_fw"]
+strict = ["cf_ips_to_hcloud_fw"]
+reportMissingImports = true
+reportMissingTypeStubs = true
+venv = "venv"
 
 [tool.ruff]
 select = ["B", "C", "E", "F", "W", "B9", "SIM", "C90", "I", "UP"]
