@@ -18,6 +18,7 @@ jobs:
       contents: read
       packages: write
       id-token: write
+      security-events: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -36,6 +37,8 @@ jobs:
             type=ref,event=pr
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
+        env:
+          DOCKER_METADATA_ANNOTATIONS_LEVELS: manifest,index
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
       - name: Set up Docker Buildx
@@ -68,13 +71,28 @@ jobs:
           platforms: linux/amd64,linux/arm64
           pull: true
           push: ${{ github.event_name != 'pull_request' }}
+          load: ${{ github.event_name == 'pull_request' }}
           tags: ${{ steps.docker-meta.outputs.tags }}
           labels: ${{ steps.docker-meta.outputs.labels }}
+          annotations: ${{ steps.docker-meta.outputs.annotations }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
       - name: Sign the images with GitHub OIDC Token
-        if: github.event_name != 'pull_request'
+        if: ${{ github.event_name != 'pull_request' }}
         run: for tag in ${TAGS}; do cosign sign --recursive --yes "${tag}@${DIGEST}"; done
         env:
           DIGEST: ${{ steps.build-and-push.outputs.digest }}
           TAGS: ${{ steps.docker-meta.outputs.tags }}
+      - name: Scan image
+        uses: anchore/scan-action@v3
+        id: scan
+        continue-on-error: true
+        with:
+          image: jkreileder/cf-ips-to-hcloud-fw:${{ steps.docker-meta.outputs.version }}
+          only-fixed: true
+          add-cpes-if-none: true
+      - name: Upload scan result to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v2
+        continue-on-error: true
+        with:
+          sarif_file: ${{ steps.scan.outputs.sarif }}
