@@ -1,8 +1,9 @@
 # syntax = docker/dockerfile:1
 
-FROM python:3.12-alpine as base-image
+ARG PY_VERSION=3.12-alpine
 
-FROM --platform=$BUILDPLATFORM base-image AS builder
+
+FROM --platform=$BUILDPLATFORM python:$PY_VERSION AS builder
 
 WORKDIR /usr/src/app
 
@@ -24,7 +25,7 @@ RUN --mount=target=cf_ips_to_hcloud_fw,source=/cf_ips_to_hcloud_fw \
     python3 -m build
 
 
-FROM base-image as final-image
+FROM python:$PY_VERSION as final-image
 
 WORKDIR /usr/src/app
 
