@@ -40,7 +40,7 @@ def fatal(msg: str) -> NoReturn:
 
 def create_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Update Hetzner Cloud firewall rules with Cloudflare IPs"
+        description="Update Hetzner Cloud firewall rules with Cloudflare IP ranges"
     )
     parser.add_argument(
         "-c", "--config", help="config file", metavar="CONFIGFILE", required=True
