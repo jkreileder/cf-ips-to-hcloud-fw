@@ -66,7 +66,7 @@ Alternatively you can use Docker or a Kubernetes CronJob to run
 ```bash
 docker run --rm \
   --mount type=bind,source="$(pwd)"/config.yaml,target=/usr/src/app/config.yaml,readonly \
-  jkreileder/cf-ips-to-hcloud-fw:1
+  jkreileder/cf-ips-to-hcloud-fw:1.0
 ```
 
 Images are available on:
