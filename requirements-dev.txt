@@ -1,4 +1,4 @@
 build==1.0.3
 pyright==1.1.340
-ruff==0.1.7
+ruff==0.1.8
 wheel==0.42.0
