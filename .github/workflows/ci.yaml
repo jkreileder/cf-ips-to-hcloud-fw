@@ -79,7 +79,12 @@ jobs:
           cache-to: type=gha,mode=max
       - name: Sign the images with GitHub OIDC Token
         if: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' }}
-        run: for tag in ${TAGS}; do cosign sign --recursive --yes "${tag}@${DIGEST}"; done
+        run: |
+          images=""
+          for tag in ${TAGS}; do
+            images+="${tag}@${DIGEST} "
+          done
+          cosign sign --recursive --yes ${images}
         env:
           DIGEST: ${{ steps.build-and-push.outputs.digest }}
           TAGS: ${{ steps.docker-meta.outputs.tags }}
