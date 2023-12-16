@@ -17,17 +17,13 @@ dependencies = ["cloudflare", "hcloud", "pydantic", "PyYAML"]
 cf-ips-to-hcloud-fw = "cf_ips_to_hcloud_fw.__main__:main"
 
 [project.urls]
-homepage = "https://github.com/jkreileder/cf-ips-to-hcloud-fw"
-repository = "https://github.com/jkreileder/cf-ips-to-hcloud-fw.git"
-source = "https://github.com/jkreileder/cf-ips-to-hcloud-fw.git"
-changelog = "https://github.com/jkreileder/cf-ips-to-hcloud-fw/blob/main/CHANGELOG.md"
-docs = "https://github.com/jkreileder/cf-ips-to-hcloud-fw"
-documentation = "https://github.com/jkreileder/cf-ips-to-hcloud-fw"
-bugs = "https://github.com/jkreileder/cf-ips-to-hcloud-fw/issues"
-issues = "https://github.com/jkreileder/cf-ips-to-hcloud-fw/issues"
-tracker = "https://github.com/jkreileder/cf-ips-to-hcloud-fw/issues"
-twitter = "https://twitter/jkreileder"
-bluesky = "https://bsky.app/profile/jk.blackdown.de"
+Homepage = "https://github.com/jkreileder/cf-ips-to-hcloud-fw"
+Source = "https://github.com/jkreileder/cf-ips-to-hcloud-fw.git"
+Changelog = "https://github.com/jkreileder/cf-ips-to-hcloud-fw/blob/main/CHANGELOG.md"
+Documentation = "https://github.com/jkreileder/cf-ips-to-hcloud-fw"
+Issues = "https://github.com/jkreileder/cf-ips-to-hcloud-fw/issues"
+Twitter = "https://twitter/jkreileder"
+Bluesky = "https://bsky.app/profile/jk.blackdown.de"
 PyPI = "https://pypi.org/project/cf-ips-to-hcloud-fw/"
 
 [project.optional-dependencies]
