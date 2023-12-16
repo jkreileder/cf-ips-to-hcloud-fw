@@ -8,7 +8,7 @@ authors = [{ name = "Jürgen Kreileder", email = "jk@blackdown.de" }]
 description = "Update Hetzner Cloud firewall rules with Cloudflare IP ranges"
 keywords = ["cloudflare", "hcloud", "hetzner", "firewall", "cli"]
 readme = "README.md"
-license = { file = "LICENSE" }
+license = { text = "MIT" }
 requires-python = ">=3.9"
 dynamic = ["version"]
 dependencies = ["cloudflare", "hcloud", "pydantic", "PyYAML"]
@@ -17,26 +17,80 @@ dependencies = ["cloudflare", "hcloud", "pydantic", "PyYAML"]
 cf-ips-to-hcloud-fw = "cf_ips_to_hcloud_fw.__main__:main"
 
 [project.urls]
-Documentation = "https://github.com/jkreileder/cf-ips-to-hcloud-fw"
-Source = "https://github.com/jkreileder/cf-ips-to-hcloud-fw"
-Changelog = "https://github.com/jkreileder/cf-ips-to-hcloud-fw/blob/main/CHANGELOG.md"
+homepage = "https://github.com/jkreileder/cf-ips-to-hcloud-fw"
+repository = "https://github.com/jkreileder/cf-ips-to-hcloud-fw.git"
+source = "https://github.com/jkreileder/cf-ips-to-hcloud-fw.git"
+changelog = "https://github.com/jkreileder/cf-ips-to-hcloud-fw/blob/main/CHANGELOG.md"
+docs = "https://github.com/jkreileder/cf-ips-to-hcloud-fw"
+documentation = "https://github.com/jkreileder/cf-ips-to-hcloud-fw"
+bugs = "https://github.com/jkreileder/cf-ips-to-hcloud-fw/issues"
+issues = "https://github.com/jkreileder/cf-ips-to-hcloud-fw/issues"
+tracker = "https://github.com/jkreileder/cf-ips-to-hcloud-fw/issues"
+twitter = "https://twitter/jkreileder"
+bluesky = "https://bsky.app/profile/jk.blackdown.de"
+PyPI = "https://pypi.org/project/cf-ips-to-hcloud-fw/"
 
 [project.optional-dependencies]
-dev = ["build", "pyright", "ruff", "wheel"]
+dev = ["build", "pyright", "pytest", "pytest-cov", "ruff", "wheel"]
 
 [tool.setuptools.dynamic]
 version = { attr = "cf_ips_to_hcloud_fw.__VERSION__" }
 
 [tool.setuptools]
-packages = ["cf_ips_to_hcloud_fw"]
+packages = ["cf_ips_to_hcloud_fw", "tests"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+addopts = """
+    --cov=cf_ips_to_hcloud_fw
+    --junitxml=test-results.xml
+    --cov-report=xml
+    --cov-report=html
+    --cov-report=term-missing
+    --cov-fail-under=80
+"""
 
 [tool.pyright]
-include = ["cf_ips_to_hcloud_fw"]
-strict = ["cf_ips_to_hcloud_fw"]
+include = ["cf_ips_to_hcloud_fw", "tests"]
+strict = ["cf_ips_to_hcloud_fw", "tests"]
 reportMissingImports = true
 reportMissingTypeStubs = true
 venv = "venv"
 
 [tool.ruff]
-select = ["B", "C", "E", "F", "W", "B9", "SIM", "C90", "I", "UP"]
+select = [
+    "A",
+    "ANN",
+    "ARG",
+    "B",
+    "BLE",
+    "C4",
+    "C90",
+    "COM",
+    "E",
+    "ERA001",
+    "F",
+    "FURB",
+    "I",
+    "ISC",
+    "LOG",
+    "N",
+    "PERF",
+    "PIE",
+    "PT",
+    "PYI",
+    "Q",
+    "RET",
+    "RUF",
+    "S",
+    "SIM",
+    "T20",
+    "UP",
+    "W",
+]
+preview = true
+ignore = ["COM812", "COM819", "ISC001", "ISC002"]
 target-version = "py311"
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["ARG001", "S101"]

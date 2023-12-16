@@ -1,6 +1,6 @@
 config.yaml
 
-__pycache__/
+__pycache__
 *.py[cod]
 
 .venv
@@ -9,6 +9,13 @@ venv
 build
 dist
 *.egg-info
+
+.coverage
+.pytest_cache
+.ruff_cache
+coverage.xml
+htmlcov
+test-results.xml
 
 .idea
 *.swp
