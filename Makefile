@@ -19,6 +19,10 @@ $(VENV): requirements.txt requirements-dev.txt pyproject.toml
 	$(BIN)/pip install --upgrade -r requirements-dev.txt
 	touch $(VENV)
 
+.PHONY: test
+test: $(VENV)
+	$(BIN)/pytest
+
 .PHONY: lint
 lint: $(VENV)
 	$(BIN)/ruff check .

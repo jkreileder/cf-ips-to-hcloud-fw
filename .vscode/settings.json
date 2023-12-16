@@ -25,4 +25,11 @@
     "python.analysis.autoFormatStrings": true,
     "python.analysis.autoImportCompletions": true,
     "python.analysis.inlayHints.callArgumentNames": "partial",
+    "python.testing.pytestArgs": [
+        "--no-cov"
+    ],
+    "python.testing.unittestEnabled": false,
+    "python.testing.pytestEnabled": true,
+    "python.analysis.inlayHints.pytestParameters": true,
+    "python.missingPackage.severity": "Error",
 }
