@@ -28,7 +28,7 @@ RUN --mount=target=cf_ips_to_hcloud_fw,source=/cf_ips_to_hcloud_fw \
     ruff check . && pyright && pytest && python3 -m build
 
 
-FROM python:$PY_VERSION-alpine as final-image
+FROM python:$PY_VERSION-alpine AS final-image
 
 WORKDIR /usr/src/app
 
