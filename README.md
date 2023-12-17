@@ -15,13 +15,13 @@ rules up-to-date with the current Cloudflare IP ranges.
 
 ## Overview
 
-`cf-ips-to-hcloud-fw` fetches the current
-[Cloudflare IP ranges](https://www.cloudflare.com/ips/) and updates your
-Hetzner Cloud firewall rules using the
-[hcloud API](https://docs.hetzner.cloud/#firewall-actions-set-rules).
+`cf-ips-to-hcloud-fw` fetches the current [Cloudflare IP
+ranges](https://www.cloudflare.com/ips/) and updates your Hetzner Cloud firewall
+rules using the [hcloud
+API](https://docs.hetzner.cloud/#firewall-actions-set-rules).
 
-The tool specifically targets **incoming** firewall rules and **replaces**
-the networks with Cloudflare networks if their description contains
+The tool specifically targets **incoming** firewall rules and **replaces** the
+networks with Cloudflare networks if their description contains
 `__CLOUDFLARE_IPS_V4__`, `__CLOUDFLARE_IPS_V6__` or `__CLOUDFLARE_IPS__`.
 
 | Text in rule description | Cloudflare IP ranges |
@@ -61,9 +61,9 @@ You should see the usage information for cf-ips-to-hcloud-fw.
 
 ### Docker and Kubernetes
 
-As an alternative, `cf-ips-to-hcloud-fw` can be run using Docker or a
-Kubernetes CronJob. Simply mount your configuration file as
-`/usr/src/app/config.yaml`. Here's an example using Docker:
+As an alternative, `cf-ips-to-hcloud-fw` can be run using Docker or a Kubernetes
+CronJob. Simply mount your configuration file as `/usr/src/app/config.yaml`.
+Here's an example using Docker:
 
 ```shell
 docker run --rm \
@@ -86,13 +86,13 @@ To prepare your Hetzner Cloud Firewall:
 - Include `__CLOUDFLARE_IPS_V4__`, `__CLOUDFLARE_IPS_V6__`, or
   `__CLOUDFLARE_IPS__` in the description of any incoming firewall rule where
   you want to insert Cloudflare networks.
-- Generate an API token with write permissions for the project that contains
-  the firewall.
+- Generate an API token with write permissions for the project that contains the
+  firewall.
 
 ### Configuring the Application
 
-To configure the application, add your tokens and the names of any firewalls
-you want to update to `config.yaml`:
+To configure the application, add your tokens and the names of any firewalls you
+want to update to `config.yaml`:
 
 ```yaml
 - token: cHJvamVjdGF0b2tlbgAd43 # token for project a
