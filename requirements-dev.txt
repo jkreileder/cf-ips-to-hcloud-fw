@@ -2,5 +2,5 @@ build==1.0.3
 pyright==1.1.342
 pytest==7.4.3
 pytest-cov==4.1.0
-ruff==0.1.8
+ruff==0.1.9
 wheel==0.42.0
