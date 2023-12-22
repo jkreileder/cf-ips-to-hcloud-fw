@@ -83,16 +83,22 @@ You can find the Docker images at:
 
 To prepare your Hetzner Cloud Firewall:
 
-- Include `__CLOUDFLARE_IPS_V4__`, `__CLOUDFLARE_IPS_V6__`, or
-  `__CLOUDFLARE_IPS__` in the description of any incoming firewall rule where
-  you want to insert Cloudflare networks.
-- Generate an API token with write permissions for the project that contains the
-  firewall.
+1. **Set the rule descriptions**: Include `__CLOUDFLARE_IPS_V4__`,
+   `__CLOUDFLARE_IPS_V6__`, or `__CLOUDFLARE_IPS__` in the description of any
+   incoming firewall rule where you want to insert Cloudflare networks. This
+   will be used as a marker to identify which rules should be updated with the
+   Cloudflare IP ranges.
+
+2. **Generate an API token**: You'll need an API token with write permissions
+   for the project that contains the firewall. This token will be used to
+   authenticate your requests to the Hetzner Cloud API. You can generate a token
+   in the Hetzner Cloud Console by going to "Security" > "API Tokens" >
+   "Generate API Token".
 
 ### Configuring the Application
 
-To configure the application, add your tokens and the names of any firewalls you
-want to update to `config.yaml`:
+To configure the application, you'll need to create a `config.yaml` file with
+your API tokens and the names of the firewalls you want to update:
 
 ```yaml
 - token: cHJvamVjdGF0b2tlbgAd43 # token for project a
