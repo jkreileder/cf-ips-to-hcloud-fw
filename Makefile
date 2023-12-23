@@ -1,40 +1,40 @@
-# system python interpreter. used only to create virtual environment
-PY = python3
-VENV = venv
-BIN=$(VENV)/bin
+MAKEFLAGS += --warn-undefined-variables
+SHELL := bash
+.SHELLFLAGS := -eu -o pipefail -c
+.DEFAULT_GOAL := all
+.DELETE_ON_ERROR:
+.SUFFIXES:
 
-
-ifeq ($(OS), Windows_NT)
-	BIN=$(VENV)/Scripts
-	PY=python
-endif
-
+SYSPYTHON := python3
+VENV := venv
+BIN := $(VENV)/bin
 
 .PHONY: all
-all: lint
+all: lint test build
 
 $(VENV): requirements.txt requirements-dev.txt pyproject.toml
-	$(PY) -m venv $(VENV)
+	$(SYSPYTHON) -m venv $(VENV)
 	$(BIN)/pip install --upgrade -r requirements.txt
 	$(BIN)/pip install --upgrade -r requirements-dev.txt
 	touch $(VENV)
-
-.PHONY: test
-test: $(VENV)
-	$(BIN)/pytest
 
 .PHONY: lint
 lint: $(VENV)
 	$(BIN)/ruff check .
 	$(BIN)/pyright --venvpath .
 
+.PHONY: test
+test: $(VENV)
+	$(BIN)/pytest
+
+.PHONY: check
+check: lint test
+
 .PHONY: build
 build: $(VENV)
 	rm -rf dist
-	$(BIN)/python3 -m build
+	$(BIN)/python -m build
 
 .PHONY: clean
 clean:
-	rm -rf build dist *.egg-info .ruff_cache htmlcov coverage.xml .coverage test-results $(VENV)
-	find . -type f -name *.pyc -delete
-	find . -type d -name __pycache__ -delete
+	git clean -xdf
