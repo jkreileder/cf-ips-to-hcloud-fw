@@ -1,6 +1,10 @@
-# syntax = docker/dockerfile:1.6.0s
+# syntax = docker/dockerfile:1.6.0
+
+ARG BUILDKIT_SBOM_SCAN_CONTEXT=true
+
 
 FROM --platform=$BUILDPLATFORM python:3.12.1-slim-bookworm AS builder
+ARG BUILDKIT_SBOM_SCAN_STAGE=true
 
 WORKDIR /usr/src/app
 
