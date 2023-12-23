@@ -27,7 +27,6 @@ class CloudflareIPNetworks(BaseModel):
 class CloudflareIPs(BaseModel):
     ipv4_cidrs: list[str]
     ipv6_cidrs: list[str]
-    all_cidrs: list[str] = []
 
 
 class Project(BaseModel):
@@ -91,7 +90,6 @@ def get_cloudflare_ips() -> CloudflareIPs:
 
     cf_ips.ipv4_cidrs.sort()
     cf_ips.ipv6_cidrs.sort()
-    cf_ips.all_cidrs = cf_ips.ipv4_cidrs + cf_ips.ipv6_cidrs
     logging.info("Got Cloudflare IPs")
     logging.debug(f"Cloudflare IPs: {cf_ips}")
     return cf_ips
@@ -112,35 +110,34 @@ def update_project(project: Project, cf_ips: CloudflareIPs) -> None:
 
 
 def update_source_ips(
-    needs_update: bool, fw: Firewall, r: FirewallRule, cidrs: list[str], kind: str
+    fw: Firewall, r: FirewallRule, cidrs: list[str], kind: str
 ) -> bool:
-    needs_update = needs_update or r.source_ips != cidrs
-    r.source_ips = cidrs
-    logging.debug(f"Updating {fw.name!r}/{r.description!r} with {kind} addresses")
-    return needs_update
+    update: bool = r.source_ips != cidrs
+    if update:
+        r.source_ips = cidrs
+        logging.debug(f"Updating {fw.name!r}/{r.description!r} with {kind} addresses")
+    else:
+        logging.debug(f"{fw.name!r}/{r.description!r} already up-to-date")
+    return update
 
 
 def update_firewall_rule(
-    needs_update: bool,
     fw: Firewall,
     r: FirewallRule,
     cf_ips: CloudflareIPs,
     ipv4: bool,
     ipv6: bool,
 ) -> bool:
-    if ipv4 and ipv6:
-        ip_cidrs = cf_ips.all_cidrs
-        ip_type = "all"
-    elif ipv4:
-        ip_cidrs = cf_ips.ipv4_cidrs
-        ip_type = "IPv4"
-    elif ipv6:
-        ip_cidrs = cf_ips.ipv6_cidrs
-        ip_type = "IPv6"
-    else:
-        return needs_update
+    if not ipv4 and not ipv6:
+        return False
 
-    return update_source_ips(needs_update, fw, r, ip_cidrs, ip_type)
+    ip_types: dict[tuple[bool, bool], tuple[list[str], str]] = {
+        (True, True): (cf_ips.ipv4_cidrs + cf_ips.ipv6_cidrs, "IPv4+IPv6"),
+        (True, False): (cf_ips.ipv4_cidrs, "IPv4"),
+        (False, True): (cf_ips.ipv6_cidrs, "IPv6"),
+    }
+    ip_cidrs, ip_type = ip_types[(ipv4, ipv6)]
+    return update_source_ips(fw, r, ip_cidrs, ip_type)
 
 
 def fw_set_rules(client: Client, fw: Firewall) -> None:
@@ -156,9 +153,8 @@ def update_firewall(client: Client, fw: Firewall, cf_ips: CloudflareIPs) -> None
     if fw.rules:
         needs_update = False
         for r in fw.rules:
-            if r.direction == "in" and r.description:
-                needs_update = update_firewall_rule(
-                    needs_update,
+            if r.direction == FirewallRule.DIRECTION_IN and r.description:
+                needs_update |= update_firewall_rule(
                     fw,
                     r,
                     cf_ips,

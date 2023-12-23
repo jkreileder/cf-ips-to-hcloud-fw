@@ -26,6 +26,8 @@ def test_create_parser() -> None:
     assert "--config" in parser._option_string_actions
     assert "-d" in parser._option_string_actions
     assert "--debug" in parser._option_string_actions
+    assert "-v" in parser._option_string_actions
+    assert "--version" in parser._option_string_actions
 
 
 @patch("builtins.open", side_effect=FileNotFoundError("config.yaml"))
@@ -37,6 +39,7 @@ def test_read_config_file_not_found(
         read_config("config.yaml")
     assert e.type is SystemExit
     assert e.value.code == 1
+    mock_open.assert_called_once()
     mock_logging.assert_called_once()
     assert mock_logging.call_args[0][0].startswith("Config file config.yaml not found.")
 
@@ -92,12 +95,10 @@ def test_read_config() -> None:
 
 @patch(
     "cf_ips_to_hcloud_fw.__main__.cf_ips_get",
-    return_value={"ipv4_cidrs": ["199.27.128.0/21", "198.27.128.0/21"]},
+    MagicMock(return_value={"ipv4_cidrs": ["199.27.128.0/21", "198.27.128.0/21"]}),
 )
 @patch("logging.error")
-def test_get_cloudflare_ips_invalid(
-    mock_logging: MagicMock, mock_cf_ips_get: MagicMock
-) -> None:
+def test_get_cloudflare_ips_invalid(mock_logging: MagicMock) -> None:
     with pytest.raises(SystemExit) as e:
         get_cloudflare_ips()
     assert e.type is SystemExit
@@ -108,45 +109,36 @@ def test_get_cloudflare_ips_invalid(
 
 @patch(
     "cf_ips_to_hcloud_fw.__main__.cf_ips_get",
-    return_value={
-        "ipv4_cidrs": ["199.27.128.0/21", "198.27.128.0/21"],
-        "ipv6_cidrs": ["2400:cb00::/32", "1400:cb00::/32"],
-    },
+    MagicMock(
+        return_value={
+            "ipv4_cidrs": ["199.27.128.0/21", "198.27.128.0/21"],
+            "ipv6_cidrs": ["2400:cb00::/32", "1400:cb00::/32"],
+        }
+    ),
 )
-def test_get_cloudflare_ips(mock_cf_ips_get: MagicMock) -> None:
+def test_get_cloudflare_ips() -> None:
     result = get_cloudflare_ips()
     assert result == CloudflareIPs(
         ipv4_cidrs=["198.27.128.0/21", "199.27.128.0/21"],
         ipv6_cidrs=["1400:cb00::/32", "2400:cb00::/32"],
-        all_cidrs=[
-            "198.27.128.0/21",
-            "199.27.128.0/21",
-            "1400:cb00::/32",
-            "2400:cb00::/32",
-        ],
     )
 
 
 @pytest.mark.parametrize(
-    ("needs_update_in", "ips", "cidrs", "needs_update_out"),
+    ("ips", "cidrs", "expected"),
     [
-        (False, None, ["127.1"], True),
-        (False, [], ["127.1"], True),
-        (False, ["127.1"], ["127.1"], False),
-        (False, ["127.1"], ["127.2"], True),
-        (True, ["127.1"], ["127.1"], True),
-        (True, ["127.1"], ["127.2"], True),
-        (False, ["127.1"], ["127.1", "127.2"], True),
-        (True, ["127.1"], ["127.1", "127.2"], True),
+        (None, ["127.1"], True),
+        ([], ["127.1"], True),
+        (["127.1"], ["127.1"], False),
+        (["127.1"], ["127.2"], True),
+        (["127.1"], ["127.1", "127.2"], True),
     ],
 )
-def test_update_source_ips(
-    needs_update_in: bool, ips: list[str], cidrs: list[str], needs_update_out: bool
-) -> None:
-    rule = FirewallRule("in", "tcp", ips)
+def test_update_source_ips(ips: list[str], cidrs: list[str], expected: bool) -> None:
+    rule = FirewallRule(FirewallRule.DIRECTION_IN, FirewallRule.PROTOCOL_TCP, ips)
     fw = Firewall(rules=[rule])
-    needs_update = update_source_ips(needs_update_in, fw, rule, cidrs, "")
-    assert needs_update == needs_update_out
+    needs_update = update_source_ips(fw, rule, cidrs, "")
+    assert needs_update == expected
     assert fw.rules
     assert fw.rules[0].source_ips == cidrs
 
@@ -154,62 +146,86 @@ def test_update_source_ips(
 @pytest.mark.parametrize(
     ("ipv4", "ipv6", "kind"),
     [
-        (True, True, "all"),
+        (True, True, "IPv4+IPv6"),
         (True, False, "IPv4"),
         (False, True, "IPv6"),
         (False, False, None),
     ],
 )
-@patch("cf_ips_to_hcloud_fw.__main__.update_source_ips", return_value=True)
+@patch("cf_ips_to_hcloud_fw.__main__.update_source_ips", wraps=update_source_ips)
 def test_update_firewall_rule(
     mock_update_source_ips: MagicMock, ipv4: bool, ipv6: bool, kind: str
 ) -> None:
-    fw = Firewall()
-    r = FirewallRule("in", "tcp", [])
+    r = FirewallRule(FirewallRule.DIRECTION_IN, FirewallRule.PROTOCOL_TCP, [])
+    fw = Firewall(1, "test-firewall", rules=[r])
     cf_ips = CloudflareIPs(ipv4_cidrs=["127.1"], ipv6_cidrs=["::1"])
     if ipv4 or ipv6:
-        res = update_firewall_rule(False, fw, r, cf_ips, ipv4, ipv6)
+        assert update_firewall_rule(fw, r, cf_ips, ipv4, ipv6)
         if ipv4 and ipv6:
-            ips = cf_ips.all_cidrs
+            ips = cf_ips.ipv4_cidrs + cf_ips.ipv6_cidrs
         elif ipv4:
             ips = cf_ips.ipv4_cidrs
         else:
             ips = cf_ips.ipv6_cidrs
-        mock_update_source_ips.assert_called_once_with(False, fw, r, ips, kind)
-        assert res is True
+        mock_update_source_ips.assert_called_once_with(fw, r, ips, kind)
+        # Second update should not change anything
+        assert not update_firewall_rule(fw, r, cf_ips, ipv4, ipv6)
     else:
-        assert not update_firewall_rule(False, fw, r, cf_ips, ipv4, ipv6)
-        mock_update_source_ips.assert_not_called()
-        assert update_firewall_rule(True, fw, r, cf_ips, ipv4, ipv6)
+        assert not update_firewall_rule(fw, r, cf_ips, ipv4, ipv6)
         mock_update_source_ips.assert_not_called()
 
 
 @patch("cf_ips_to_hcloud_fw.__main__.update_firewall_rule", wraps=update_firewall_rule)
 @patch("cf_ips_to_hcloud_fw.__main__.fw_set_rules")
 def test_update_firewall(
-    mock_firewalls_set_rules: MagicMock,
-    mock_update_firewall_rule: MagicMock,
+    mock_firewalls_set_rules: MagicMock, mock_update_firewall_rule: MagicMock
 ) -> None:
     client = MagicMock()
     fw = Firewall(
         name="test-firewall",
         rules=[
-            FirewallRule("in", "tcp", description=f" {CF_ALL} ", source_ips=[]),
-            FirewallRule("out", "tcp", description=CF_ALL, source_ips=[]),
-            FirewallRule("in", "tcp", description=CF_IPV4, source_ips=[]),
-            FirewallRule("in", "tcp", description=CF_IPV6, source_ips=[]),
+            FirewallRule(
+                FirewallRule.DIRECTION_IN,
+                FirewallRule.PROTOCOL_TCP,
+                description=f" {CF_ALL} ",
+                source_ips=[],
+            ),
+            FirewallRule(
+                FirewallRule.DIRECTION_OUT,
+                FirewallRule.PROTOCOL_TCP,
+                description=CF_ALL,
+                source_ips=[],
+            ),
+            FirewallRule(
+                FirewallRule.DIRECTION_IN,
+                FirewallRule.PROTOCOL_TCP,
+                description=CF_IPV4,
+                source_ips=[],
+            ),
+            FirewallRule(
+                FirewallRule.DIRECTION_IN,
+                FirewallRule.PROTOCOL_TCP,
+                description=CF_IPV6,
+                source_ips=[],
+            ),
+            FirewallRule(
+                FirewallRule.DIRECTION_IN,
+                FirewallRule.PROTOCOL_TCP,
+                description=f"{CF_IPV4} {CF_IPV6}",
+                source_ips=[],
+            ),
         ],
     )
     cf_ips = CloudflareIPs(ipv4_cidrs=["127.1"], ipv6_cidrs=["::1"])
-    cf_ips.all_cidrs = cf_ips.ipv4_cidrs + cf_ips.ipv6_cidrs
 
     update_firewall(client, fw, cf_ips)
 
     assert fw.rules
     mock_update_firewall_rule.assert_has_calls([
-        call(False, fw, fw.rules[0], cf_ips, True, True),
-        call(True, fw, fw.rules[2], cf_ips, True, False),
-        call(True, fw, fw.rules[3], cf_ips, False, True),
+        call(fw, fw.rules[0], cf_ips, True, True),
+        call(fw, fw.rules[2], cf_ips, True, False),
+        call(fw, fw.rules[3], cf_ips, False, True),
+        call(fw, fw.rules[4], cf_ips, True, True),
     ])
     mock_firewalls_set_rules.assert_called_once_with(client, fw)
 
@@ -225,23 +241,46 @@ def test_update_firewall_already_up_to_date(
         name="test-firewall",
         rules=[
             FirewallRule(
-                "in", "tcp", description=f" {CF_ALL} ", source_ips=["127.1", "::1"]
+                FirewallRule.DIRECTION_IN,
+                FirewallRule.PROTOCOL_TCP,
+                description=f" {CF_ALL} ",
+                source_ips=["127.1", "::1"],
             ),
-            FirewallRule("out", "tcp", description=CF_ALL, source_ips=[]),
-            FirewallRule("in", "tcp", description=CF_IPV4, source_ips=["127.1"]),
-            FirewallRule("in", "tcp", description=CF_IPV6, source_ips=["::1"]),
+            FirewallRule(
+                FirewallRule.DIRECTION_OUT,
+                FirewallRule.PROTOCOL_TCP,
+                description=CF_ALL,
+                source_ips=[],
+            ),
+            FirewallRule(
+                FirewallRule.DIRECTION_IN,
+                FirewallRule.PROTOCOL_TCP,
+                description=CF_IPV4,
+                source_ips=["127.1"],
+            ),
+            FirewallRule(
+                FirewallRule.DIRECTION_IN,
+                FirewallRule.PROTOCOL_TCP,
+                description=CF_IPV6,
+                source_ips=["::1"],
+            ),
+            FirewallRule(
+                FirewallRule.DIRECTION_IN,
+                FirewallRule.PROTOCOL_TCP,
+                description=f"{CF_IPV4} {CF_IPV6}",
+                source_ips=["127.1", "::1"],
+            ),
         ],
     )
     cf_ips = CloudflareIPs(ipv4_cidrs=["127.1"], ipv6_cidrs=["::1"])
-    cf_ips.all_cidrs = cf_ips.ipv4_cidrs + cf_ips.ipv6_cidrs
-
     update_firewall(client, fw, cf_ips)
 
     assert fw.rules
     mock_update_firewall_rule.assert_has_calls([
-        call(False, fw, fw.rules[0], cf_ips, True, True),
-        call(False, fw, fw.rules[2], cf_ips, True, False),
-        call(False, fw, fw.rules[3], cf_ips, False, True),
+        call(fw, fw.rules[0], cf_ips, True, True),
+        call(fw, fw.rules[2], cf_ips, True, False),
+        call(fw, fw.rules[3], cf_ips, False, True),
+        call(fw, fw.rules[4], cf_ips, True, True),
     ])
     mock_firewalls_set_rules.assert_not_called()
 
@@ -258,7 +297,6 @@ def test_update_firewall_no_rules(
         rules=[],
     )
     cf_ips = CloudflareIPs(ipv4_cidrs=["127.1"], ipv6_cidrs=["::1"])
-    cf_ips.all_cidrs = cf_ips.ipv4_cidrs + cf_ips.ipv6_cidrs
 
     update_firewall(client, fw, cf_ips)
 
@@ -266,21 +304,18 @@ def test_update_firewall_no_rules(
     mock_firewalls_set_rules.assert_not_called()
 
 
-@patch("cf_ips_to_hcloud_fw.__main__.create_parser")
+@patch("cf_ips_to_hcloud_fw.__main__.create_parser", MagicMock())
 @patch(
     "cf_ips_to_hcloud_fw.__main__.read_config",
-    return_value=[
-        Project(token=SecretStr("token-1"), firewalls=["fw-1", "fw-2"]),
-        Project(token=SecretStr("token-2"), firewalls=["fw-1", "fw-2"]),
-    ],
+    MagicMock(
+        return_value=[
+            Project(token=SecretStr("token-1"), firewalls=["fw-1", "fw-2"]),
+            Project(token=SecretStr("token-2"), firewalls=["fw-1", "fw-2"]),
+        ]
+    ),
 )
-@patch("cf_ips_to_hcloud_fw.__main__.get_cloudflare_ips")
+@patch("cf_ips_to_hcloud_fw.__main__.get_cloudflare_ips", MagicMock())
 @patch("cf_ips_to_hcloud_fw.__main__.update_project")
-def test_main(
-    mock_update_project: MagicMock,
-    mock_get_cloudflare_ips: MagicMock,
-    mock_read_config: MagicMock,
-    mock_create_parser: MagicMock,
-) -> None:
+def test_main(mock_update_project: MagicMock) -> None:
     main()
     assert mock_update_project.call_count == 2
