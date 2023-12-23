@@ -35,6 +35,6 @@ build: $(VENV)
 
 .PHONY: clean
 clean:
-	rm -rf build dist *.egg-info .ruff_cache $(VENV)
+	rm -rf build dist *.egg-info .ruff_cache htmlcov coverage.xml .coverage test-results $(VENV)
 	find . -type f -name *.pyc -delete
 	find . -type d -name __pycache__ -delete
