@@ -26,7 +26,7 @@ jobs:
 
       - name: Check for changes
         id: git-diff
-        run: echo "::set-output name=changed::$(git diff --exit-code || echo 'true')"
+        run: echo "changed=$(git diff --exit-code || echo 'true')" >> "$GITHUB_OUTPUT"
 
       - name: Create Pull Request
         if: steps.git-diff.outputs.changed == 'true'
