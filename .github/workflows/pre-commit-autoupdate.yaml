@@ -3,6 +3,7 @@ name: Pre-commit autoupdate
 on:
   schedule:
     - cron: "20 03 * * *"
+  workflow_dispatch:
 
 jobs:
   update:
