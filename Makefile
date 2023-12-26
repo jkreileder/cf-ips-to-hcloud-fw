@@ -15,7 +15,7 @@ pyproject-dependencies := $(patsubst %.txt,%-pep508.txt,$(pip-dependencies))
 .PHONY: all
 all: lint test build
 
-$(VENV): pyproject.toml $(pip-dependencies)
+$(VENV): pyproject.toml
 	$(SYSPYTHON) -m venv $(VENV)
 	$(BIN)/pip install --require-hashes -r requirements-dev.txt
 	$(BIN)/pip install --require-hashes -r requirements.txt
@@ -42,10 +42,10 @@ build: $(VENV) $(pyproject-dependencies)
 clean:
 	git clean -xdf
 
-requirements.txt: pyproject.toml
+requirements.txt: requirements.in
 	$(BIN)/pip-compile --no-allow-unsafe --generate-hashes --output-file=requirements.txt requirements.in
 
-requirements-dev.txt: pyproject.toml requirements.txt
+requirements-dev.txt: requirements-dev.in
 	$(BIN)/pip-compile --allow-unsafe --constraint=requirements.txt --generate-hashes --output-file=requirements-dev.txt requirements-dev.in
 
 $(pyproject-dependencies): %-pep508.txt: %.txt
