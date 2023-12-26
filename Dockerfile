@@ -8,25 +8,33 @@ ARG BUILDKIT_SBOM_SCAN_STAGE=true
 
 WORKDIR /usr/src/app
 
-RUN --mount=target=requirements-dev.txt,source=/requirements-dev.txt \
-    --mount=type=cache,id=pip,target=/root/.cache/pip \
-    pip3 install --disable-pip-version-check -r requirements-dev.txt
-
-RUN --mount=target=requirements.txt,source=/requirements.txt \
+# Install dependencies and force pyright to install node
+RUN --mount=target=requirements.txt,source=/requirements.txt  \
+    --mount=target=requirements-dev.txt,source=/requirements-dev.txt \
     --mount=type=cache,id=npm,target=/root/.npm \
-    --mount=type=cache,id=pip,target=/root/.cache/pip \
-    pip3 install --disable-pip-version-check -r requirements.txt && pyright --version # force pyright to install node
+    --mount=type=cache,id=pip,target=/root/.cache/pip <<EOF
+    set -ex
+    pip3 install --disable-pip-version-check --require-hashes -r requirements-dev.txt
+    pip3 install --disable-pip-version-check --require-hashes -r requirements.txt
+    pyright --version
+    pip-compile --allow-unsafe --no-strip-extras --output-file=requirements-dev-pep508.txt --quiet requirements-dev.txt
+    pip-compile --allow-unsafe --no-strip-extras --output-file=requirements-pep508.txt --quiet requirements.txt
+EOF
 
+# Lint, test and build
 RUN --mount=target=cf_ips_to_hcloud_fw,source=/cf_ips_to_hcloud_fw \
     --mount=target=tests,source=/tests \
     --mount=target=LICENSE,source=/LICENSE \
     --mount=target=pyproject.toml,source=/pyproject.toml \
     --mount=target=README.md,source=/README.md \
-    --mount=target=requirements-dev.txt,source=/requirements-dev.txt \
-    --mount=target=requirements.txt,source=/requirements.txt \
     --mount=type=cache,id=pip,target=/root/.cache/pip \
-    --mount=type=cache,id=npm,target=/root/.npm \
-    ruff check . && pyright && pytest && python3 -m build
+    --mount=type=cache,id=npm,target=/root/.npm <<EOF
+    set -ex
+    ruff check --output-format=github
+    pyright
+    pytest
+    python3 -m build
+EOF
 
 
 FROM python:3.12.1-alpine3.19 AS final-image

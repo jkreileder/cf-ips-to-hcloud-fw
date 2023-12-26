@@ -1,0 +1,6 @@
+build
+pip-tools
+pyright
+pytest
+pytest-cov
+ruff

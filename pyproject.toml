@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=64.0"]
+requires = ["setuptools>=69"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -10,8 +10,7 @@ keywords = ["cloudflare", "hcloud", "hetzner", "firewall", "cli"]
 readme = "README.md"
 license = { text = "MIT" }
 requires-python = ">=3.9"
-dynamic = ["version"]
-dependencies = ["cloudflare", "hcloud", "pydantic", "PyYAML"]
+dynamic = ["version", "dependencies", "optional-dependencies"]
 
 [project.scripts]
 cf-ips-to-hcloud-fw = "cf_ips_to_hcloud_fw.__main__:main"
@@ -26,14 +25,13 @@ Twitter = "https://twitter/jkreileder"
 Bluesky = "https://bsky.app/profile/jk.blackdown.de"
 PyPI = "https://pypi.org/project/cf-ips-to-hcloud-fw/"
 
-[project.optional-dependencies]
-dev = ["build", "pyright", "pytest", "pytest-cov", "ruff", "wheel"]
+[tool.setuptools]
+packages = ["cf_ips_to_hcloud_fw"]
 
 [tool.setuptools.dynamic]
 version = { attr = "cf_ips_to_hcloud_fw.__VERSION__" }
-
-[tool.setuptools]
-packages = ["cf_ips_to_hcloud_fw", "tests"]
+dependencies = { file = ["requirements-pep508.txt"] }
+optional-dependencies.dev = { file = ["requirements-dev-pep508.txt"] }
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
@@ -90,3 +88,10 @@ target-version = "py311"
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["S101"]
+
+[tool.pip-tools]
+generate-hashes = false
+newline = "LF"
+quiet = true
+strip-extras = false
+upgrade = true

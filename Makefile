@@ -9,13 +9,16 @@ SYSPYTHON := python3
 VENV := venv
 BIN := $(VENV)/bin
 
+pip-dependencies := requirements.txt requirements-dev.txt
+pyproject-dependencies := $(patsubst %.txt,%-pep508.txt,$(pip-dependencies))
+
 .PHONY: all
 all: lint test build
 
-$(VENV): requirements.txt requirements-dev.txt pyproject.toml
+$(VENV): pyproject.toml $(pip-dependencies)
 	$(SYSPYTHON) -m venv $(VENV)
-	$(BIN)/pip install --upgrade -r requirements.txt
-	$(BIN)/pip install --upgrade -r requirements-dev.txt
+	$(BIN)/pip install --require-hashes -r requirements-dev.txt
+	$(BIN)/pip install --require-hashes -r requirements.txt
 	touch $(VENV)
 
 .PHONY: lint
@@ -31,10 +34,19 @@ test: $(VENV)
 check: lint test
 
 .PHONY: build
-build: $(VENV)
+build: $(VENV) $(pyproject-dependencies)
 	rm -rf dist
 	$(BIN)/python -m build
 
 .PHONY: clean
 clean:
 	git clean -xdf
+
+requirements.txt: pyproject.toml
+	$(BIN)/pip-compile --no-allow-unsafe --generate-hashes --output-file=requirements.txt requirements.in
+
+requirements-dev.txt: pyproject.toml requirements.txt
+	$(BIN)/pip-compile --allow-unsafe --constraint=requirements.txt --generate-hashes --output-file=requirements-dev.txt requirements-dev.in
+
+$(pyproject-dependencies): %-pep508.txt: %.txt
+	$(BIN)/pip-compile --allow-unsafe --output-file=$@ $<

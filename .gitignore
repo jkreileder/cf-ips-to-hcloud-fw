@@ -10,6 +10,8 @@ build
 dist
 *.egg-info
 
+requirements*-pep508.txt
+
 .coverage
 .pytest_cache
 .ruff_cache
