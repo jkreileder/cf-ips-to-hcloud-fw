@@ -33,6 +33,8 @@ FROM python:3.12.1-alpine3.19 AS final-image
 
 WORKDIR /usr/src/app
 
+ENV PYTHONFAULTHANDLER=1
+
 RUN --mount=from=builder,target=/dist,source=/usr/src/app/dist \
     --mount=type=cache,id=pip,target=/root/.cache/pip \
     pip3 install --disable-pip-version-check --force-reinstall /dist/*.whl
