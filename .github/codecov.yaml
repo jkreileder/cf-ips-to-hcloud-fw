@@ -1,3 +1,8 @@
+coverage:
+  range: 60..80
+  round: down
+  precision: 2
+
 flag_management:
   default_rules:
     carryforward: true
