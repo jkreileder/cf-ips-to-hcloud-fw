@@ -36,8 +36,9 @@ optional-dependencies.dev = { file = ["requirements-dev-pep508.txt"] }
 [tool.pytest.ini_options]
 pythonpath = ["."]
 addopts = """
-    --cov=cf_ips_to_hcloud_fw
     --junitxml=test-results.xml
+    --cov=cf_ips_to_hcloud_fw
+    --cov-branch
     --cov-report=xml
     --cov-report=html
     --cov-report=term-missing
