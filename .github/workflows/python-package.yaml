@@ -37,11 +37,11 @@ jobs:
       - name: Test
         run: make test
       - name: Upload coverage report to Codecov
-        if: ${{ matrix.python-version == '3.11' }}
         uses: codecov/codecov-action@v3
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./coverage.xml
+          flags: python-${{ matrix.python-version }}
       - name: Build
         run: make build
       - name: Store the distribution packages
