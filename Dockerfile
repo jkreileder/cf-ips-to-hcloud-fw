@@ -43,9 +43,14 @@ WORKDIR /usr/src/app
 
 ENV PYTHONFAULTHANDLER=1
 
-RUN --mount=from=builder,target=/dist,source=/usr/src/app/dist \
+# Install dependencies directly with hashes
+RUN --mount=target=requirements.txt,source=/requirements.txt  \
     --mount=type=cache,id=pip,target=/root/.cache/pip \
-    pip3 install --disable-pip-version-check --force-reinstall /dist/*.whl
+    pip3 install --disable-pip-version-check --require-hashes -r requirements.txt
+
+# Install wheel without dependencies
+RUN --mount=from=builder,target=/dist,source=/usr/src/app/dist \
+    pip3 install --disable-pip-version-check --force-reinstall --no-deps /dist/*.whl
 
 USER 65534
 
