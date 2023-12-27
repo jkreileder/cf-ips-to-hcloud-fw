@@ -1,5 +1,5 @@
 **
-!/cf_ips_to_hcloud_fw/*.py
+!/src/cf_ips_to_hcloud_fw/*.py
 !/tests/*.py
 !/LICENSE
 !/pyproject.toml

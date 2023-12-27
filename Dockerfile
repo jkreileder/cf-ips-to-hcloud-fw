@@ -22,7 +22,7 @@ RUN --mount=target=requirements.txt,source=/requirements.txt  \
 EOF
 
 # Lint, test and build
-RUN --mount=target=cf_ips_to_hcloud_fw,source=/cf_ips_to_hcloud_fw \
+RUN --mount=target=src/cf_ips_to_hcloud_fw,source=/src/cf_ips_to_hcloud_fw \
     --mount=target=tests,source=/tests \
     --mount=target=LICENSE,source=/LICENSE \
     --mount=target=pyproject.toml,source=/pyproject.toml \

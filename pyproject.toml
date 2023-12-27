@@ -25,8 +25,8 @@ Twitter = "https://twitter/jkreileder"
 Bluesky = "https://bsky.app/profile/jk.blackdown.de"
 PyPI = "https://pypi.org/project/cf-ips-to-hcloud-fw/"
 
-[tool.setuptools]
-packages = ["cf_ips_to_hcloud_fw"]
+[tool.setuptools.packages.find]
+where = ["src"]
 
 [tool.setuptools.dynamic]
 version = { attr = "cf_ips_to_hcloud_fw.__VERSION__" }
@@ -34,10 +34,10 @@ dependencies = { file = ["requirements-pep508.txt"] }
 optional-dependencies.dev = { file = ["requirements-dev-pep508.txt"] }
 
 [tool.pytest.ini_options]
-pythonpath = ["."]
+pythonpath = ["src", "tests"]
 addopts = """
     --junitxml=test-results.xml
-    --cov=cf_ips_to_hcloud_fw
+    --cov=src
     --cov-branch
     --cov-report=xml
     --cov-report=html
@@ -46,13 +46,14 @@ addopts = """
 """
 
 [tool.pyright]
-include = ["cf_ips_to_hcloud_fw", "tests"]
-strict = ["cf_ips_to_hcloud_fw", "tests"]
+include = ["src", "tests"]
+strict = ["src", "tests"]
 reportMissingImports = true
 reportMissingTypeStubs = true
 venv = "venv"
 
 [tool.ruff]
+src = ["src"]
 select = [
     "A",
     "ANN",
