@@ -44,7 +44,7 @@ def test_read_config_file_not_found(
         read_config("config.yaml")
     assert e.type is SystemExit
     assert e.value.code == 1
-    mock_open.assert_called_once()
+    mock_open.assert_called_once_with("config.yaml")
     mock_logging.assert_called_once()
     assert mock_logging.call_args[0][0].startswith("Config file config.yaml not found.")
 
@@ -369,7 +369,7 @@ def test_update_project_found(
     mock_client.return_value.firewalls.get_by_name.return_value = fw
     project = Project(token=SecretStr("token-1"), firewalls=["fw-1"])
     update_project(project, cf_ips)
-    mock_client.return_value.firewalls.get_by_name.assert_called_once()
+    mock_client.return_value.firewalls.get_by_name.assert_called_once_with("fw-1")
     mock_update_firewall.assert_called_once_with(mock_client.return_value, fw, cf_ips)
 
 
@@ -382,7 +382,7 @@ def test_update_project_not_found(
     mock_client.return_value.firewalls.get_by_name.return_value = None
     project = Project(token=SecretStr("token-1"), firewalls=["fw-1"])
     update_project(project, CloudflareIPs(ipv4_cidrs=["127.1"], ipv6_cidrs=["::1"]))
-    mock_client.return_value.firewalls.get_by_name.assert_called_once()
+    mock_client.return_value.firewalls.get_by_name.assert_called_once_with("fw-1")
     mock_update_firewall.assert_not_called()
     mock_logging.assert_called_once_with("hcloud firewall 'fw-1' not found")
 
@@ -398,7 +398,7 @@ def test_update_project_fail(mock_logging: MagicMock, mock_client: MagicMock) ->
         update_project(project, CloudflareIPs(ipv4_cidrs=["127.1"], ipv6_cidrs=["::1"]))
     assert e.type is SystemExit
     assert e.value.code == 1
-    mock_client.return_value.firewalls.get_by_name.assert_called_once()
+    mock_client.return_value.firewalls.get_by_name.assert_called_once_with("fw-1")
     mock_logging.assert_called_once_with("hcloud/firewalls.get_by_name failed: Message")
 
 
