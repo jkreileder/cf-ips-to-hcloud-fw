@@ -1,6 +1,8 @@
 from unittest.mock import MagicMock, call, mock_open, patch
 
+import CloudFlare  # type: ignore[import-untyped]
 import pytest
+from hcloud._exceptions import APIException
 from hcloud.firewalls.domain import Firewall, FirewallRule
 from pydantic import SecretStr
 
@@ -10,12 +12,15 @@ from cf_ips_to_hcloud_fw.__main__ import (
     CF_IPV6,
     CloudflareIPs,
     Project,
+    cf_ips_get,  # type: ignore[import-untyped]
     create_parser,
+    fw_set_rules,
     get_cloudflare_ips,
     main,
     read_config,
     update_firewall,
     update_firewall_rule,
+    update_project,
     update_source_ips,
 )
 
@@ -91,6 +96,20 @@ def test_read_config_broken_yaml(mock_logging: MagicMock) -> None:
 def test_read_config() -> None:
     projects = read_config("config.yaml")
     assert projects == [Project(token=SecretStr("token"), firewalls=["fw-1"])]
+
+
+@patch("CloudFlare.CloudFlare")
+@patch("logging.error")
+def test_cf_ips_get(mock_logging: MagicMock, mock_cloudflare: MagicMock) -> None:
+    mock_cloudflare.return_value.ips.get.side_effect = (
+        CloudFlare.exceptions.CloudFlareAPIError(503, "503")  # type: ignore
+    )
+    with pytest.raises(SystemExit) as e:
+        cf_ips_get()
+    assert e.type is SystemExit
+    assert e.value.code == 1
+    mock_cloudflare.return_value.ips.get.assert_called_once()
+    mock_logging.assert_called_once_with("Error getting CloudFlare IPs: 503")
 
 
 @patch(
@@ -285,23 +304,102 @@ def test_update_firewall_already_up_to_date(
     mock_firewalls_set_rules.assert_not_called()
 
 
+@pytest.mark.parametrize(
+    "rules",
+    [
+        None,
+        [],
+        [FirewallRule(FirewallRule.DIRECTION_IN, FirewallRule.PROTOCOL_TCP, ["127.1"])],
+    ],
+)
+@patch("cf_ips_to_hcloud_fw.__main__.Client")
+def test_fw_set_rules(mock_client: MagicMock, rules: list[FirewallRule]) -> None:
+    expected = rules or []
+    fw = Firewall(
+        name="test-firewall",
+        rules=rules,
+    )
+    fw_set_rules(mock_client, fw)
+    mock_client.firewalls.set_rules.assert_called_once_with(fw, expected)
+
+
+@patch("cf_ips_to_hcloud_fw.__main__.Client")
+@patch("logging.error")
+def test_fw_set_rules_fail(mock_logging: MagicMock, mock_client: MagicMock) -> None:
+    fw = Firewall(
+        name="test-firewall",
+        rules=[],
+    )
+    mock_client.firewalls.set_rules.side_effect = APIException(
+        "Test exception", "Message", "Details"
+    )
+    with pytest.raises(SystemExit) as e:
+        fw_set_rules(mock_client, fw)
+    assert e.type is SystemExit
+    assert e.value.code == 1
+    mock_client.firewalls.set_rules.assert_called_once_with(fw, [])
+    mock_logging.assert_called_once_with("hcloud/firewall.set_rules failed: Message")
+
+
 @patch("cf_ips_to_hcloud_fw.__main__.update_firewall_rule", wraps=update_firewall_rule)
 @patch("cf_ips_to_hcloud_fw.__main__.fw_set_rules")
 def test_update_firewall_no_rules(
     mock_firewalls_set_rules: MagicMock,
     mock_update_firewall_rule: MagicMock,
 ) -> None:
-    client = MagicMock()
     fw = Firewall(
         name="test-firewall",
         rules=[],
     )
     cf_ips = CloudflareIPs(ipv4_cidrs=["127.1"], ipv6_cidrs=["::1"])
 
-    update_firewall(client, fw, cf_ips)
+    update_firewall(MagicMock(), fw, cf_ips)
 
     mock_update_firewall_rule.assert_not_called()
     mock_firewalls_set_rules.assert_not_called()
+
+
+@patch("cf_ips_to_hcloud_fw.__main__.Client")
+@patch("cf_ips_to_hcloud_fw.__main__.update_firewall")
+def test_update_project_found(
+    mock_update_firewall: MagicMock, mock_client: MagicMock
+) -> None:
+    fw = Firewall(1, "fw-1")
+    cf_ips = CloudflareIPs(ipv4_cidrs=["127.1"], ipv6_cidrs=["::1"])
+    mock_client.return_value.firewalls.get_by_name.return_value = fw
+    project = Project(token=SecretStr("token-1"), firewalls=["fw-1"])
+    update_project(project, cf_ips)
+    mock_client.return_value.firewalls.get_by_name.assert_called_once()
+    mock_update_firewall.assert_called_once_with(mock_client.return_value, fw, cf_ips)
+
+
+@patch("cf_ips_to_hcloud_fw.__main__.Client")
+@patch("cf_ips_to_hcloud_fw.__main__.update_firewall")
+@patch("logging.error")
+def test_update_project_not_found(
+    mock_logging: MagicMock, mock_update_firewall: MagicMock, mock_client: MagicMock
+) -> None:
+    mock_client.return_value.firewalls.get_by_name.return_value = None
+    project = Project(token=SecretStr("token-1"), firewalls=["fw-1"])
+    update_project(project, CloudflareIPs(ipv4_cidrs=["127.1"], ipv6_cidrs=["::1"]))
+    mock_client.return_value.firewalls.get_by_name.assert_called_once()
+    mock_update_firewall.assert_not_called()
+    mock_logging.assert_called_once_with("hcloud firewall 'fw-1' not found")
+
+
+@patch("cf_ips_to_hcloud_fw.__main__.Client")
+@patch("logging.error")
+def test_update_project_fail(mock_logging: MagicMock, mock_client: MagicMock) -> None:
+    mock_client.return_value.firewalls.get_by_name.side_effect = APIException(
+        "Test exception", "Message", "Details"
+    )
+    project = Project(token=SecretStr("token-1"), firewalls=["fw-1", "fw-2"])
+    with pytest.raises(SystemExit) as e:
+        update_project(project, CloudflareIPs(ipv4_cidrs=["127.1"], ipv6_cidrs=["::1"]))
+    assert e.type is SystemExit
+    assert e.value.code == 1
+    mock_client.return_value.firewalls.get_by_name.assert_called_once()
+    mock_logging.assert_called_once_with("hcloud/firewalls.get_by_name failed: Message")
 
 
 @patch("cf_ips_to_hcloud_fw.__main__.create_parser", MagicMock())
