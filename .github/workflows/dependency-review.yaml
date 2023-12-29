@@ -7,7 +7,8 @@
 #
 # Source repository: https://github.com/actions/dependency-review-action
 name: "Dependency Review"
-on: [pull_request]
+on:
+  pull_request:
 
 permissions:
   contents: read
@@ -15,6 +16,7 @@ permissions:
 jobs:
   dependency-review:
     runs-on: ubuntu-latest
+
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@eb238b55efaa70779f274895e782ed17c84f2895 # v2.6.1
@@ -29,5 +31,6 @@ jobs:
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           persist-credentials: false
+
       - name: "Dependency Review"
         uses: actions/dependency-review-action@01bc87099ba56df1e897b6874784491ea6309bc4 # v3.1.4

@@ -25,6 +25,7 @@ jobs:
           - "3.10"
           - "3.11"
           - "3.12"
+
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@eb238b55efaa70779f274895e782ed17c84f2895 # v2.6.1
@@ -45,24 +46,31 @@ jobs:
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           persist-credentials: false
+
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5.0.0
         with:
           python-version: ${{ matrix.python-version }}
           cache: pip
+
       - name: Make venv
         run: make venv
+
       - name: Lint
         run: make lint
+
       - name: Test
         run: make test
+
       - name: Upload coverage report to Codecov
         uses: codecov/codecov-action@eaaf4bedf32dbdc6b720b63067d99c4d77d6047d # v3.1.4
         with:
           files: ./coverage.xml
           flags: python-${{ matrix.python-version }}
+
       - name: Build
         run: make build
+
       - name: Store the distribution packages
         uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392 # v4.0.0
         if: ${{ github.event_name != 'pull_request' && startsWith(github.ref, 'refs/tags/') && matrix.python-version == '3.11' }}
@@ -81,6 +89,7 @@ jobs:
       url: https://pypi.org/p/cf-ips-to-hcloud-fw
     permissions:
       id-token: write
+
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@eb238b55efaa70779f274895e782ed17c84f2895 # v2.6.1
@@ -92,6 +101,7 @@ jobs:
         with:
           name: python-package-distributions
           path: dist/
+
       - name: Publish distribution to PyPI
         uses: pypa/gh-action-pypi-publish@2f6f737ca5f74c637829c0f5c3acd0e29ea5e8bf # release/v1
 
@@ -104,6 +114,7 @@ jobs:
     permissions:
       contents: write
       id-token: write
+
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@eb238b55efaa70779f274895e782ed17c84f2895 # v2.6.1
@@ -115,12 +126,14 @@ jobs:
         with:
           name: python-package-distributions
           path: dist/
+
       - name: Sign the dists with Sigstore
         uses: sigstore/gh-action-sigstore-python@61f6a500bbfdd9a2a339cf033e5421951fbc1cd2 # v2.1.1
         with:
           inputs: >-
             ./dist/*.tar.gz
             ./dist/*.whl
+
       - name: Create GitHub Release
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -129,6 +142,7 @@ jobs:
           '${{ github.ref_name }}'
           --repo '${{ github.repository }}'
           --notes ""
+
       - name: Upload artifact signatures to GitHub Release
         env:
           GITHUB_TOKEN: ${{ github.token }}
