@@ -107,7 +107,7 @@ jobs:
           image: image://jkreileder/cf-ips-to-hcloud-fw:${{ steps.docker-meta.outputs.version }}
           sarif-file: sarif.output.json
           organization: jkreileder
-          to: jkreileder/cf-ips-to-hcloud-fw:1
+          to: registry://jkreileder/cf-ips-to-hcloud-fw:1
       - name: Upload Docker Scout scan result to GitHub Security tab
         if: ${{ github.event_name != 'pull_request' || !github.event.pull_request.head.repo.fork }}
         continue-on-error: true
