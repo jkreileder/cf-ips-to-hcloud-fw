@@ -3,7 +3,7 @@
 ARG BUILDKIT_SBOM_SCAN_CONTEXT=true
 
 
-FROM --platform=$BUILDPLATFORM python:3.12.1-slim-bookworm AS builder
+FROM --platform=$BUILDPLATFORM python:3.12.1-slim-bookworm@sha256:c805c5edcf6005fd72f933156f504525e1da263ffbc3fae6b4940e6c360c216f AS builder
 ARG BUILDKIT_SBOM_SCAN_STAGE=true
 
 WORKDIR /usr/src/app
@@ -37,7 +37,7 @@ RUN --mount=target=src/cf_ips_to_hcloud_fw,source=/src/cf_ips_to_hcloud_fw \
 EOF
 
 
-FROM python:3.12.1-alpine3.19 AS final-image
+FROM python:3.12.1-alpine3.19@sha256:c793b92fd9e0e2a0b611756788a033d569ca864b733461c8fb30cfd14847dbcf AS final-image
 
 WORKDIR /usr/src/app
 

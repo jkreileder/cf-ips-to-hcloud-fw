@@ -10,6 +10,9 @@ on:
     branches:
       - "main"
 
+permissions:
+  contents: read
+
 jobs:
   build:
     name: Build
@@ -23,10 +26,15 @@ jobs:
           - "3.11"
           - "3.12"
     steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@eb238b55efaa70779f274895e782ed17c84f2895 # v2.6.1
+        with:
+          egress-policy: audit
+
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f39ef2b9c # v5.0.0
         with:
           python-version: ${{ matrix.python-version }}
           cache: pip
@@ -37,7 +45,7 @@ jobs:
       - name: Test
         run: make test
       - name: Upload coverage report to Codecov
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@eaaf4bedf32dbdc6b720b63067d99c4d77d6047d # v3.1.4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./coverage.xml
@@ -45,7 +53,7 @@ jobs:
       - name: Build
         run: make build
       - name: Store the distribution packages
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392 # v4.0.0
         if: ${{ github.event_name != 'pull_request' && startsWith(github.ref, 'refs/tags/') && matrix.python-version == '3.11' }}
         with:
           name: python-package-distributions
@@ -63,13 +71,18 @@ jobs:
     permissions:
       id-token: write
     steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@eb238b55efaa70779f274895e782ed17c84f2895 # v2.6.1
+        with:
+          egress-policy: audit
+
       - name: Download all the dists
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@f44cd7b40bfd40b6aa1cc1b9b5b7bf03d3c67110 # v4.1.0
         with:
           name: python-package-distributions
           path: dist/
       - name: Publish distribution to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
+        uses: pypa/gh-action-pypi-publish@2f6f737ca5f74c637829c0f5c3acd0e29ea5e8bf # release/v1
 
   github-release:
     name: Sign the Python distribution with Sigstore and upload them to GitHub Release
@@ -81,13 +94,18 @@ jobs:
       contents: write
       id-token: write
     steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@eb238b55efaa70779f274895e782ed17c84f2895 # v2.6.1
+        with:
+          egress-policy: audit
+
       - name: Download all the dists
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@f44cd7b40bfd40b6aa1cc1b9b5b7bf03d3c67110 # v4.1.0
         with:
           name: python-package-distributions
           path: dist/
       - name: Sign the dists with Sigstore
-        uses: sigstore/gh-action-sigstore-python@v2.1.1
+        uses: sigstore/gh-action-sigstore-python@61f6a500bbfdd9a2a339cf033e5421951fbc1cd2 # v2.1.1
         with:
           inputs: >-
             ./dist/*.tar.gz
