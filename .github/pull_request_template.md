@@ -11,14 +11,14 @@ Please ensure that your PR fulfills the following requirements:
 - [ ] I have added or updated the appropriate unit tests.
 - [ ] I have updated the documentation accordingly.
 
-### Type Of Change
+### Type of Change
 <!-- Please check the one that applies to this PR using "x". -->
 - [ ] Bug fix
 - [ ] New feature
 - [ ] Documentation update
 - [ ] Other (please describe)
 
-### Impact Of Change
+### Impact of Change
 <!-- What impact will this have on existing functionality? -->
 
 ### Change Description
