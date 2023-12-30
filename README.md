@@ -123,7 +123,7 @@ metadata:
 type: Opaque
 stringData:
   config.yaml: |
-    - token: API_TOKEN_FOR_PROJECT_2
+    - token: API_TOKEN_FOR_PROJECT_1
       firewalls:
         - firewall-1
         - firewall-2
@@ -193,7 +193,7 @@ To configure the application, you'll need to create a `config.yaml` file with
 your API tokens and the names of the firewalls you want to update:
 
 ```yaml
-- token: API_TOKEN_FOR_PROJECT_2 # Token with read-write permissions for a Hetzner Cloud project
+- token: API_TOKEN_FOR_PROJECT_1 # Token with read-write permissions for a Hetzner Cloud project
   firewalls:
     - firewall-1
     - firewall-2
