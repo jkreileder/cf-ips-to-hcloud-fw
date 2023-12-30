@@ -101,7 +101,7 @@ def update_project(project: Project, cf_ips: CloudflareIPs) -> None:
         try:
             fw = client.firewalls.get_by_name(name)
         except APIException as e:
-            log_error_and_exit(f"hcloud/firewalls.get_by_name failed: {e}")
+            log_error_and_exit(f"hcloud/firewalls.get_by_name failed for {name!r}: {e}")
         if fw:
             logging.info(f"Inspecting hcloud firewall {name!r}")
             update_firewall(client, fw, cf_ips)
@@ -112,13 +112,13 @@ def update_project(project: Project, cf_ips: CloudflareIPs) -> None:
 def update_source_ips(
     fw: Firewall, r: FirewallRule, cidrs: list[str], kind: str
 ) -> bool:
-    update: bool = r.source_ips != cidrs
-    if update:
+    needs_update: bool = r.source_ips != cidrs
+    if needs_update:
         r.source_ips = cidrs
         logging.debug(f"Updating {fw.name!r}/{r.description!r} with {kind} addresses")
     else:
         logging.debug(f"{fw.name!r}/{r.description!r} already up-to-date")
-    return update
+    return needs_update
 
 
 def update_firewall_rule(
@@ -141,12 +141,12 @@ def update_firewall_rule(
 
 
 def fw_set_rules(client: Client, fw: Firewall) -> None:
-    logging.info(f"Updating hcloud firewall {fw.name!r}")
+    logging.info(f"Updating rules for hcloud firewall {fw.name!r}")
     try:
         rules = fw.rules or []
         client.firewalls.set_rules(fw, rules)
     except APIException as e:
-        log_error_and_exit(f"hcloud/firewall.set_rules failed: {e}")
+        log_error_and_exit(f"hcloud/firewall.set_rules failed for {fw.name!r}: {e}")
 
 
 def update_firewall(client: Client, fw: Firewall, cf_ips: CloudflareIPs) -> None:
