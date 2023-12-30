@@ -45,7 +45,7 @@ clean:
 requirements.txt: requirements.in
 	$(BIN)/pip-compile --no-allow-unsafe --generate-hashes --output-file=requirements.txt requirements.in
 
-requirements-dev.txt: requirements-dev.in
+requirements-dev.txt: requirements.txt requirements-dev.in
 	$(BIN)/pip-compile --allow-unsafe --constraint=requirements.txt --generate-hashes --output-file=requirements-dev.txt requirements-dev.in
 
 $(pyproject-dependencies): %-pep508.txt: %.txt
