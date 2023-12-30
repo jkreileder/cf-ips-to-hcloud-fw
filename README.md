@@ -94,6 +94,8 @@ docker run --rm \
   jkreileder/cf-ips-to-hcloud-fw:1.0.3
 ```
 
+(Add `--pull` if you use a rolling image tag)
+
 Docker images for `cf-ips-to-hcloud-fw` are available for both `linux/amd64` and
 `linux/arm64` architectures.  The Docker images support the following tags:
 
@@ -148,8 +150,8 @@ spec:
             runAsUser: 65534
           containers:
             - name: cf-ips-to-hcloud-fw
-              image: jkreileder/cf-ips-to-hcloud-fw:1.0
-              imagePullPolicy: Always
+              image: jkreileder/cf-ips-to-hcloud-fw:1.0.3
+              # imagePullPolicy: Always # Uncomment this if you use a rolling image tag
               securityContext:
                 allowPrivilegeEscalation: false
                 readOnlyRootFilesystem: true
