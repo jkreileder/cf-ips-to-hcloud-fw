@@ -11,6 +11,24 @@ readme = "README.md"
 license = { text = "MIT" }
 requires-python = ">=3.9"
 dynamic = ["version", "dependencies", "optional-dependencies"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Console",
+    "Environment :: Other Environment",
+    "Intended Audience :: Developers",
+    "Intended Audience :: System Administrators",
+    "License :: OSI Approved :: MIT License",
+    "Natural Language :: English",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Internet",
+    "Topic :: System :: Networking :: Firewalls",
+    "Topic :: Utilities",
+]
 
 [project.scripts]
 cf-ips-to-hcloud-fw = "cf_ips_to_hcloud_fw.__main__:main"
