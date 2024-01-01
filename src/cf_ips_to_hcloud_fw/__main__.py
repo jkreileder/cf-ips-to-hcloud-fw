@@ -53,7 +53,7 @@ def create_parser() -> argparse.ArgumentParser:
 
 def read_config(config_file: str) -> list[Project]:
     try:
-        with open(config_file) as file:
+        with open(config_file, encoding="utf-8") as file:
             config = yaml.safe_load(file)
     except FileNotFoundError:
         log_error_and_exit(f"Config file {config_file} not found.")

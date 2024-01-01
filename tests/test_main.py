@@ -44,7 +44,7 @@ def test_read_config_file_not_found(
         read_config("config.yaml")
     assert e.type is SystemExit
     assert e.value.code == 1
-    mock_open.assert_called_once_with("config.yaml")
+    mock_open.assert_called_once_with("config.yaml", encoding="utf-8")
     mock_logging.assert_called_once()
     assert mock_logging.call_args[0][0].startswith("Config file config.yaml not found.")
 
