@@ -41,7 +41,7 @@ def log_error_and_exit(msg: str) -> NoReturn:
 
 def create_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Update Hetzner Cloud firewall rules with Cloudflare IP ranges",
+        description="Update Hetzner Cloud firewall rules with Cloudflare IP ranges"
     )
     parser.add_argument(
         "-c", "--config", help="config file", metavar="CONFIGFILE", required=True
@@ -110,23 +110,21 @@ def update_project(project: Project, cf_ips: CloudflareIPs) -> None:
 
 
 def update_source_ips(
-    fw: Firewall, r: FirewallRule, cidrs: list[str], kind: str
+    fw: Firewall, rule: FirewallRule, cidrs: list[str], kind: str
 ) -> bool:
-    needs_update: bool = r.source_ips != cidrs
+    needs_update = rule.source_ips != cidrs
     if needs_update:
-        r.source_ips = cidrs
-        logging.debug(f"Updating {fw.name!r}/{r.description!r} with {kind} addresses")
+        rule.source_ips = cidrs
+        logging.debug(
+            f"Updating {fw.name!r}/{rule.description!r} with {kind} addresses"
+        )
     else:
-        logging.debug(f"{fw.name!r}/{r.description!r} already up-to-date")
+        logging.debug(f"{fw.name!r}/{rule.description!r} already up-to-date")
     return needs_update
 
 
 def update_firewall_rule(
-    fw: Firewall,
-    r: FirewallRule,
-    cf_ips: CloudflareIPs,
-    ipv4: bool,
-    ipv6: bool,
+    fw: Firewall, rule: FirewallRule, cf_ips: CloudflareIPs, ipv4: bool, ipv6: bool
 ) -> bool:
     if not ipv4 and not ipv6:
         return False
@@ -137,7 +135,7 @@ def update_firewall_rule(
         (False, True): (cf_ips.ipv6_cidrs, "IPv6"),
     }
     ip_cidrs, ip_type = ip_types[(ipv4, ipv6)]
-    return update_source_ips(fw, r, ip_cidrs, ip_type)
+    return update_source_ips(fw, rule, ip_cidrs, ip_type)
 
 
 def fw_set_rules(client: Client, fw: Firewall) -> None:
@@ -152,14 +150,14 @@ def fw_set_rules(client: Client, fw: Firewall) -> None:
 def update_firewall(client: Client, fw: Firewall, cf_ips: CloudflareIPs) -> None:
     if fw.rules:
         needs_update = False
-        for r in fw.rules:
-            if r.direction == FirewallRule.DIRECTION_IN and r.description:
+        for rule in fw.rules:
+            if rule.direction == FirewallRule.DIRECTION_IN and rule.description:
                 needs_update |= update_firewall_rule(
                     fw,
-                    r,
+                    rule,
                     cf_ips,
-                    CF_ALL in r.description or CF_IPV4 in r.description,
-                    CF_ALL in r.description or CF_IPV6 in r.description,
+                    CF_ALL in rule.description or CF_IPV4 in rule.description,
+                    CF_ALL in rule.description or CF_IPV6 in rule.description,
                 )
         if needs_update:
             fw_set_rules(client, fw)
@@ -183,8 +181,8 @@ def main() -> None:
 
     projects = read_config(args.config)
     cf_ips = get_cloudflare_ips()
-    for p in projects:
-        update_project(p, cf_ips)
+    for project in projects:
+        update_project(project, cf_ips)
 
 
 if __name__ == "__main__":  # pragma: no cover
