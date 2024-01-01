@@ -55,7 +55,7 @@ def test_read_config_empty(mock_logging: MagicMock) -> None:
     with pytest.raises(SystemExit) as e:
         read_config("config.yaml")
     assert e.type is SystemExit
-    assert e.value.code != 1
+    assert e.value.code == 1
     mock_logging.assert_called_once()
     assert "Config file config.yaml is broken" in mock_logging.call_args[0][0]
 
