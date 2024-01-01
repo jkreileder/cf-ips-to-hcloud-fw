@@ -1,5 +1,12 @@
 # Changelog
 
+## [v1.0.5] - 2024-01-01
+
+### Fixed
+
+- Resolved issues with Docker image signing through a rebuild. This ensures the
+  integrity and authenticity of the Docker images.
+
 ## [v1.0.4] - 2024-01-01
 
 ### Changed
@@ -16,7 +23,8 @@
 
 ### Notes
 
-- No functional changes were made in this release. The focus was on improvements and optimizations.
+- No functional changes were made in this release. The focus was on improvements
+  and optimizations.
 
 ## [v1.0.3] - 2023-12-19
 
