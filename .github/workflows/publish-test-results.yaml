@@ -1,0 +1,47 @@
+name: Test results
+
+on:
+  workflow_run:
+    workflows:
+      - Python package
+    types:
+      - completed
+
+permissions:
+  contents: read
+
+jobs:
+  publish-test-results:
+    name: Publish test results
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion != 'skipped' }}
+
+    permissions:
+      checks: write
+      pull-requests: write
+      actions: read
+
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@eb238b55efaa70779f274895e782ed17c84f2895 # v2.6.1
+        with:
+          egress-policy: audit
+
+      - name: Download artifacts
+        uses: dawidd6/action-download-artifact@e7466d1a7587ed14867642c2ca74b5bcc1e19a2d # v3.0.0
+        with:
+          run_id: ${{ github.event.workflow_run.id }}
+          name: test-results-.*|event-file
+          name_is_regexp: true
+          path: artifacts
+
+      - name: Publish test results
+        uses: EnricoMi/publish-unit-test-result-action@e780361cd1fc1b1a170624547b3ffda64787d365 # v2.12.0
+        with:
+          commit: ${{ github.event.workflow_run.head_sha }}
+          event_file: artifacts/event-file/event.json
+          event_name: ${{ github.event.workflow_run.event }}
+          files: artifacts/test-results-*/*.xml
+          comment_mode: ${{ github.event.workflow_run.event == 'pull_request' && 'always' || 'off' }}
+          report_individual_runs: true
+          check_run_annotations_branch: "*"

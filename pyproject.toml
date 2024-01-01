@@ -53,8 +53,9 @@ optional-dependencies.dev = { file = ["requirements-dev-pep508.txt"] }
 
 [tool.pytest.ini_options]
 pythonpath = ["src", "tests"]
+junit_family = "xunit1" # required by https://github.com/EnricoMi/publish-unit-test-result-action
 addopts = """
-    --junitxml=test-results.xml
+    --junit-xml=test-results.xml
     --cov=src
     --cov-branch
     --cov-report=xml
