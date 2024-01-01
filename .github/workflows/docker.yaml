@@ -16,6 +16,7 @@ permissions:
 
 jobs:
   docker:
+    name: Docker build
     runs-on: ubuntu-latest
     permissions:
       contents: read
