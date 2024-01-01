@@ -35,7 +35,7 @@ cf-ips-to-hcloud-fw = "cf_ips_to_hcloud_fw.__main__:main"
 
 [project.urls]
 Homepage = "https://github.com/jkreileder/cf-ips-to-hcloud-fw"
-Source = "https://github.com/jkreileder/cf-ips-to-hcloud-fw.git"
+Source = "https://github.com/jkreileder/cf-ips-to-hcloud-fw"
 Changelog = "https://github.com/jkreileder/cf-ips-to-hcloud-fw/blob/main/CHANGELOG.md"
 Documentation = "https://github.com/jkreileder/cf-ips-to-hcloud-fw"
 Issues = "https://github.com/jkreileder/cf-ips-to-hcloud-fw/issues"
