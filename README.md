@@ -4,6 +4,7 @@
 [![CodeQL](https://github.com/jkreileder/cf-ips-to-hcloud-fw/actions/workflows/codeql.yaml/badge.svg)](https://github.com/jkreileder/cf-ips-to-hcloud-fw/actions/workflows/codeql.yaml)
 [![Python package](https://github.com/jkreileder/cf-ips-to-hcloud-fw/actions/workflows/python-package.yaml/badge.svg)](https://github.com/jkreileder/cf-ips-to-hcloud-fw/actions/workflows/python-package.yaml)
 [![Docker build](https://github.com/jkreileder/cf-ips-to-hcloud-fw/actions/workflows/docker.yaml/badge.svg)](https://github.com/jkreileder/cf-ips-to-hcloud-fw/actions/workflows/docker.yaml)
+[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/cf-ips-to-hcloud-fw?logo=python&label=Python)](https://pypi.org/project/cf-ips-to-hcloud-fw/)
 
 This tool, `cf-ips-to-hcloud-fw`, helps you keep your Hetzner Cloud firewall
 rules up-to-date with the current Cloudflare IP ranges.
