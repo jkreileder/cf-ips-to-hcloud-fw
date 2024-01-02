@@ -83,33 +83,46 @@ extend-select = [
     "C90",
     "COM",
     "E",
+    "EM",
     "ERA001",
+    "EXE",
     "F",
+    "FA",
+    "FBT",
+    "FLY",
     "FURB",
     "I",
+    "ICN",
     "ISC",
     "LOG",
     "N",
     "PERF",
     "PIE",
+    "PGH",
+    "PL",
     "PT",
     "PYI",
     "Q",
     "RET",
+    "RSE",
     "RUF",
     "S",
     "SIM",
+    "SLF",
+    "SLOT",
     "T20",
     "TCH",
+    "TID",
+    "TRY",
     "UP",
     "W",
 ]
 preview = true
 ignore = ["COM812", "COM819", "ISC001", "ISC002"]
-target-version = "py311"
+target-version = "py39"
 
 [tool.ruff.lint.per-file-ignores]
-"tests/*" = ["S101"]
+"tests/*" = ["S101", "SLF001"]
 
 [tool.ruff.lint.flake8-type-checking]
 runtime-evaluated-base-classes = ["pydantic.BaseModel"]

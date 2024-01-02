@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import re
 
 from cf_ips_to_hcloud_fw.version import __VERSION__

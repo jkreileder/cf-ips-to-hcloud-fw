@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from unittest.mock import MagicMock, call, mock_open, patch
 
 import CloudFlare  # type: ignore[import-untyped]
@@ -102,7 +104,7 @@ def test_read_config() -> None:
 @patch("logging.error")
 def test_cf_ips_get(mock_logging: MagicMock, mock_cloudflare: MagicMock) -> None:
     mock_cloudflare.return_value.ips.get.side_effect = (
-        CloudFlare.exceptions.CloudFlareAPIError(503, "503")  # type: ignore
+        CloudFlare.exceptions.CloudFlareAPIError(503, "503")  # type: ignore[assignment]
     )
     with pytest.raises(SystemExit) as e:
         cf_ips_get()
@@ -153,7 +155,7 @@ def test_get_cloudflare_ips() -> None:
         (["127.1"], ["127.1", "127.2"], True),
     ],
 )
-def test_update_source_ips(ips: list[str], cidrs: list[str], expected: bool) -> None:
+def test_update_source_ips(*, ips: list[str], cidrs: list[str], expected: bool) -> None:
     rule = FirewallRule(FirewallRule.DIRECTION_IN, FirewallRule.PROTOCOL_TCP, ips)
     fw = Firewall(rules=[rule])
     needs_update = update_source_ips(fw, rule, cidrs, "")
@@ -173,13 +175,13 @@ def test_update_source_ips(ips: list[str], cidrs: list[str], expected: bool) -> 
 )
 @patch("cf_ips_to_hcloud_fw.__main__.update_source_ips", wraps=update_source_ips)
 def test_update_firewall_rule(
-    mock_update_source_ips: MagicMock, ipv4: bool, ipv6: bool, kind: str
+    mock_update_source_ips: MagicMock, *, ipv4: bool, ipv6: bool, kind: str
 ) -> None:
     r = FirewallRule(FirewallRule.DIRECTION_IN, FirewallRule.PROTOCOL_TCP, [])
     fw = Firewall(1, "fw-1", rules=[r])
     cf_ips = CloudflareIPs(ipv4_cidrs=["127.1"], ipv6_cidrs=["::1"])
     if ipv4 or ipv6:
-        assert update_firewall_rule(fw, r, cf_ips, ipv4, ipv6)
+        assert update_firewall_rule(fw, r, cf_ips, ipv4=ipv4, ipv6=ipv6)
         if ipv4 and ipv6:
             ips = cf_ips.ipv4_cidrs + cf_ips.ipv6_cidrs
         elif ipv4:
@@ -188,9 +190,9 @@ def test_update_firewall_rule(
             ips = cf_ips.ipv6_cidrs
         mock_update_source_ips.assert_called_once_with(fw, r, ips, kind)
         # Second update should not change anything
-        assert not update_firewall_rule(fw, r, cf_ips, ipv4, ipv6)
+        assert not update_firewall_rule(fw, r, cf_ips, ipv4=ipv4, ipv6=ipv6)
     else:
-        assert not update_firewall_rule(fw, r, cf_ips, ipv4, ipv6)
+        assert not update_firewall_rule(fw, r, cf_ips, ipv4=ipv4, ipv6=ipv6)
         mock_update_source_ips.assert_not_called()
 
 
@@ -241,10 +243,10 @@ def test_update_firewall(
 
     assert fw.rules
     mock_update_firewall_rule.assert_has_calls([
-        call(fw, fw.rules[0], cf_ips, True, True),
-        call(fw, fw.rules[2], cf_ips, True, False),
-        call(fw, fw.rules[3], cf_ips, False, True),
-        call(fw, fw.rules[4], cf_ips, True, True),
+        call(fw, fw.rules[0], cf_ips, ipv4=True, ipv6=True),
+        call(fw, fw.rules[2], cf_ips, ipv4=True, ipv6=False),
+        call(fw, fw.rules[3], cf_ips, ipv4=False, ipv6=True),
+        call(fw, fw.rules[4], cf_ips, ipv4=True, ipv6=True),
     ])
     mock_firewalls_set_rules.assert_called_once_with(client, fw)
 
@@ -296,10 +298,10 @@ def test_update_firewall_already_up_to_date(
 
     assert fw.rules
     mock_update_firewall_rule.assert_has_calls([
-        call(fw, fw.rules[0], cf_ips, True, True),
-        call(fw, fw.rules[2], cf_ips, True, False),
-        call(fw, fw.rules[3], cf_ips, False, True),
-        call(fw, fw.rules[4], cf_ips, True, True),
+        call(fw, fw.rules[0], cf_ips, ipv4=True, ipv6=True),
+        call(fw, fw.rules[2], cf_ips, ipv4=True, ipv6=False),
+        call(fw, fw.rules[3], cf_ips, ipv4=False, ipv6=True),
+        call(fw, fw.rules[4], cf_ips, ipv4=True, ipv6=True),
     ])
     mock_firewalls_set_rules.assert_not_called()
 
@@ -313,7 +315,7 @@ def test_update_firewall_already_up_to_date(
     ],
 )
 @patch("cf_ips_to_hcloud_fw.__main__.Client")
-def test_fw_set_rules(mock_client: MagicMock, rules: list[FirewallRule]) -> None:
+def test_fw_set_rules(mock_client: MagicMock, *, rules: list[FirewallRule]) -> None:
     expected = rules or []
     fw = Firewall(name="fw-1", rules=rules)
     fw_set_rules(mock_client, fw)
@@ -411,4 +413,4 @@ def test_update_project_fail(mock_logging: MagicMock, mock_client: MagicMock) ->
 @patch("cf_ips_to_hcloud_fw.__main__.update_project")
 def test_main(mock_update_project: MagicMock) -> None:
     main()
-    assert mock_update_project.call_count == 2
+    assert mock_update_project.call_count == 2  # noqa: PLR2004

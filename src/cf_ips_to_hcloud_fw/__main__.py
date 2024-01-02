@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import argparse
 import logging
 import sys
@@ -71,16 +73,16 @@ def read_config(config_file: str) -> list[Project]:
     return projects
 
 
-def cf_ips_get() -> dict:  # type: ignore
+def cf_ips_get() -> dict:  # type: ignore[return]
     cf = CloudFlare.CloudFlare(use_sessions=False)
     try:
-        return cf.ips.get()  # type: ignore
-    except CloudFlare.exceptions.CloudFlareAPIError as e:  # type: ignore
+        return cf.ips.get()  # type: ignore[return-value]
+    except CloudFlare.exceptions.CloudFlareAPIError as e:  # type: ignore[attr-defined]
         log_error_and_exit(f"Error getting CloudFlare IPs: {e}")
 
 
 def get_cloudflare_ips() -> CloudflareIPs:
-    response = cf_ips_get()  # type: ignore
+    response = cf_ips_get()  # type: ignore[return-value]
     try:
         TypeAdapter(CloudflareIPNetworks).validate_python(response)  # sanity check
         cf_ips = TypeAdapter(CloudflareIPs).validate_python(response)
@@ -123,7 +125,7 @@ def update_source_ips(
 
 
 def update_firewall_rule(
-    fw: Firewall, rule: FirewallRule, cf_ips: CloudflareIPs, ipv4: bool, ipv6: bool
+    fw: Firewall, rule: FirewallRule, cf_ips: CloudflareIPs, *, ipv4: bool, ipv6: bool
 ) -> bool:
     if not ipv4 and not ipv6:
         return False
@@ -155,8 +157,8 @@ def update_firewall(client: Client, fw: Firewall, cf_ips: CloudflareIPs) -> None
                     fw,
                     rule,
                     cf_ips,
-                    CF_ALL in rule.description or CF_IPV4 in rule.description,
-                    CF_ALL in rule.description or CF_IPV6 in rule.description,
+                    ipv4=CF_ALL in rule.description or CF_IPV4 in rule.description,
+                    ipv6=CF_ALL in rule.description or CF_IPV6 in rule.description,
                 )
         if needs_update:
             fw_set_rules(client, fw)
