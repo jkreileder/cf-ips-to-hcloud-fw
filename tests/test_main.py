@@ -2,7 +2,7 @@ from unittest.mock import MagicMock, call, mock_open, patch
 
 import CloudFlare  # type: ignore[import-untyped]
 import pytest
-from hcloud._exceptions import APIException
+from hcloud import APIException
 from hcloud.firewalls.domain import Firewall, FirewallRule
 from pydantic import SecretStr
 

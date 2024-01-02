@@ -6,8 +6,7 @@ from typing import NoReturn
 
 import CloudFlare  # type: ignore[import-untyped]
 import yaml
-from hcloud._client import Client
-from hcloud._exceptions import APIException
+from hcloud import APIException, Client
 from hcloud.firewalls.domain import Firewall, FirewallRule
 from pydantic import BaseModel, SecretStr, TypeAdapter, ValidationError
 from yaml import YAMLError
