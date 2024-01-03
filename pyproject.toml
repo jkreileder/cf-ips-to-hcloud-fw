@@ -118,7 +118,22 @@ extend-select = [
     "W",
 ]
 preview = true
-ignore = ["COM812", "COM819", "ISC001", "ISC002"]
+ignore = [
+    "COM812",
+    "COM819",
+    "E111",
+    "E114",
+    "E117",
+    "D206",
+    "D300",
+    "Q000",
+    "Q001",
+    "Q002",
+    "Q003",
+    "ISC001",
+    "ISC002",
+    "W191",
+]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["S101", "SLF001"]
