@@ -41,6 +41,8 @@ jobs:
           - "3.10"
           - "3.11"
           - "3.12"
+    outputs:
+      hashes: ${{ steps.hash.outputs.hashes }}
 
     steps:
       - name: Harden runner
@@ -94,6 +96,11 @@ jobs:
       - name: Build
         run: make build
 
+      - name: Generate hashes
+        id: hash
+        if: ${{ github.event_name != 'pull_request' && startsWith(github.ref, 'refs/tags/') && matrix.python-version == '3.11' }}
+        run: cd dist && echo "hashes=$(sha256sum * | base64 -w0)" >> $GITHUB_OUTPUT
+
       - name: Store the distribution packages
         uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392 # v4.0.0
         if: ${{ github.event_name != 'pull_request' && startsWith(github.ref, 'refs/tags/') && matrix.python-version == '3.11' }}
@@ -101,11 +108,28 @@ jobs:
           name: python-package-distributions
           path: dist/
 
+  provenance-and-draft-release:
+    name: Generate provenance and create draft release
+    if: ${{ github.event_name != 'pull_request' && startsWith(github.ref, 'refs/tags/') }}
+    needs:
+      - build
+      - upload-event-file
+    permissions:
+      actions: read
+      id-token: write
+      contents: write
+    # Can't pin with hash due to how this workflow works.
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v1.9.0
+    with:
+      base64-subjects: ${{ needs.build.outputs.hashes }}
+      upload-assets: true
+      draft-release: true
+
   publish-to-test-pypi:
     name: Publish to TestPyPI
     if: ${{ github.event_name != 'pull_request' && startsWith(github.ref, 'refs/tags/') }}
     needs:
-      - build
+      - provenance-and-draft-release
     runs-on: ubuntu-latest
     environment:
       name: test-pypi
@@ -117,9 +141,10 @@ jobs:
       - name: Harden runner
         uses: step-security/harden-runner@eb238b55efaa70779f274895e782ed17c84f2895 # v2.6.1
         with:
+          disable-sudo: true
           egress-policy: audit
 
-      - name: Download all the dists
+      - name: Download all the distribution packages
         uses: actions/download-artifact@f44cd7b40bfd40b6aa1cc1b9b5b7bf03d3c67110 # v4.1.0
         with:
           name: python-package-distributions
@@ -134,6 +159,7 @@ jobs:
     name: Publish to PyPI
     if: ${{ github.event_name != 'pull_request' && startsWith(github.ref, 'refs/tags/') }}
     needs:
+      - provenance-and-draft-release
       - publish-to-test-pypi
     runs-on: ubuntu-latest
     environment:
@@ -146,9 +172,10 @@ jobs:
       - name: Harden runner
         uses: step-security/harden-runner@eb238b55efaa70779f274895e782ed17c84f2895 # v2.6.1
         with:
+          disable-sudo: true
           egress-policy: audit
 
-      - name: Download all the dists
+      - name: Download all the distribution packages
         uses: actions/download-artifact@f44cd7b40bfd40b6aa1cc1b9b5b7bf03d3c67110 # v4.1.0
         with:
           name: python-package-distributions
@@ -157,45 +184,29 @@ jobs:
       - name: Publish distribution to PyPI
         uses: pypa/gh-action-pypi-publish@2f6f737ca5f74c637829c0f5c3acd0e29ea5e8bf # v1.8.11
 
-  github-release:
-    name: Sign the Python distribution with Sigstore and upload them to GitHub Release
+  upload-dist-to-github-release:
+    name: Upload distribution packages to GitHub Release
     if: ${{ github.event_name != 'pull_request' && startsWith(github.ref, 'refs/tags/') }}
     needs:
       - publish-to-pypi
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      id-token: write
 
     steps:
       - name: Harden runner
         uses: step-security/harden-runner@eb238b55efaa70779f274895e782ed17c84f2895 # v2.6.1
         with:
+          disable-sudo: true
           egress-policy: audit
 
-      - name: Download all the dists
+      - name: Download all the distribution packages
         uses: actions/download-artifact@f44cd7b40bfd40b6aa1cc1b9b5b7bf03d3c67110 # v4.1.0
         with:
           name: python-package-distributions
           path: dist
 
-      - name: Sign the dists with Sigstore
-        uses: sigstore/gh-action-sigstore-python@61f6a500bbfdd9a2a339cf033e5421951fbc1cd2 # v2.1.1
-        with:
-          inputs: >-
-            ./dist/*.tar.gz
-            ./dist/*.whl
-
-      - name: Create GitHub Release
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        run: >-
-          gh release create
-          '${{ github.ref_name }}'
-          --repo '${{ github.repository }}'
-          --notes ""
-
-      - name: Upload artifact signatures to GitHub Release
+      - name: Upload distribution packages to GitHub Release
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: >-
