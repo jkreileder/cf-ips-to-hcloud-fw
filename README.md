@@ -1,10 +1,13 @@
 # Update Hetzner Cloud Firewall Rules with Current Cloudflare IP Ranges  <!-- omit in toc -->
 
 [![codecov](https://codecov.io/gh/jkreileder/cf-ips-to-hcloud-fw/graph/badge.svg?token=PCP1F2XWAT)](https://codecov.io/gh/jkreileder/cf-ips-to-hcloud-fw)
+[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/8275/badge)](https://www.bestpractices.dev/projects/8275)
 [![CodeQL](https://github.com/jkreileder/cf-ips-to-hcloud-fw/actions/workflows/codeql.yaml/badge.svg)](https://github.com/jkreileder/cf-ips-to-hcloud-fw/actions/workflows/codeql.yaml)
 [![Python package](https://github.com/jkreileder/cf-ips-to-hcloud-fw/actions/workflows/python-package.yaml/badge.svg)](https://github.com/jkreileder/cf-ips-to-hcloud-fw/actions/workflows/python-package.yaml)
 [![Docker build](https://github.com/jkreileder/cf-ips-to-hcloud-fw/actions/workflows/docker.yaml/badge.svg)](https://github.com/jkreileder/cf-ips-to-hcloud-fw/actions/workflows/docker.yaml)
-[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/cf-ips-to-hcloud-fw?logo=python&label=Python)](https://pypi.org/project/cf-ips-to-hcloud-fw/)
+![PyPI - Version](https://img.shields.io/pypi/v/cf-ips-to-hcloud-fw)
+[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/cf-ips-to-hcloud-fw?logo=python)](https://pypi.org/project/cf-ips-to-hcloud-fw/)
+
 
 This tool, `cf-ips-to-hcloud-fw`, helps you keep your Hetzner Cloud firewall
 rules up-to-date with the current Cloudflare IP ranges.
