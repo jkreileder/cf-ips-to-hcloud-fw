@@ -8,7 +8,6 @@
 ![PyPI - Version](https://img.shields.io/pypi/v/cf-ips-to-hcloud-fw)
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/cf-ips-to-hcloud-fw?logo=python)](https://pypi.org/project/cf-ips-to-hcloud-fw/)
 
-
 This tool, `cf-ips-to-hcloud-fw`, helps you keep your Hetzner Cloud firewall
 rules up-to-date with the current Cloudflare IP ranges.
 
@@ -54,7 +53,7 @@ Python applications in isolated environments.
 
 #### Using pipx (Recommended)
 
-1. Install cf-ips-to-hcloud-fw using pipx:
+1. Install `cf-ips-to-hcloud-fw` using pipx:
 
     ```shell
     pipx install cf-ips-to-hcloud-fw
@@ -66,9 +65,18 @@ Python applications in isolated environments.
     cf-ips-to-hcloud-fw -h
     ```
 
-You should see the usage information for cf-ips-to-hcloud-fw.
+You should see the usage information for `cf-ips-to-hcloud-fw`.
+
+To upgrade `cf-ips-to-hcloud-fw`, run:
+
+> [!TIP]
+> To upgrade `cf-ips-to-hcloud-fw`, run `pipx upgrade cf-ips-to-hcloud-fw`.
 
 #### Using pip
+
+We strongly recommend using a virtual environment when installing Python
+packages with pip. This helps to avoid conflicts between packages and allows you
+to manage packages on a per-project basis.
 
 1. Create a virtual environment:
 
@@ -76,7 +84,7 @@ You should see the usage information for cf-ips-to-hcloud-fw.
     python3 -m venv cf-ips-to-hcloud-fw-venv
     ```
 
-2. Install cf-ips-to-hcloud-fw into the virtual environment:
+2. Install `cf-ips-to-hcloud-fw` into the virtual environment:
 
     ```shell
     ./cf-ips-to-hcloud-fw-venv/bin/pip3 install cf-ips-to-hcloud-fw
@@ -88,7 +96,11 @@ You should see the usage information for cf-ips-to-hcloud-fw.
     ./cf-ips-to-hcloud-fw-venv/bin/cf-ips-to-hcloud-fw -h
     ```
 
-You should see the usage information for cf-ips-to-hcloud-fw.
+You should see the usage information for `cf-ips-to-hcloud-fw`.
+
+> [!TIP]
+> To upgrade `cf-ips-to-hcloud-fw` in your virtual environment, run
+> `./cf-ips-to-hcloud-fw-venv/bin/pip3 install --upgrade cf-ips-to-hcloud-fw`.
 
 ### Docker and Kubernetes
 
