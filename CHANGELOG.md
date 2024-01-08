@@ -1,5 +1,19 @@
 # Changelog
 
+## [v1.0.7] - unreleased
+
+### Added
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
 ## [1.0.6] - 2024-01-08
 
 ### Added
