@@ -35,6 +35,12 @@ def test_create_parser() -> None:
     assert "--debug" in parser._option_string_actions
     assert "-v" in parser._option_string_actions
     assert "--version" in parser._option_string_actions
+    args = parser.parse_args(["-c", "config.yaml", "-d"])
+    assert args.config == "config.yaml"
+    assert args.debug is True
+    args = parser.parse_args(["-c", "config2.yaml"])
+    assert args.config == "config2.yaml"
+    assert args.debug is False
 
 
 @patch("builtins.open", side_effect=FileNotFoundError("config.yaml"))
