@@ -104,9 +104,9 @@ pyproject-hooks==1.0.0 \
     --hash=sha256:283c11acd6b928d2f6a7c73fa0d01cb2bdc5f07c57a2eeb6e83d5e56b97976f8 \
     --hash=sha256:f271b298b97f5955d53fb12b72c1fb1948c22c1a6b70b315c54cedaca0264ef5
     # via build
-pyright==1.1.344 \
-    --hash=sha256:ab7117a911ce25fcd317f42272579f9ae53a6abc8b8a15f6aa069a11281953ee \
-    --hash=sha256:ab7c962f00dd8141a5a0192c1060fb34b92d1f9047ad70dda45229938051922b
+pyright==1.1.345 \
+    --hash=sha256:00891361baf58698aa660d9374823d65782823ceb4a65515ff5dd159b0d4d2b1 \
+    --hash=sha256:bb8c80671cdaeb913142b49642a741959f3fcd728c99814631c2bde3a7864938
     # via -r requirements-dev.in
 pytest==7.4.4 \
     --hash=sha256:2cf0005922c6ace4a3e2ec8b4080eb0d9753fdc93107415332f50ce9e7994280 \
