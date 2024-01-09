@@ -157,7 +157,7 @@ jobs:
           sarif_file: sarif.output.json
 
       - name: Scan image with Grype
-        uses: anchore/scan-action@65161264d84bfeed55775e43bdbe5eb7c8a433fb # v3.4.0
+        uses: anchore/scan-action@1d59d90b47fc11ff8f97822da6c25eec888f81cf # v3.5.0
         id: grype-scan
         continue-on-error: true
         with:
