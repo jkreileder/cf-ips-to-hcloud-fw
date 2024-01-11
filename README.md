@@ -156,7 +156,7 @@ stringData:
 And here's an example of a Kubernetes CronJob that uses the Secret:
 
 ```yaml
-apiVersion: batch/v1beta1
+apiVersion: batch/v1
 kind: CronJob
 metadata:
   name: cf-ips-to-hcloud-fw
