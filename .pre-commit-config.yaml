@@ -3,7 +3,7 @@ ci:
 
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.5.0
+    rev: c4a0b883114b00d8d76b479c820ce7950211c99b  # frozen: v4.5.0
     hooks:
       - id: check-executables-have-shebangs
       - id: end-of-file-fixer
@@ -16,12 +16,12 @@ repos:
       - id: pretty-format-json
         args: [--autofix, --indent=4]
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.1.13
+    rev: abe8946973726245279f972c708ebcd6ae0ec272  # frozen: v0.1.13
     hooks:
       - id: ruff
         args: [--fix]
       - id: ruff-format
   - repo: https://github.com/gitleaks/gitleaks
-    rev: v8.18.1
+    rev: e815c559e3ac76227e8e7463cf3a6598b715687b  # frozen: v8.18.1
     hooks:
       - id: gitleaks
