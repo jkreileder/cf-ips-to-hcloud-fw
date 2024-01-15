@@ -1,22 +1,12 @@
 from __future__ import annotations
 
 import logging
-from ipaddress import IPv4Network, IPv6Network
 
 import CloudFlare  # type: ignore[import-untyped]
-from pydantic import BaseModel, TypeAdapter, ValidationError
+from pydantic import TypeAdapter, ValidationError
 
 from cf_ips_to_hcloud_fw.logging import log_error_and_exit
-
-
-class CloudflareIPNetworks(BaseModel):
-    ipv4_cidrs: list[IPv4Network]
-    ipv6_cidrs: list[IPv6Network]
-
-
-class CloudflareIPs(BaseModel):
-    ipv4_cidrs: list[str]
-    ipv6_cidrs: list[str]
+from cf_ips_to_hcloud_fw.models import CloudflareCIDRs, CloudflareIPNetworks
 
 
 def cf_ips_get() -> dict:  # type: ignore[return]
@@ -27,16 +17,16 @@ def cf_ips_get() -> dict:  # type: ignore[return]
         log_error_and_exit(f"Error getting CloudFlare IPs: {e}")
 
 
-def get_cloudflare_ips() -> CloudflareIPs:
+def get_cloudflare_cidrs() -> CloudflareCIDRs:
     response = cf_ips_get()  # type: ignore[return-value]
     try:
         TypeAdapter(CloudflareIPNetworks).validate_python(response)  # sanity check
-        cf_ips = TypeAdapter(CloudflareIPs).validate_python(response)
+        cf_ips = TypeAdapter(CloudflareCIDRs).validate_python(response)
     except ValidationError as e:
         log_error_and_exit(f"Cloudflare/ips.get didn't validate: {e}")
 
     cf_ips.ipv4_cidrs.sort()
     cf_ips.ipv6_cidrs.sort()
     logging.info("Got Cloudflare IPs")
-    logging.debug(f"Cloudflare IPs: {cf_ips}")
+    logging.debug(f"Cloudflare CIDRs: {cf_ips}")
     return cf_ips

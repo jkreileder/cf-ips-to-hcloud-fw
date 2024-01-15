@@ -8,7 +8,7 @@ if TYPE_CHECKING:  # pragma: no cover
     import argparse  # pragma: no cover
 
 
-def init_logging(args: argparse.Namespace) -> None:
+def setup_logging(args: argparse.Namespace) -> None:
     logging.basicConfig(
         level=logging.getLevelName(logging.DEBUG if args.debug else logging.INFO),
         format=(

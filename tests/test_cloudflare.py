@@ -6,10 +6,10 @@ import CloudFlare  # type: ignore[import-untyped]
 import pytest
 
 from cf_ips_to_hcloud_fw.cloudflare import (
-    CloudflareIPs,
     cf_ips_get,  # type: ignore[import-untyped]
-    get_cloudflare_ips,
+    get_cloudflare_cidrs,
 )
+from cf_ips_to_hcloud_fw.models import CloudflareCIDRs
 
 
 @patch("CloudFlare.CloudFlare")
@@ -31,9 +31,9 @@ def test_cf_ips_get(mock_logging: MagicMock, mock_cloudflare: MagicMock) -> None
     MagicMock(return_value={"ipv4_cidrs": ["199.27.128.0/21", "198.27.128.0/21"]}),
 )
 @patch("logging.error")
-def test_get_cloudflare_ips_invalid(mock_logging: MagicMock) -> None:
+def test_get_cloudflare_cidrs_invalid(mock_logging: MagicMock) -> None:
     with pytest.raises(SystemExit) as e:
-        get_cloudflare_ips()
+        get_cloudflare_cidrs()
     assert e.type is SystemExit
     assert e.value.code == 1
     mock_logging.assert_called_once()
@@ -49,9 +49,9 @@ def test_get_cloudflare_ips_invalid(mock_logging: MagicMock) -> None:
         }
     ),
 )
-def test_get_cloudflare_ips() -> None:
-    result = get_cloudflare_ips()
-    assert result == CloudflareIPs(
+def test_get_cloudflare_cidrs() -> None:
+    result = get_cloudflare_cidrs()
+    assert result == CloudflareCIDRs(
         ipv4_cidrs=["198.27.128.0/21", "199.27.128.0/21"],
         ipv6_cidrs=["1400:cb00::/32", "2400:cb00::/32"],
     )
