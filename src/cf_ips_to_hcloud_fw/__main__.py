@@ -3,16 +3,15 @@ from __future__ import annotations
 import argparse
 import logging
 import sys
-from ipaddress import IPv4Network, IPv6Network
-from typing import NoReturn
 
-import CloudFlare  # type: ignore[import-untyped]
 import yaml
 from hcloud import APIException, Client
 from hcloud.firewalls.domain import Firewall, FirewallRule
 from pydantic import BaseModel, SecretStr, TypeAdapter, ValidationError
 from yaml import YAMLError
 
+from cf_ips_to_hcloud_fw.cloudflare import CloudflareIPs, get_cloudflare_ips
+from cf_ips_to_hcloud_fw.logging import init_logging, log_error_and_exit
 from cf_ips_to_hcloud_fw.version import __VERSION__
 
 CF_IPV4 = "__CLOUDFLARE_IPS_V4__"
@@ -20,24 +19,9 @@ CF_IPV6 = "__CLOUDFLARE_IPS_V6__"
 CF_ALL = "__CLOUDFLARE_IPS__"
 
 
-class CloudflareIPNetworks(BaseModel):
-    ipv4_cidrs: list[IPv4Network]
-    ipv6_cidrs: list[IPv6Network]
-
-
-class CloudflareIPs(BaseModel):
-    ipv4_cidrs: list[str]
-    ipv6_cidrs: list[str]
-
-
 class Project(BaseModel):
     token: SecretStr
     firewalls: list[str]
-
-
-def log_error_and_exit(msg: str) -> NoReturn:
-    logging.error(msg)
-    sys.exit(1)
 
 
 def create_parser() -> argparse.ArgumentParser:
@@ -75,29 +59,6 @@ def read_config(config_file: str) -> list[Project]:
         sys.exit(0)
 
     return projects
-
-
-def cf_ips_get() -> dict:  # type: ignore[return]
-    cf = CloudFlare.CloudFlare(use_sessions=False)
-    try:
-        return cf.ips.get()  # type: ignore[return-value]
-    except CloudFlare.exceptions.CloudFlareAPIError as e:  # type: ignore[attr-defined]
-        log_error_and_exit(f"Error getting CloudFlare IPs: {e}")
-
-
-def get_cloudflare_ips() -> CloudflareIPs:
-    response = cf_ips_get()  # type: ignore[return-value]
-    try:
-        TypeAdapter(CloudflareIPNetworks).validate_python(response)  # sanity check
-        cf_ips = TypeAdapter(CloudflareIPs).validate_python(response)
-    except ValidationError as e:
-        log_error_and_exit(f"Cloudflare/ips.get didn't validate: {e}")
-
-    cf_ips.ipv4_cidrs.sort()
-    cf_ips.ipv6_cidrs.sort()
-    logging.info("Got Cloudflare IPs")
-    logging.debug(f"Cloudflare IPs: {cf_ips}")
-    return cf_ips
 
 
 def update_project(project: Project, cf_ips: CloudflareIPs) -> None:
@@ -173,16 +134,8 @@ def update_firewall(client: Client, fw: Firewall, cf_ips: CloudflareIPs) -> None
 
 
 def main() -> None:
-    parser = create_parser()
-    args = parser.parse_args()
-    logging.basicConfig(
-        level=logging.getLevelName(logging.DEBUG if args.debug else logging.INFO),
-        format=(
-            "%(asctime)s %(levelname)-8s "
-            + ("[%(filename)s:%(funcName)s:%(lineno)d] " if args.debug else "")
-            + "%(message)s"
-        ),
-    )
+    args = create_parser().parse_args()
+    init_logging(args)
 
     projects = read_config(args.config)
     cf_ips = get_cloudflare_ips()
