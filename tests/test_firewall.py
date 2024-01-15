@@ -239,7 +239,7 @@ def test_update_project_found(
     mock_update_firewall: MagicMock, mock_client: MagicMock
 ) -> None:
     fw = Firewall(1, "fw-1")
-    cf_ips = CloudflareCIDRs(ipv4_cidrs=["127.1/32"], ipv6_cidrs=["::1/65"])
+    cf_ips = CloudflareCIDRs(ipv4_cidrs=["127.1/32"], ipv6_cidrs=["::1/64"])
     mock_client.return_value.firewalls.get_by_name.return_value = fw
     project = Project(token=SecretStr("token-1"), firewalls=["fw-1"])
     update_project(project, cf_ips)
