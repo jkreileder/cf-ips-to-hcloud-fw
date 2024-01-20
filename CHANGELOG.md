@@ -1,18 +1,36 @@
 # Changelog
 
-## [v1.0.7] - unreleased
+## [v1.0.7] - 2024-01-20
 
 ### Added
 
+- Check passed arguments in test_main (#74)
+- Add CPython implementation to classifiers (#61)
+- Pin pre-commit hook versions (#59)
+- Update Kubernetes CronJob API version (#54)
+- Add SLSA3 workflows for Docker images (#50)
+
 ### Changed
 
-### Deprecated
-
-### Removed
-
-### Fixed
-
-### Security
+- Update base image shas (#73)
+- Bump ruff from 0.1.13 to 0.1.14 (#72)
+- Update pyyaml hashes (#71)
+- Bump docker/scout-action from 1.2.2 to 1.3.0 (#67)
+- Bump python from `ee9a59c` to `247e70c` (#70)
+- Bump actions/dependency-review-action from 3.1.5 to 4.0.0 (#68)
+- Bump anchore/scan-action from 3.5.0 to 3.6.0 (#69)
+- Bump actions/upload-artifact from 4.1.0 to 4.2.0 (#66)
+- Bump github/codeql-action from 3.23.0 to 3.23.1 (#65)
+- Refactor: Modularize Cloudflare, hcloud firewall, config and logging functionality into separate modules (#64)
+- Update pyright to version 1.1.347 (#63)
+- Update pyright to version 1.1.346 (#62)
+- Bump actions/upload-artifact from 4.0.0 to 4.1.0 (#60)
+- Bump ruff from 0.1.12 to 0.1.13 (#58)
+- Bump ruff from 0.1.11 to 0.1.12 (#57)
+- Bump python from `c805c5e` to `ee9a59c` (#55)
+- Bump actions/download-artifact from 4.1.0 to 4.1.1 (#53)
+- Bump github/codeql-action from 3.22.12 to 3.23.0 (#52)
+- Bump anchore/scan-action from 3.4.0 to 3.5.0 (#51)
 
 ## [1.0.6] - 2024-01-08
 
