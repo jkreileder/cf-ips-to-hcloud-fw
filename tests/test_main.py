@@ -4,10 +4,7 @@ from unittest.mock import MagicMock, patch
 
 from pydantic import SecretStr
 
-from cf_ips_to_hcloud_fw.__main__ import (
-    create_parser,
-    main,
-)
+from cf_ips_to_hcloud_fw.__main__ import create_parser, main  # noqa: PLC2701
 from cf_ips_to_hcloud_fw.models import Project
 
 
