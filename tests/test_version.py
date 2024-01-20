@@ -4,7 +4,7 @@ import re
 
 import pytest
 
-from cf_ips_to_hcloud_fw.__main__ import create_parser
+from cf_ips_to_hcloud_fw.__main__ import create_parser  # noqa: PLC2701
 from cf_ips_to_hcloud_fw.version import __VERSION__
 
 
