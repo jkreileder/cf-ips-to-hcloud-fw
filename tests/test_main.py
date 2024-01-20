@@ -27,15 +27,15 @@ def test_create_parser() -> None:
 @patch("cf_ips_to_hcloud_fw.__main__.create_parser", MagicMock())
 @patch(
     "cf_ips_to_hcloud_fw.__main__.read_config",
-    MagicMock(
-        return_value=[
-            Project(token=SecretStr("token-1"), firewalls=["fw-1", "fw-2"]),
-            Project(token=SecretStr("token-2"), firewalls=["fw-1", "fw-2"]),
-        ]
-    ),
+    return_value=[
+        Project(token=SecretStr("token-1"), firewalls=["fw-1", "fw-2"]),
+        Project(token=SecretStr("token-2"), firewalls=["fw-1", "fw-2"]),
+    ],
 )
 @patch("cf_ips_to_hcloud_fw.__main__.get_cloudflare_cidrs", MagicMock())
 @patch("cf_ips_to_hcloud_fw.__main__.update_project")
-def test_main(mock_update_project: MagicMock) -> None:
+def test_main(mock_update_project: MagicMock, mock_projects: MagicMock) -> None:
     main()
-    assert mock_update_project.call_count == 2  # noqa: PLR2004
+    assert mock_update_project.call_count == len(mock_projects.return_value)
+    for i, project in enumerate(mock_projects.return_value):
+        assert mock_update_project.call_args_list[i][0][0] == project
