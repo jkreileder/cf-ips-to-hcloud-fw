@@ -80,7 +80,7 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
         env:
-          DOCKER_METADATA_ANNOTATIONS_LEVELS: manifest,index
+          DOCKER_METADATA_ANNOTATIONS_LEVELS: manifest${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' && ',index' || '' }}
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@68827325e0b33c7199eb31dd4e31fbe9023e06e3 # v3.0.0
