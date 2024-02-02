@@ -74,6 +74,9 @@ venv = "venv"
 
 [tool.ruff]
 src = ["src"]
+preview = true
+
+[tool.ruff.lint]
 extend-select = [
     "A",
     "ANN",
@@ -118,7 +121,6 @@ extend-select = [
     "UP",
     "W",
 ]
-preview = true
 ignore = [
     "COM812",
     "COM819",
