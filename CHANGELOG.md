@@ -1,5 +1,22 @@
 # Changelog
 
+## [v1.0.8] - 2024-02-08
+
+### Added
+
+- Added CODECOV_TOKEN to Codecov action and cli.codecov to allowed endpoints
+
+### Changed
+
+- Updated Python base image in Dockerfile
+- Upgraded `pyright` to 1.1.350, `ruff` & `ruff-pre-commit` to v0.2.1, `pydantic` to 2.6.1, and pip to 24.0
+- Updated `certifi`, `urllib3`, and pluggy versions
+- Updated ruff and gitleaks pre-commit hooks and ruff configuration
+- Bumped various GitHub actions and Docker actions
+- Updated DOCKER_METADATA_ANNOTATIONS_LEVELS environment variable
+- Bumped pytest from 7.4.4 to 8.0.0
+- Bumped version to 1.0.8-dev
+
 ## [v1.0.7] - 2024-01-20
 
 ### Added
