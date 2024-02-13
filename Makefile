@@ -42,11 +42,16 @@ build: $(VENV) $(pyproject-dependencies)
 clean:
 	git clean -xdf
 
-requirements.txt: requirements.in
+$(pip-dependencies): %.txt: %.in
 	$(BIN)/pip-compile --no-allow-unsafe --generate-hashes --output-file=requirements.txt requirements.in
-
-requirements-dev.txt: requirements.txt requirements-dev.in
 	$(BIN)/pip-compile --allow-unsafe --constraint=requirements.txt --generate-hashes --output-file=requirements-dev.txt requirements-dev.in
+
+.PHONY: regenerate-hashes
+regenerate-hashes: delete-hashes $(pip-dependencies)
+
+.PHONY: delete-hashes
+delete-hashes:
+	rm -f $(pip-dependencies)
 
 $(pyproject-dependencies): %-pep508.txt: %.txt
 	$(BIN)/pip-compile --allow-unsafe --output-file=$@ $<
