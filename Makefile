@@ -44,7 +44,7 @@ clean:
 
 $(pip-dependencies): %.txt: %.in
 	$(BIN)/pip-compile --no-allow-unsafe --generate-hashes --output-file=requirements.txt requirements.in
-	$(BIN)/pip-compile --allow-unsafe --constraint=requirements.txt --generate-hashes --output-file=requirements-dev.txt requirements-dev.in
+	$(BIN)/pip-compile --allow-unsafe --generate-hashes --output-file=requirements-dev.txt requirements-dev.in
 
 .PHONY: regenerate-hashes
 regenerate-hashes: delete-hashes $(pip-dependencies)
