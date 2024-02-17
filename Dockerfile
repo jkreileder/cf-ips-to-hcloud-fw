@@ -39,6 +39,9 @@ WORKDIR /usr/src/app
 
 ENV PYTHONFAULTHANDLER=1 PYTHONDONTWRITEBYTECODE=1
 
+# Remove unneeded gdbm dependency with GPL-3.0 license
+RUN apk add --no-network --virtual .python-rundeps $(apk info --no-network -qR .python-rundeps | grep -v gdbm)
+
 # Install dependencies directly with hashes
 RUN --mount=target=requirements.txt,source=/requirements.txt  \
     --mount=type=cache,id=pip,target=/root/.cache/pip \
