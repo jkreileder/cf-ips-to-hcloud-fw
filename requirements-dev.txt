@@ -108,9 +108,9 @@ pyright==1.1.352 \
     --hash=sha256:0040cf173c6a60704e553bfd129dfe54de59cc76d0b2b80f77cfab4f50701d64 \
     --hash=sha256:a621c0dfbcf1291b3610641a07380fefaa1d0e182890a1b2a7f13b446e8109a9
     # via -r requirements-dev.in
-pytest==8.0.2 \
-    --hash=sha256:d4051d623a2e0b7e51960ba963193b09ce6daeb9759a451844a21e4ddedfc1bd \
-    --hash=sha256:edfaaef32ce5172d5466b5127b42e0d6d35ebbe4453f0e3505d96afd93f6b096
+pytest==8.1.0 \
+    --hash=sha256:ee32db7af8de4629a455806befa90559f307424c07b8413ccfc30bf5b221dd7e \
+    --hash=sha256:f8fa04ab8f98d185113ae60ea6d79c22f8143b14bc1caeced44a0ab844928323
     # via
     #   -r requirements-dev.in
     #   pytest-cov
