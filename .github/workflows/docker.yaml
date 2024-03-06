@@ -141,7 +141,7 @@ jobs:
         if: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.head.repo.fork) && github.actor != 'dependabot[bot]' }}
         id: docker-scout-cves
         continue-on-error: true
-        uses: docker/scout-action@67eb1afe777307506aaecb9acd9a0e0389cb99ae # v1.5.0
+        uses: docker/scout-action@b3dd3d6c420903eb3ff2812ac1b1d146ffb93a41 # v1.5.1
         with:
           command: cves${{ !startsWith(github.ref, 'refs/tags/') && ',recommendations,compare' || '' }}
           image: jkreileder/cf-ips-to-hcloud-fw:${{ steps.docker-meta.outputs.version }}
