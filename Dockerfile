@@ -1,6 +1,6 @@
 # syntax = docker/dockerfile:1.6.0@sha256:ac85f380a63b13dfcefa89046420e1781752bab202122f8f50032edf31be0021
 
-FROM --platform=$BUILDPLATFORM python:3.12.2-slim-bookworm@sha256:5c73034c2bc151596ee0f1335610735162ee2b148816710706afec4757ad5b1e AS builder
+FROM --platform=$BUILDPLATFORM python:3.12.2-slim-bookworm@sha256:36d57d7f9948fefe7b6092cfe8567da368033e71ba281b11bb9eeffce3d45bc6 AS builder
 
 WORKDIR /usr/src/app
 
