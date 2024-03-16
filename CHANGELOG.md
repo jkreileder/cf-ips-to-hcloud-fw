@@ -1,5 +1,19 @@
 # Changelog
 
+## [v1.0.9] - 2024-03-16
+
+### Added
+
+- Pin sbom-generator to specific version and hash (#132)
+- Optimize dependency hash regeneration (#123)
+
+### Changed
+
+- Update Python base image in Dockerfile (#193, #122)
+- Bump various dependencies and actions (Refer to commit history for detailed list)
+- Remove unneeded gdbm dependency with GPL-3.0 license (#131)
+- Move constraint spec from pip-compile invocation to requirements-dev.in (#133)
+
 ## [v1.0.8] - 2024-02-08
 
 ### Added
