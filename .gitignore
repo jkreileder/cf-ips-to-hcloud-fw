@@ -1,17 +1,23 @@
+# Configuration files
 config.yaml
 
+# Python cache and compiled files
 __pycache__
 *.py[cod]
 
+# Virtual environments
 .venv
 venv
 
+# Build artifacts
 build
 dist
 *.egg-info
 
+# Requirements files
 requirements*-pep508.txt
 
+# Test and coverage reports
 .coverage
 .pytest_cache
 .ruff_cache
@@ -19,11 +25,12 @@ coverage.xml
 htmlcov
 test-results.xml
 
+# IDE and editor files
 .idea
 *.swp
 *~
 
-# VS Code but not project setup
+# VS Code specific (excluding project setup)
 .vscode/*
 !.vscode/extensions.json
 !.vscode/settings.json
