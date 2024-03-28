@@ -4,9 +4,9 @@
 #
 #    pip-compile --allow-unsafe --generate-hashes --newline=LF --output-file=requirements-dev.txt requirements-dev.in
 #
-build==1.2.0 \
-    --hash=sha256:49df7f8e1e74d345fe71e54f5d56423b2111eda89e3da53a2c18392954dade1d \
-    --hash=sha256:6105465d9b233433ce8ffa151c760f674446ba766af0290fc14bfa32aef92a04
+build==1.2.1 \
+    --hash=sha256:526263f4870c26f26c433545579475377b2b7588b6f1eac76a001e873ae3e19d \
+    --hash=sha256:75e10f767a433d9a86e50d83f418e83efc18ede923ee5ff7df93b6cb0306c5d4
     # via
     #   -r requirements-dev.in
     #   pip-tools
