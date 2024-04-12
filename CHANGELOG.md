@@ -1,5 +1,18 @@
 # Changelog
 
+## [v1.0.10] - 2024-04-12s
+
+### Added
+
+- Allow api.securityscorecards.dev and api.deps.dev in egress policy (#218, #207)
+
+### Changed
+
+- Bump various dependencies and actions (Refer to commit history for detailed list)
+- Update Python base images in Dockerfile (#219, #229)
+- Update sbom generator to version 1.6.4 (#224)
+- Remove CODECOV_TOKEN (#235)
+
 ## [v1.0.9] - 2024-03-16
 
 ### Added
