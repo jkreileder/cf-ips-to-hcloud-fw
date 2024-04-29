@@ -108,8 +108,8 @@ charset-normalizer==3.3.2 \
     --hash=sha256:fd1abc0d89e30cc4e02e4064dc67fcc51bd941eb395c502aac3ec19fab46b519 \
     --hash=sha256:ff8fa367d09b717b2a17a052544193ad76cd49979c805768879cb63d9ca50561
     # via requests
-cloudflare==2.19.2 \
-    --hash=sha256:10d4b96b2addee07dfa3699e0a167df77d2a8d5ab7f86e6590eaa6ea87d6dc18
+cloudflare==2.19.4 \
+    --hash=sha256:3b6000a01a237c23bccfdf6d20256ea5111ec74a826ae9e74f9f0e5bb5b2383f
     # via -r requirements.in
 hcloud==1.35.0 \
     --hash=sha256:b03efd72daf456ea5806c1a876694ae4de53cbc658566bc784f24f7534bd617e \
