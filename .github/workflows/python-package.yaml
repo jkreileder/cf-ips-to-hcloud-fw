@@ -94,6 +94,7 @@ jobs:
         with:
           files: ./coverage.xml
           flags: python-${{ matrix.python-version }}
+          token: ${{ secrets.CODECOV_TOKEN }}
 
       - name: Build
         run: make build
