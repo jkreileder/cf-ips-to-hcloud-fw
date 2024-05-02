@@ -24,6 +24,7 @@ jobs:
       id-token: write
       security-events: write
       pull-requests: write
+      attestations: write
     outputs:
       digest: ${{ steps.build-and-push.outputs.digest }}
 
@@ -124,6 +125,30 @@ jobs:
           tags: ${{ steps.docker-meta.outputs.tags }}
           labels: ${{ steps.docker-meta.outputs.labels }}
           annotations: ${{ steps.docker-meta.outputs.annotations }}
+
+      - name: Generate artifact attestation for DockerHub
+        if: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' }}
+        uses: actions/attest-build-provenance@897ed5eab6ed058a474202017ada7f40bfa52940 # v1.0.0
+        with:
+          subject-name: index.docker.io/jkreileder/cf-ips-to-hcloud-fw
+          subject-digest: ${{ steps.build-and-push.outputs.digest }}
+          push-to-registry: true
+
+      - name: Generate artifact attestation for Quay
+        if: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' }}
+        uses: actions/attest-build-provenance@897ed5eab6ed058a474202017ada7f40bfa52940 # v1.0.0
+        with:
+          subject-name: quay.io/jkreileder/cf-ips-to-hcloud-fw
+          subject-digest: ${{ steps.build-and-push.outputs.digest }}
+          push-to-registry: true
+
+      - name: Generate artifact attestation for GitHub Container Registry
+        if: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' }}
+        uses: actions/attest-build-provenance@897ed5eab6ed058a474202017ada7f40bfa52940 # v1.0.0
+        with:
+          subject-name: ghcr.io/jkreileder/cf-ips-to-hcloud-fw
+          subject-digest: ${{ steps.build-and-push.outputs.digest }}
+          push-to-registry: true
 
       - name: Sign the images with GitHub OIDC Token
         if: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' }}
