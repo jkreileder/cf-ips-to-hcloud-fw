@@ -71,9 +71,9 @@ jobs:
         uses: docker/metadata-action@8e5442c4ef9f78752691e2d8f8d19755c6f78e81 # v5.5.1
         with:
           images: |
-            jkreileder/cf-ips-to-hcloud-fw
-            quay.io/jkreileder/cf-ips-to-hcloud-fw
-            ghcr.io/jkreileder/cf-ips-to-hcloud-fw
+            ${{ vars.DOCKERHUB_USERNAME }}/cf-ips-to-hcloud-fw
+            quay.io/${{ vars.QUAY_USERNAME }}/cf-ips-to-hcloud-fw
+            ghcr.io/${{ github.repository_owner }}/cf-ips-to-hcloud-fw
           tags: |
             type=ref,event=branch
             type=ref,event=pr
@@ -93,7 +93,7 @@ jobs:
         if: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.head.repo.fork) && github.actor != 'dependabot[bot]' }}
         uses: docker/login-action@e92390c5fb421da1463c202d546fed0ec5c39f20 # v3.1.0
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          username: ${{ vars.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Login to Quay
@@ -101,7 +101,7 @@ jobs:
         uses: docker/login-action@e92390c5fb421da1463c202d546fed0ec5c39f20 # v3.1.0
         with:
           registry: quay.io
-          username: ${{ secrets.QUAY_USERNAME }}
+          username: ${{ vars.QUAY_ROBOT }}
           password: ${{ secrets.QUAY_TOKEN }}
 
       - name: Login to GitHub Container Registry
@@ -130,7 +130,7 @@ jobs:
         if: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' }}
         uses: actions/attest-build-provenance@f8d5ea8082b0d9f5ab855907be308fbd7eefb155 # v1.1.0
         with:
-          subject-name: index.docker.io/jkreileder/cf-ips-to-hcloud-fw
+          subject-name: index.docker.io/${{ vars.DOCKERHUB_USERNAME }}/cf-ips-to-hcloud-fw
           subject-digest: ${{ steps.build-and-push.outputs.digest }}
           push-to-registry: true
 
@@ -138,7 +138,7 @@ jobs:
         if: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' }}
         uses: actions/attest-build-provenance@f8d5ea8082b0d9f5ab855907be308fbd7eefb155 # v1.1.0
         with:
-          subject-name: quay.io/jkreileder/cf-ips-to-hcloud-fw
+          subject-name: quay.io/${{ vars.QUAY_USERNAME }}/cf-ips-to-hcloud-fw
           subject-digest: ${{ steps.build-and-push.outputs.digest }}
           push-to-registry: true
 
@@ -146,7 +146,7 @@ jobs:
         if: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' }}
         uses: actions/attest-build-provenance@f8d5ea8082b0d9f5ab855907be308fbd7eefb155 # v1.1.0
         with:
-          subject-name: ghcr.io/jkreileder/cf-ips-to-hcloud-fw
+          subject-name: ghcr.io/${{ github.repository_owner }}/cf-ips-to-hcloud-fw
           subject-digest: ${{ steps.build-and-push.outputs.digest }}
           push-to-registry: true
 
@@ -169,10 +169,10 @@ jobs:
         uses: docker/scout-action@cc6a9c02565075538531ec2351ff995512826265 # v1.8.0
         with:
           command: cves${{ !startsWith(github.ref, 'refs/tags/') && ',recommendations,compare' || '' }}
-          image: jkreileder/cf-ips-to-hcloud-fw:${{ steps.docker-meta.outputs.version }}
+          image: ${{ vars.DOCKERHUB_USERNAME }}/cf-ips-to-hcloud-fw:${{ steps.docker-meta.outputs.version }}
           sarif-file: sarif.output.json
-          organization: jkreileder
-          to: registry://jkreileder/cf-ips-to-hcloud-fw:1
+          organization: ${{ vars.DOCKERHUB_USERNAME }}
+          to: registry://${{ vars.DOCKERHUB_USERNAME }}/cf-ips-to-hcloud-fw:1
 
       - name: Upload Docker Scout scan result to GitHub Security tab
         if: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.head.repo.fork) && github.actor != 'dependabot[bot]' }}
@@ -186,7 +186,7 @@ jobs:
         id: grype-scan
         continue-on-error: true
         with:
-          image: jkreileder/cf-ips-to-hcloud-fw:${{ steps.docker-meta.outputs.version }}
+          image: ${{ vars.DOCKERHUB_USERNAME }}/cf-ips-to-hcloud-fw:${{ steps.docker-meta.outputs.version }}
           only-fixed: true
           add-cpes-if-none: true
 
@@ -208,11 +208,11 @@ jobs:
     # Can't pin with hash due to how this workflow works.
     uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v2.0.0
     with:
-      image: jkreileder/cf-ips-to-hcloud-fw
+      image: ${{ vars.DOCKERHUB_USERNAME }}/cf-ips-to-hcloud-fw
       digest: ${{ needs.docker.outputs.digest }}
       private-repository: true
+      registry-username: ${{ vars.DOCKERHUB_USERNAME }}
     secrets:
-      registry-username: ${{ secrets.DOCKERHUB_USERNAME }}
       registry-password: ${{ secrets.DOCKERHUB_TOKEN }}
 
   provenance-quay:
@@ -227,11 +227,11 @@ jobs:
     # Can't pin with hash due to how this workflow works.
     uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v2.0.0
     with:
-      image: quay.io/jkreileder/cf-ips-to-hcloud-fw
+      image: quay.io/${{ vars.QUAY_USERNAME }}/cf-ips-to-hcloud-fw
       digest: ${{ needs.docker.outputs.digest }}
       private-repository: true
+      registry-username: ${{ vars.QUAY_ROBOT }}
     secrets:
-      registry-username: ${{ secrets.QUAY_USERNAME }}
       registry-password: ${{ secrets.QUAY_TOKEN }}
 
   provenance-ghcr:
@@ -246,9 +246,9 @@ jobs:
     # Can't pin with hash due to how this workflow works.
     uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v2.0.0
     with:
-      image: ghcr.io/jkreileder/cf-ips-to-hcloud-fw
+      image: ghcr.io/${{ github.repository_owner }}/cf-ips-to-hcloud-fw
       digest: ${{ needs.docker.outputs.digest }}
       private-repository: true
-    secrets:
       registry-username: ${{ github.repository_owner }}
+    secrets:
       registry-password: ${{ secrets.GITHUB_TOKEN }}
