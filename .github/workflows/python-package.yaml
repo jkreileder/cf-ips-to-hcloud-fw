@@ -81,13 +81,6 @@ jobs:
           python-version: ${{ matrix.python-version }}
           cache: pip
 
-      - name: Generate SBOM
-        if: ${{ matrix.python-version == '3.11' }}
-        uses: anchore/sbom-action@7ccf588e3cf3cc2611714c2eeae48550fbc17552 # v0.15.11
-        with:
-          format: spdx-json
-          output-file: sbom.spdx.json
-
       - name: Make venv
         run: make venv
 
@@ -113,6 +106,13 @@ jobs:
 
       - name: Build
         run: make build
+
+      - name: Generate SBOM
+        if: ${{ matrix.python-version == '3.11' }}
+        uses: anchore/sbom-action@7ccf588e3cf3cc2611714c2eeae48550fbc17552 # v0.15.11
+        with:
+          format: spdx-json
+          output-file: sbom.spdx.json
 
       - name: Generate SBOM attestation
         if: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' && matrix.python-version == '3.11' }}
