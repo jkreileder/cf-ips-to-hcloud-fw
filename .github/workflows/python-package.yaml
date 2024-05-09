@@ -69,6 +69,7 @@ jobs:
             rekor.sigstore.dev:443
             storage.googleapis.com:443
             uploader.codecov.io:443
+            uploads.github.com:443
 
       - name: Checkout repository
         uses: actions/checkout@44c2b7a8a4ea60a981eaca3cf939b5f4305c123b # v4.1.5
