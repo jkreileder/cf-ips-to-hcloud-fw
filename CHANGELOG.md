@@ -1,5 +1,23 @@
 # Changelog
 
+## [v1.0.11] - 2024-05-09
+
+### Added
+
+- SBOM uploads to GitHub releases (#300)
+- Egress policies for PyPi releases (#299)
+- SBOM and attestations for DockerHub, Quay, GitHub Container Registry (#297)
+- SBOM generation after build (#295)
+- Attestations for python artifacts and sbom (#294)
+- GitHub artifact attestation across registries (#284)
+
+### Changed
+
+- Workflow action versions and naming (#301)
+- SBOM output files naming (#298)
+- Docker workflow security settings (#296)
+- Various dependencies and actions bumped (Refer to commit history for detailed list)
+
 ## [v1.0.10] - 2024-04-12
 
 ### Added
