@@ -112,14 +112,15 @@ jobs:
         uses: anchore/sbom-action@7ccf588e3cf3cc2611714c2eeae48550fbc17552 # v0.15.11
         with:
           format: spdx-json
-          output-file: sbom.spdx.json
+          artifact-name: sbom-python.spdx.json
+          output-file: sbom-python.spdx.json
 
       - name: Generate SBOM attestation
         if: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' && matrix.python-version == '3.11' }}
         uses: actions/attest-sbom@7d87da1e33596bc5503e50993d8f68c7a9bdfb4d # v1.1.0
         with:
           subject-path: dist/*.whl
-          sbom-path: sbom.spdx.json
+          sbom-path: sbom-python.spdx.json
 
       - name: Generate artifact attestation
         if: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' && matrix.python-version == '3.11' }}
