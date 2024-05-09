@@ -133,7 +133,8 @@ jobs:
         with:
           image: ${{ vars.DOCKERHUB_USERNAME }}/cf-ips-to-hcloud-fw
           format: spdx-json
-          output-file: sbom.spdx.json
+          artifact-name: sbom-docker.spdx.json
+          output-file: sbom-docker.spdx.json
 
       - name: Generate SBOM attestation for DockerHub
         if: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' }}
@@ -141,7 +142,7 @@ jobs:
         with:
           subject-name: index.docker.io/${{ vars.DOCKERHUB_USERNAME }}/cf-ips-to-hcloud-fw
           subject-digest: ${{ steps.build-and-push.outputs.digest }}
-          sbom-path: sbom.spdx.json
+          sbom-path: sbom-docker.spdx.json
           push-to-registry: true
 
       - name: Generate SBOM attestation for Quay
@@ -150,7 +151,7 @@ jobs:
         with:
           subject-name: quay.io/${{ vars.QUAY_USERNAME }}/cf-ips-to-hcloud-fw
           subject-digest: ${{ steps.build-and-push.outputs.digest }}
-          sbom-path: sbom.spdx.json
+          sbom-path: sbom-docker.spdx.json
           push-to-registry: true
 
       - name: Generate SBOM attestation for GitHub Container Registry
@@ -159,7 +160,7 @@ jobs:
         with:
           subject-name: ghcr.io/${{ github.repository_owner }}/cf-ips-to-hcloud-fw
           subject-digest: ${{ steps.build-and-push.outputs.digest }}
-          sbom-path: sbom.spdx.json
+          sbom-path: sbom-docker.spdx.json
           push-to-registry: true
 
       - name: Generate artifact attestation for DockerHub
