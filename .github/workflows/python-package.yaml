@@ -33,6 +33,10 @@ jobs:
   build:
     name: Build
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
     strategy:
       fail-fast: false
       matrix:
@@ -56,9 +60,13 @@ jobs:
             cli.codecov.io:443
             codecov.io:443
             files.pythonhosted.org:443
+            fulcio.sigstore.dev:443
             github.com:443
+            objects.githubusercontent.com:443
             pypi.org:443
+            raw.githubusercontent.com:443
             registry.npmjs.org:443
+            rekor.sigstore.dev:443
             storage.googleapis.com:443
             uploader.codecov.io:443
 
@@ -72,6 +80,13 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           cache: pip
+
+      - name: Generate SBOM
+        if: ${{ matrix.python-version == '3.11' }}
+        uses: anchore/sbom-action@7ccf588e3cf3cc2611714c2eeae48550fbc17552 # v0.15.11
+        with:
+          format: spdx-json
+          output-file: sbom.spdx.json
 
       - name: Make venv
         run: make venv
@@ -98,6 +113,19 @@ jobs:
 
       - name: Build
         run: make build
+
+      - name: Generate SBOM attestation
+        if: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' && matrix.python-version == '3.11' }}
+        uses: actions/attest-sbom@7d87da1e33596bc5503e50993d8f68c7a9bdfb4d # v1.1.0
+        with:
+          subject-path: dist/*.whl
+          sbom-path: sbom.spdx.json
+
+      - name: Generate artifact attestation
+        if: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' && matrix.python-version == '3.11' }}
+        uses: actions/attest-build-provenance@f8d5ea8082b0d9f5ab855907be308fbd7eefb155 # v1.1.0
+        with:
+          subject-path: dist/*.whl
 
       - name: Generate hashes
         id: hash
