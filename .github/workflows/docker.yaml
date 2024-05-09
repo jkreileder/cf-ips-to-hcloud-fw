@@ -127,6 +127,41 @@ jobs:
           labels: ${{ steps.docker-meta.outputs.labels }}
           annotations: ${{ steps.docker-meta.outputs.annotations }}
 
+      - name: Generate SBOM
+        if: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' }}
+        uses: anchore/sbom-action@7ccf588e3cf3cc2611714c2eeae48550fbc17552 # v0.15.11
+        with:
+          image: ${{ vars.DOCKERHUB_USERNAME }}/cf-ips-to-hcloud-fw
+          format: spdx-json
+          output-file: sbom.spdx.json
+
+      - name: Generate SBOM attestation for DockerHub
+        if: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' }}
+        uses: actions/attest-sbom@7d87da1e33596bc5503e50993d8f68c7a9bdfb4d # v1.1.0
+        with:
+          subject-name: index.docker.io/${{ vars.DOCKERHUB_USERNAME }}/cf-ips-to-hcloud-fw
+          subject-digest: ${{ steps.build-and-push.outputs.digest }}
+          sbom-path: sbom.spdx.json
+          push-to-registry: true
+
+      - name: Generate SBOM attestation for Quay
+        if: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' }}
+        uses: actions/attest-sbom@7d87da1e33596bc5503e50993d8f68c7a9bdfb4d # v1.1.0
+        with:
+          subject-name: quay.io/${{ vars.QUAY_USERNAME }}/cf-ips-to-hcloud-fw
+          subject-digest: ${{ steps.build-and-push.outputs.digest }}
+          sbom-path: sbom.spdx.json
+          push-to-registry: true
+
+      - name: Generate SBOM attestation for GitHub Container Registry
+        if: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' }}
+        uses: actions/attest-sbom@7d87da1e33596bc5503e50993d8f68c7a9bdfb4d # v1.1.0
+        with:
+          subject-name: ghcr.io/${{ github.repository_owner }}/cf-ips-to-hcloud-fw
+          subject-digest: ${{ steps.build-and-push.outputs.digest }}
+          sbom-path: sbom.spdx.json
+          push-to-registry: true
+
       - name: Generate artifact attestation for DockerHub
         if: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' }}
         uses: actions/attest-build-provenance@f8d5ea8082b0d9f5ab855907be308fbd7eefb155 # v1.1.0
