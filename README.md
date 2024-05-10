@@ -2,6 +2,7 @@
 
 [![codecov](https://codecov.io/gh/jkreileder/cf-ips-to-hcloud-fw/graph/badge.svg?token=PCP1F2XWAT)](https://codecov.io/gh/jkreileder/cf-ips-to-hcloud-fw)
 [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/8275/badge)](https://www.bestpractices.dev/projects/8275)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/jkreileder/cf-ips-to-hcloud-fw/badge)](https://scorecard.dev/viewer/?uri=github.com/jkreileder/cf-ips-to-hcloud-fw)
 [![CodeQL](https://github.com/jkreileder/cf-ips-to-hcloud-fw/actions/workflows/codeql.yaml/badge.svg)](https://github.com/jkreileder/cf-ips-to-hcloud-fw/actions/workflows/codeql.yaml)
 [![Python package](https://github.com/jkreileder/cf-ips-to-hcloud-fw/actions/workflows/python-package.yaml/badge.svg)](https://github.com/jkreileder/cf-ips-to-hcloud-fw/actions/workflows/python-package.yaml)
 [![Docker build](https://github.com/jkreileder/cf-ips-to-hcloud-fw/actions/workflows/docker.yaml/badge.svg)](https://github.com/jkreileder/cf-ips-to-hcloud-fw/actions/workflows/docker.yaml)
