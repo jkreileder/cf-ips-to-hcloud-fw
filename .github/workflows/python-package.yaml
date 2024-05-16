@@ -16,7 +16,7 @@ permissions:
 jobs:
   upload-event-file:
     name: Upload event file
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Harden runner
         uses: step-security/harden-runner@a4aa98b93cab29d9b1101a6143fb8bce00e2eac4 # v2.7.1
@@ -32,7 +32,7 @@ jobs:
 
   build:
     name: Build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
       id-token: write
@@ -163,7 +163,7 @@ jobs:
     if: ${{ github.event_name != 'pull_request' && startsWith(github.ref, 'refs/tags/') }}
     needs:
       - provenance-and-draft-release
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     environment:
       name: test-pypi
       url: https://test.pypi.org/p/cf-ips-to-hcloud-fw
@@ -196,7 +196,7 @@ jobs:
     needs:
       - provenance-and-draft-release
       - publish-to-test-pypi
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     environment:
       name: pypi
       url: https://pypi.org/p/cf-ips-to-hcloud-fw
@@ -226,7 +226,7 @@ jobs:
     if: ${{ github.event_name != 'pull_request' && startsWith(github.ref, 'refs/tags/') }}
     needs:
       - publish-to-pypi
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: write
 
