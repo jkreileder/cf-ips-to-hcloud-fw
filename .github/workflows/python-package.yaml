@@ -118,7 +118,7 @@ jobs:
 
       - name: Generate SBOM attestation
         if: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' && matrix.python-version == '3.11' }}
-        uses: actions/attest-sbom@c29e4e92259a5ed4629496ec6a5724e444389a1f # v1.1.1
+        uses: actions/attest-sbom@aaa2d0a82e0853a3aea99fcf632b9b61cdb534c2 # v1.1.2
         with:
           subject-path: dist/*.whl
           sbom-path: sbom-python.spdx.json
