@@ -93,14 +93,14 @@ jobs:
 
       - name: Login to DockerHub
         if: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.head.repo.fork) && github.actor != 'dependabot[bot]' }}
-        uses: docker/login-action@e92390c5fb421da1463c202d546fed0ec5c39f20 # v3.1.0
+        uses: docker/login-action@0d4c9c5ea7693da7b068278f7b52bda2a190a446 # v3.2.0
         with:
           username: ${{ vars.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Login to Quay
         if: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' }}
-        uses: docker/login-action@e92390c5fb421da1463c202d546fed0ec5c39f20 # v3.1.0
+        uses: docker/login-action@0d4c9c5ea7693da7b068278f7b52bda2a190a446 # v3.2.0
         with:
           registry: quay.io
           username: ${{ vars.QUAY_ROBOT }}
@@ -108,7 +108,7 @@ jobs:
 
       - name: Login to GitHub Container Registry
         if: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' }}
-        uses: docker/login-action@e92390c5fb421da1463c202d546fed0ec5c39f20 # v3.1.0
+        uses: docker/login-action@0d4c9c5ea7693da7b068278f7b52bda2a190a446 # v3.2.0
         with:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
@@ -123,7 +123,7 @@ jobs:
           pull: true
           push: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' }}
           load: ${{ github.event_name == 'pull_request' || github.actor == 'dependabot[bot]' }}
-          sbom: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' && 'generator=docker/scout-sbom-indexer:1.7.1@sha256:77da3d79606158e53bbf61b7503a1086ec1fe4e728cfa77293185e117b3f3c3a' || '' }}
+          sbom: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' && 'generator=docker/scout-sbom-indexer:1.9.3@sha256:61c4a0b6921641739a8410b9eb983338034d2a7cae0a3632247b364969317cdf' || '' }}
           tags: ${{ steps.docker-meta.outputs.tags }}
           labels: ${{ steps.docker-meta.outputs.labels }}
           annotations: ${{ steps.docker-meta.outputs.annotations }}
@@ -204,7 +204,7 @@ jobs:
         if: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.head.repo.fork) && github.actor != 'dependabot[bot]' }}
         id: docker-scout-cves
         continue-on-error: true
-        uses: docker/scout-action@b0c66a3ccc2a4a8233b31a370cc953c96931c7a6 # v1.9.1
+        uses: docker/scout-action@5dae9c7571dd0f3de81f5b501240c593c13c3eb6 # v1.9.3
         with:
           command: cves${{ !startsWith(github.ref, 'refs/tags/') && ',recommendations,compare' || '' }}
           image: ${{ vars.DOCKERHUB_USERNAME }}/cf-ips-to-hcloud-fw:${{ steps.docker-meta.outputs.version }}
