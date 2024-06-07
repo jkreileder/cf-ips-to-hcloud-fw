@@ -33,7 +33,7 @@ RUN --mount=target=src/cf_ips_to_hcloud_fw,source=/src/cf_ips_to_hcloud_fw \
 EOF
 
 
-FROM python:3.12.3-alpine3.20@sha256:53cab1eabac71d6160eeabe09fd3144de789f75de62b9833e49f67534edc547e AS final-image
+FROM python:3.12.3-alpine3.20@sha256:32385e61c3414ffa5a6dbf52feace89f758ad68709a48d376d56a0232162665a AS final-image
 
 WORKDIR /usr/src/app
 
