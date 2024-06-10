@@ -1,6 +1,6 @@
 # syntax = docker/dockerfile:1.7.1@sha256:a57df69d0ea827fb7266491f2813635de6f17269be881f696fbfdf2d83dda33e
 
-FROM --platform=$BUILDPLATFORM python:3.12.3-slim-bookworm@sha256:afc139a0a640942491ec481ad8dda10f2c5b753f5c969393b12480155fe15a63 AS builder
+FROM --platform=$BUILDPLATFORM python:3.12.4-slim-bookworm@sha256:e3ae8cf03c4f0abbfef13a8147478a7cd92798a94fa729a36a185d9106cbae32 AS builder
 
 WORKDIR /usr/src/app
 
@@ -33,7 +33,7 @@ RUN --mount=target=src/cf_ips_to_hcloud_fw,source=/src/cf_ips_to_hcloud_fw \
 EOF
 
 
-FROM python:3.12.3-alpine3.20@sha256:32385e61c3414ffa5a6dbf52feace89f758ad68709a48d376d56a0232162665a AS final-image
+FROM python:3.12.4-alpine3.20@sha256:d24ed567ee3b972478a232ceff84b0d002e18ee9f5d38234ecbffece23dfa084 AS final-image
 
 WORKDIR /usr/src/app
 
