@@ -139,7 +139,7 @@ jobs:
 
       - name: Generate SBOM attestation for DockerHub
         if: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' }}
-        uses: actions/attest-sbom@49e7311f18c5bb4e412963fd12f8c266d7e2132d # v1.2.0
+        uses: actions/attest-sbom@91d05efbc376a456f8abf965e8929c5c04ece8af # v1.3.1
         with:
           subject-name: index.docker.io/${{ vars.DOCKERHUB_USERNAME }}/cf-ips-to-hcloud-fw
           subject-digest: ${{ steps.build-and-push.outputs.digest }}
@@ -148,7 +148,7 @@ jobs:
 
       - name: Generate SBOM attestation for Quay
         if: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' }}
-        uses: actions/attest-sbom@49e7311f18c5bb4e412963fd12f8c266d7e2132d # v1.2.0
+        uses: actions/attest-sbom@91d05efbc376a456f8abf965e8929c5c04ece8af # v1.3.1
         with:
           subject-name: quay.io/${{ vars.QUAY_USERNAME }}/cf-ips-to-hcloud-fw
           subject-digest: ${{ steps.build-and-push.outputs.digest }}
@@ -157,7 +157,7 @@ jobs:
 
       - name: Generate SBOM attestation for GitHub Container Registry
         if: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' }}
-        uses: actions/attest-sbom@49e7311f18c5bb4e412963fd12f8c266d7e2132d # v1.2.0
+        uses: actions/attest-sbom@91d05efbc376a456f8abf965e8929c5c04ece8af # v1.3.1
         with:
           subject-name: ghcr.io/${{ github.repository_owner }}/cf-ips-to-hcloud-fw
           subject-digest: ${{ steps.build-and-push.outputs.digest }}
