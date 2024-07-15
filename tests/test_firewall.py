@@ -214,7 +214,7 @@ def test_fw_set_rules_fail(mock_logging: MagicMock, mock_client: MagicMock) -> N
     assert e.value.code == 1
     mock_client.firewalls.set_rules.assert_called_once_with(fw, [])
     mock_logging.assert_called_once_with(
-        "hcloud/firewall.set_rules failed for 'fw-1': Message"
+        "hcloud/firewall.set_rules failed for 'fw-1': Message (Test exception)"
     )
 
 
@@ -278,5 +278,5 @@ def test_update_project_fail(mock_logging: MagicMock, mock_client: MagicMock) ->
     assert e.value.code == 1
     mock_client.return_value.firewalls.get_by_name.assert_called_once_with("fw-1")
     mock_logging.assert_called_once_with(
-        "hcloud/firewalls.get_by_name failed for 'fw-1': Message"
+        "hcloud/firewalls.get_by_name failed for 'fw-1': Message (Test exception)"
     )
