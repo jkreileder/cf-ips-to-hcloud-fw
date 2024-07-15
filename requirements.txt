@@ -111,9 +111,9 @@ charset-normalizer==3.3.2 \
 cloudflare==2.20.0 \
     --hash=sha256:46aefc39dfaa2365d639b423cec2cd5350ae11153c7247d3eb3545bdcf01a68a
     # via -r requirements.in
-hcloud==1.35.0 \
-    --hash=sha256:b03efd72daf456ea5806c1a876694ae4de53cbc658566bc784f24f7534bd617e \
-    --hash=sha256:b1949ab637be517b7af6becdbf840c47722f9471c6b870e6f35de1ef6fcea3e3
+hcloud==2.0.1 \
+    --hash=sha256:35fe2b9159173c43cf67ec410a77ca7d87a08017e1b208a39c0209cc1c91e3a0 \
+    --hash=sha256:3b068dacac99fb967a7de25e64d23daad3f2fb586f3145ba831b3fd70848522c
     # via -r requirements.in
 idna==3.7 \
     --hash=sha256:028ff3aadf0609c1fd278d8ea3089299412a7a8b9bd005dd08b9f8285bcb5cfc \
