@@ -2,28 +2,32 @@ from __future__ import annotations
 
 import logging
 
-import CloudFlare  # type: ignore[import-untyped]
+import cloudflare
+import cloudflare.types.ips
 from pydantic import TypeAdapter, ValidationError
 
 from cf_ips_to_hcloud_fw.logging import log_error_and_exit
 from cf_ips_to_hcloud_fw.models import CloudflareCIDRs, CloudflareIPNetworks
 
 
-def cf_ips_get() -> dict:  # type: ignore[return]
-    cf = CloudFlare.CloudFlare(use_sessions=False)
+def cf_ips_list() -> cloudflare.types.ips.IPListResponse | None:
+    cf = cloudflare.Cloudflare()
     try:
-        return cf.ips.get()  # type: ignore[return-value]
-    except CloudFlare.exceptions.CloudFlareAPIError as e:  # type: ignore[attr-defined]
+        return cf.ips.list()
+    except (cloudflare.APIConnectionError, cloudflare.APIStatusError) as e:
         log_error_and_exit(f"Error getting CloudFlare IPs: {e}")
 
 
 def get_cloudflare_cidrs() -> CloudflareCIDRs:
-    response = cf_ips_get()  # type: ignore[return-value]
+    ips_model = cf_ips_list()
+    if ips_model is None:
+        log_error_and_exit("Cloudflare/ips.list: no response")
     try:
-        TypeAdapter(CloudflareIPNetworks).validate_python(response)  # sanity check
-        cf_ips = TypeAdapter(CloudflareCIDRs).validate_python(response)
+        ips_dict = ips_model.model_dump()
+        TypeAdapter(CloudflareIPNetworks).validate_python(ips_dict)  # sanity check
+        cf_ips = TypeAdapter(CloudflareCIDRs).validate_python(ips_dict)
     except ValidationError as e:
-        log_error_and_exit(f"Cloudflare/ips.get didn't validate: {e}")
+        log_error_and_exit(f"Cloudflare/ips.list didn't validate: {e}")
 
     cf_ips.ipv4_cidrs.sort()
     cf_ips.ipv6_cidrs.sort()

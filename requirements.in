@@ -1,4 +1,4 @@
-cloudflare < 3
+cloudflare
 hcloud
 pydantic
 PyYAML
