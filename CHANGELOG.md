@@ -1,5 +1,9 @@
 # Changelog
 
+## [v1.0.12] - 2024-07-15
+
+Maintenance release with updated dependencies.
+
 ## [v1.0.11] - 2024-05-09
 
 ### Added
