@@ -11,7 +11,7 @@ from cf_ips_to_hcloud_fw.models import CloudflareCIDRs, CloudflareIPNetworks
 
 
 def cf_ips_list() -> cloudflare.types.ips.IPListResponse | None:
-    cf = cloudflare.Cloudflare()
+    cf = cloudflare.Cloudflare(api_key="dummy")  # required to pass credential check
     try:
         return cf.ips.list()
     except (cloudflare.APIConnectionError, cloudflare.APIStatusError) as e:
