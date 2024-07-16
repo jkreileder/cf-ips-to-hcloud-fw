@@ -123,7 +123,7 @@ jobs:
           pull: true
           push: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' }}
           load: ${{ github.event_name == 'pull_request' || github.actor == 'dependabot[bot]' }}
-          sbom: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' && 'generator=docker/scout-sbom-indexer:1.10.0@sha256:c29c6fda87f94d2861ca38ac92d6d5c4c01543f081294f561b375bb3f7dbe716' || '' }}
+          sbom: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' && 'generator=docker/scout-sbom-indexer:1.11.0@sha256:10ef9eb6bfc374443ebc7f5f79747ff8a39b1998836d94b965ff361b84060324' || '' }}
           tags: ${{ steps.docker-meta.outputs.tags }}
           labels: ${{ steps.docker-meta.outputs.labels }}
           annotations: ${{ steps.docker-meta.outputs.annotations }}
