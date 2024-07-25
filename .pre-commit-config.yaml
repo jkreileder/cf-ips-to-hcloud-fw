@@ -16,7 +16,7 @@ repos:
       - id: pretty-format-json
         args: [--autofix, --indent=4]
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: cbaa26132c4c2e41aec5c64ee91e2f1c47bf5cad  # frozen: v0.5.4
+    rev: 1ee2e387938ec90ec10a64f85fc0b4be527ade6a  # frozen: v0.5.5
     hooks:
       - id: ruff
         args: [--fix]
