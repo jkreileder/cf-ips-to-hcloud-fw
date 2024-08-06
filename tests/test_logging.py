@@ -4,7 +4,7 @@ import argparse
 import logging
 from unittest.mock import MagicMock, patch
 
-from cf_ips_to_hcloud_fw.logging import setup_logging
+from cf_ips_to_hcloud_fw.custom_logging import setup_logging
 
 
 @patch("logging.basicConfig")

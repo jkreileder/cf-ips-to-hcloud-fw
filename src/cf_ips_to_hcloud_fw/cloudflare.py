@@ -6,7 +6,7 @@ import cloudflare
 import cloudflare.types.ips
 from pydantic import TypeAdapter, ValidationError
 
-from cf_ips_to_hcloud_fw.logging import log_error_and_exit
+from cf_ips_to_hcloud_fw.custom_logging import log_error_and_exit
 from cf_ips_to_hcloud_fw.models import CloudflareCIDRs, CloudflareIPNetworks
 
 

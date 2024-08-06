@@ -4,8 +4,8 @@ import argparse
 
 from cf_ips_to_hcloud_fw.cloudflare import get_cloudflare_cidrs
 from cf_ips_to_hcloud_fw.config import read_config
+from cf_ips_to_hcloud_fw.custom_logging import setup_logging
 from cf_ips_to_hcloud_fw.firewall import update_project
-from cf_ips_to_hcloud_fw.logging import setup_logging
 from cf_ips_to_hcloud_fw.version import __VERSION__
 
 
