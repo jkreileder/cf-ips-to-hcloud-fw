@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 from hcloud import APIException, Client
 from hcloud.firewalls.domain import Firewall, FirewallRule
 
-from cf_ips_to_hcloud_fw.logging import log_error_and_exit
+from cf_ips_to_hcloud_fw.custom_logging import log_error_and_exit
 
 if TYPE_CHECKING:  # pragma: no cover
     from cf_ips_to_hcloud_fw.models import CloudflareCIDRs, Project  # pragma: no cover
