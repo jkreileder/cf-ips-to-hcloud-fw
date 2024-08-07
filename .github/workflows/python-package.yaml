@@ -25,7 +25,7 @@ jobs:
           egress-policy: block
 
       - name: Upload
-        uses: actions/upload-artifact@89ef406dd8d7e03cfd12d9e0a4a378f454709029 # v4.3.5
+        uses: actions/upload-artifact@834a144ee995460fba8ed112a2fc961b36a5ec5a # v4.3.6
         with:
           name: event-file
           path: ${{ github.event_path }}
@@ -93,7 +93,7 @@ jobs:
 
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@89ef406dd8d7e03cfd12d9e0a4a378f454709029 # v4.3.5
+        uses: actions/upload-artifact@834a144ee995460fba8ed112a2fc961b36a5ec5a # v4.3.6
         with:
           name: test-results-${{ matrix.python-version }}
           path: test-results.xml
@@ -135,7 +135,7 @@ jobs:
         run: cd dist && echo "hashes=$(sha256sum * | base64 -w0)" >> $GITHUB_OUTPUT
 
       - name: Store the distribution packages
-        uses: actions/upload-artifact@89ef406dd8d7e03cfd12d9e0a4a378f454709029 # v4.3.5
+        uses: actions/upload-artifact@834a144ee995460fba8ed112a2fc961b36a5ec5a # v4.3.6
         if: ${{ github.event_name != 'pull_request' && startsWith(github.ref, 'refs/tags/') && matrix.python-version == '3.11' }}
         with:
           name: python-package-distributions
