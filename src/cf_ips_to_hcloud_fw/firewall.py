@@ -60,7 +60,7 @@ def update_firewall_rule(
         (True, False): (cf_cidrs.ipv4_cidrs, "IPv4"),
         (False, True): (cf_cidrs.ipv6_cidrs, "IPv6"),
     }
-    ip_cidrs, ip_type = ip_types[(ipv4, ipv6)]
+    ip_cidrs, ip_type = ip_types[ipv4, ipv6]
     return update_source_ips(fw, rule, ip_cidrs, ip_type)
 
 
