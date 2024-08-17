@@ -44,6 +44,7 @@ jobs:
             fulcio.sigstore.dev:443
             ghcr.io:443
             github.com:443
+            grype.anchore.io:443
             hub.docker.com:443
             index.docker.io:443
             nodejs.org:443
