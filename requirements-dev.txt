@@ -126,9 +126,9 @@ pyproject-hooks==1.1.0 \
     # via
     #   build
     #   pip-tools
-pyright==1.1.378 \
-    --hash=sha256:78a043be2876d12d0af101d667e92c7734f3ebb9db71dccc2c220e7e7eb89ca2 \
-    --hash=sha256:8853776138b01bc284da07ac481235be7cc89d3176b073d2dba73636cb95be79
+pyright==1.1.379 \
+    --hash=sha256:01954811ac71db8646f50de1577576dc275ffb891a9e7324350e676cf6df323f \
+    --hash=sha256:6f426cb6443786fa966b930c23ad1941c8cb9fe672e4589daea8d80bb34193ea
     # via -r requirements-dev.in
 pytest==8.3.2 \
     --hash=sha256:4ba08f9ae7dcf84ded419494d229b48d0903ea6407b030eaec46df5e6a73bba5 \
@@ -182,7 +182,7 @@ pip==24.2 \
     --hash=sha256:2cd581cf58ab7fcfca4ce8efa6dcacd0de5bf8d0a3eb9ec927e07405f4d9e2a2 \
     --hash=sha256:5b5e490b5e9cb275c879595064adce9ebd31b854e3e803740b72f9ccf34a45b8
     # via pip-tools
-setuptools==74.0.0 \
-    --hash=sha256:0274581a0037b638b9fc1c6883cc71c0210865aaa76073f7882376b641b84e8f \
-    --hash=sha256:a85e96b8be2b906f3e3e789adec6a9323abf79758ecfa3065bd740d81158b11e
+setuptools==74.1.1 \
+    --hash=sha256:2353af060c06388be1cecbf5953dcdb1f38362f87a2356c480b6b4d5fcfc8847 \
+    --hash=sha256:fc91b5f89e392ef5b77fe143b17e32f65d3024744fba66dc3afe07201684d766
     # via pip-tools
