@@ -30,7 +30,7 @@ jobs:
 
     steps:
       - name: Harden runner
-        uses: step-security/harden-runner@5c7944e73c4c2a096b17a9cb74d65b6c2bbafbde # v2.9.1
+        uses: step-security/harden-runner@91182cccc01eb5e619899d80e4e971d6181294a7 # v2.10.1
         with:
           disable-sudo: true
           egress-policy: block
@@ -90,7 +90,7 @@ jobs:
         uses: docker/setup-qemu-action@49b3bc8e6bdd4a60e6116a5414239cba5943d3cf # v3.2.0
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@988b5a0280414f521da01fcc63a27aeeb4b104db # v3.6.1
+        uses: docker/setup-buildx-action@c47758b77c9736f4b2ef4073d4d51994fabfe349 # v3.7.1
 
       - name: Login to DockerHub
         if: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.head.repo.fork) && github.actor != 'dependabot[bot]' }}
@@ -124,14 +124,14 @@ jobs:
           pull: true
           push: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' }}
           load: ${{ github.event_name == 'pull_request' || github.actor == 'dependabot[bot]' }}
-          sbom: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' && 'generator=docker/scout-sbom-indexer:1.13.0@sha256:b19ad00af1515f55556a032e3980c3a423f14359a915dfa16609934c6e32c3f0' || '' }}
+          sbom: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' && 'generator=docker/scout-sbom-indexer:1.14.1@sha256:3e225c7cd33fb08121f4a633fa2b4cc51e7ec2be9a9273f7d7836e7a4a9816de' || '' }}
           tags: ${{ steps.docker-meta.outputs.tags }}
           labels: ${{ steps.docker-meta.outputs.labels }}
           annotations: ${{ steps.docker-meta.outputs.annotations }}
 
       - name: Generate SBOM
         if: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' }}
-        uses: anchore/sbom-action@61119d458adab75f756bc0b9e4bde25725f86a7a # v0.17.2
+        uses: anchore/sbom-action@8d0a6505bf28ced3e85154d13dc6af83299e13f1 # v0.17.4
         with:
           image: ${{ vars.DOCKERHUB_USERNAME }}/cf-ips-to-hcloud-fw
           format: spdx-json
@@ -205,7 +205,7 @@ jobs:
         if: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.head.repo.fork) && github.actor != 'dependabot[bot]' }}
         id: docker-scout-cves
         continue-on-error: true
-        uses: docker/scout-action@e71a6e518e912cc9094cb8c89e29bb0dcef01668 # v1.13.0
+        uses: docker/scout-action@cc6bf8dd03587425ef920278b3e2726ba8d791e8 # v1.14.0
         with:
           command: cves${{ !startsWith(github.ref, 'refs/tags/') && ',recommendations,compare' || '' }}
           image: ${{ vars.DOCKERHUB_USERNAME }}/cf-ips-to-hcloud-fw:${{ steps.docker-meta.outputs.version }}
