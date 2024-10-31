@@ -116,9 +116,9 @@ pyproject-hooks==1.2.0 \
     # via
     #   build
     #   pip-tools
-pyright==1.1.386 \
-    --hash=sha256:7071ac495593b2258ccdbbf495f1a5c0e5f27951f6b429bed4e8b296eb5cd21d \
-    --hash=sha256:8e9975e34948ba5f8e07792a9c9d2bdceb2c6c0b61742b068d2229ca2bc4a9d9
+pyright==1.1.387 \
+    --hash=sha256:577de60224f7fe36505d5b181231e3a395d427b7873be0bbcaa962a29ea93a60 \
+    --hash=sha256:6a1f495a261a72e12ad17e20d1ae3df4511223c773b19407cfa006229b1b08a5
     # via -r requirements-dev.in
 pytest==8.3.3 \
     --hash=sha256:70b98107bd648308a7952b06e6ca9a50bc660be218d53c257cc1fc94fda10181 \
