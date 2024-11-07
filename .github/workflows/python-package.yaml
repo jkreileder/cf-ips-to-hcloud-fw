@@ -178,6 +178,7 @@ jobs:
           disable-sudo: true
           egress-policy: block
           allowed-endpoints: >
+            ghcr.io:443
             test.pypi.org:443
 
       - name: Download all the distribution packages
@@ -211,6 +212,7 @@ jobs:
           disable-sudo: true
           egress-policy: block
           allowed-endpoints: >
+            ghcr.io:443
             upload.pypi.org:443
 
       - name: Download all the distribution packages
