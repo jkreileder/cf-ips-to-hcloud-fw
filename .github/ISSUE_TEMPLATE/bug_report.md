@@ -24,10 +24,10 @@ A clear and concise description of what actually happened.
 A clear and concise description of what you expected to happen.
 
 **Environment (please complete the following information):**
- - cf-ips-to-hcloud-fw version: [e.g. 1.0.12]
+ - cf-ips-to-hcloud-fw version: [e.g. 1.0.13]
  - Deployment method: [e.g. Docker, Python module]
  - If Python module, Python Version: [e.g. 3.13]
- - If Python module, OS: [e.g. MacOS 14.3]
+ - If Python module, OS: [e.g. MacOS 15.1]
 
 **Additional context**
 Add any other context about the problem here.
