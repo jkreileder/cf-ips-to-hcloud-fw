@@ -128,9 +128,9 @@ charset-normalizer==3.4.0 \
     --hash=sha256:fe9f97feb71aa9896b81973a7bbada8c49501dc73e58a10fcef6663af95e5079 \
     --hash=sha256:ffc519621dce0c767e96b9c53f09c5d215578e10b02c285809f76509a3931482
     # via requests
-cloudflare==3.1.0 \
-    --hash=sha256:e93ddafa85ab34f0dc4e38b2e6807da77dedbf41d34a9019f3ad5569879a6f37 \
-    --hash=sha256:fcb72f22803071054820a152ff403834c5df27f731f732ac26fcf681e909ef58
+cloudflare==3.1.1 \
+    --hash=sha256:874781a9dddbb96bc72ec100a1cfc01c8dc58fce7e8824e47d20a056c490335a \
+    --hash=sha256:d065c9ef3b48dcd73e08f2b3a27ce851303767a6de2f42d033e3944bdb291da4
     # via -r requirements.in
 distro==1.9.0 \
     --hash=sha256:2fa77c6fd8940f116ee1d6b94a2f90b13b5ea8d019b98bc8bafdcabcdd9bdbed \
@@ -148,9 +148,9 @@ hcloud==2.3.0 \
     --hash=sha256:653bd4f53cf92e028c00a04462b9c549249278d3acafc8e6bb9b063ca426877f \
     --hash=sha256:e901d298b112f1d2d4568d8300f3ce19dfe782bdef3ff9c417026a81e16ee956
     # via -r requirements.in
-httpcore==1.0.6 \
-    --hash=sha256:27b59625743b85577a8c0e10e55b50b5368a4f2cfe8cc7bcfa9cf00829c2682f \
-    --hash=sha256:73f6dbd6eb8c21bbf7ef8efad555481853f5f6acdeaff1edb0694289269ee17f
+httpcore==1.0.7 \
+    --hash=sha256:8551cb62a169ec7162ac7be8d4817d561f60e08eaa485234898414bb5a8a0b4c \
+    --hash=sha256:a3fff8f43dc260d5bd363d9f9cf1830fa3a458b332856f34282de498ed420edd
     # via httpx
 httpx==0.27.2 \
     --hash=sha256:7bb2708e112d8fdd7829cd4243970f0c223274051cb35ee80c03301ee29a3df0 \
@@ -323,9 +323,9 @@ requests==2.32.3 \
     --hash=sha256:55365417734eb18255590a9ff9eb97e9e1da868d4ccd6402399eaf68af20a760 \
     --hash=sha256:70761cfe03c773ceb22aa2f671b4757976145175cdfca038c02654d061d6dcc6
     # via hcloud
-six==1.16.0 \
-    --hash=sha256:1e61c37477a1626458e36f7b1d82aa5c9b094fa4802892072e49de9c60c4c926 \
-    --hash=sha256:8abb2f1d86890a2dfb989f9a77cfcfd3e47c2a354b01111771326f8aa26e0254
+six==1.17.0 \
+    --hash=sha256:4721f391ed90541fddacab5acf947aa0d3dc7d27b2e1e8eda2be8970586c3274 \
+    --hash=sha256:ff70335d468e7eb6ec65b95b99d3a2836546063f63acc5171de367e834932a81
     # via python-dateutil
 sniffio==1.3.1 \
     --hash=sha256:2f6da418d1f1e0fddd844478f41680e794e6051915791a034ff65e5f100525a2 \
