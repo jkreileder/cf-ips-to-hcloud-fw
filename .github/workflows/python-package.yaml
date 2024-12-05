@@ -113,7 +113,7 @@ jobs:
 
       - name: Generate SBOM
         if: ${{ matrix.python-version == '3.11' }}
-        uses: anchore/sbom-action@fc46e51fd3cb168ffb36c6d1915723c47db58abb # v0.17.7
+        uses: anchore/sbom-action@55dc4ee22412511ee8c3142cbea40418e6cec693 # v0.17.8
         with:
           format: spdx-json
           artifact-name: sbom-python.spdx.json
@@ -121,14 +121,14 @@ jobs:
 
       - name: Generate SBOM attestation
         if: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' && matrix.python-version == '3.11' }}
-        uses: actions/attest-sbom@5026d3663739160db546203eeaffa6aa1c51a4d6 # v1.4.1
+        uses: actions/attest-sbom@1455967b1b6415d3df9fac31a87500523f7b455c # v2.0.0
         with:
           subject-path: dist/*.whl
           sbom-path: sbom-python.spdx.json
 
       - name: Generate artifact attestation
         if: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' && matrix.python-version == '3.11' }}
-        uses: actions/attest-build-provenance@ef244123eb79f2f7a7e75d99086184180e6d0018 # v1.4.4
+        uses: actions/attest-build-provenance@619dbb2e03e0189af0c55118e7d3c5e129e99726 # v2.0.0
         with:
           subject-path: dist/*.whl
 
