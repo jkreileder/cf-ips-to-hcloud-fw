@@ -63,6 +63,8 @@ jobs:
             files.pythonhosted.org:443
             fulcio.sigstore.dev:443
             github.com:443
+            ingest.codecov.io:443
+            keybase.io:443
             objects.githubusercontent.com:443
             pypi.org:443
             raw.githubusercontent.com:443
