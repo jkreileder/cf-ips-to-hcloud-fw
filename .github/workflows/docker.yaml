@@ -123,7 +123,7 @@ jobs:
           platforms: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' && 'linux/amd64,linux/arm64' || '' }}
           push: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' }}
           load: ${{ github.event_name == 'pull_request' || github.actor == 'dependabot[bot]' }}
-          sbom: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' && 'generator=docker/scout-sbom-indexer:1.15.0@sha256:4fa68d539eb5a99e75a93dfbefe5a4dfacd9c90c4577925f492670c6a1b06894' || '' }}
+          sbom: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' && 'generator=docker/scout-sbom-indexer:1.15.1@sha256:f5c5a08680dfc0634603370502cc944a0d106dcad36d438fbe64c21bdc70b63a' || '' }}
           tags: ${{ steps.docker-meta.outputs.tags }}
           labels: ${{ steps.docker-meta.outputs.labels }}
           annotations: ${{ steps.docker-meta.outputs.annotations }}
@@ -222,7 +222,7 @@ jobs:
           sarif_file: sarif.output.json
 
       - name: Scan image with Grype
-        uses: anchore/scan-action@f2ba85e044c8f5e5014c9a539328a9c78d3bfa49 # v5.2.1
+        uses: anchore/scan-action@869c549e657a088dc0441b08ce4fc0ecdac2bb65 # v5.3.0
         id: grype-scan
         continue-on-error: true
         with:
