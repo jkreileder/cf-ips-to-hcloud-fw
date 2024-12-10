@@ -170,7 +170,7 @@ jobs:
 
       - name: Generate artifact attestation for DockerHub
         if: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' }}
-        uses: actions/attest-build-provenance@c4fbc648846ca6f503a13a2281a5e7b98aa57202 # v2.0.1
+        uses: actions/attest-build-provenance@7668571508540a607bdfd90a87a560489fe372eb # v2.1.0
         with:
           subject-name: index.docker.io/${{ vars.DOCKERHUB_USERNAME }}/cf-ips-to-hcloud-fw
           subject-digest: ${{ steps.build-and-push.outputs.digest }}
@@ -178,7 +178,7 @@ jobs:
 
       - name: Generate artifact attestation for Quay
         if: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' }}
-        uses: actions/attest-build-provenance@c4fbc648846ca6f503a13a2281a5e7b98aa57202 # v2.0.1
+        uses: actions/attest-build-provenance@7668571508540a607bdfd90a87a560489fe372eb # v2.1.0
         with:
           subject-name: quay.io/${{ vars.QUAY_USERNAME }}/cf-ips-to-hcloud-fw
           subject-digest: ${{ steps.build-and-push.outputs.digest }}
@@ -186,7 +186,7 @@ jobs:
 
       - name: Generate artifact attestation for GitHub Container Registry
         if: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' }}
-        uses: actions/attest-build-provenance@c4fbc648846ca6f503a13a2281a5e7b98aa57202 # v2.0.1
+        uses: actions/attest-build-provenance@7668571508540a607bdfd90a87a560489fe372eb # v2.1.0
         with:
           subject-name: ghcr.io/${{ github.repository_owner }}/cf-ips-to-hcloud-fw
           subject-digest: ${{ steps.build-and-push.outputs.digest }}
