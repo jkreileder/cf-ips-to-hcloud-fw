@@ -40,6 +40,7 @@ jobs:
             api.scout.docker.com:443
             auth.docker.io:443
             cdn03.quay.io:443
+            cloudflarestorage.com:443
             files.pythonhosted.org:443
             files.pythonhosted.org:65535
             fulcio.sigstore.dev:443
@@ -208,7 +209,7 @@ jobs:
         if: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.head.repo.fork) && github.actor != 'dependabot[bot]' }}
         id: docker-scout-cves
         continue-on-error: true
-        uses: docker/scout-action@6ac950eb733f8b2811f25c05d97bfb3d181b8026 # v1.15.1
+        uses: docker/scout-action@4d5cab64d69921183d77962a3569acb76d1ff908 # v1.16.0
         with:
           command: cves${{ !startsWith(github.ref, 'refs/tags/') && ',recommendations,compare' || '' }}
           image: ${{ vars.DOCKERHUB_USERNAME }}/cf-ips-to-hcloud-fw:${{ steps.docker-meta.outputs.version }}
@@ -219,7 +220,7 @@ jobs:
       - name: Upload Docker Scout scan result to GitHub Security tab
         if: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.head.repo.fork) && github.actor != 'dependabot[bot]' }}
         continue-on-error: true
-        uses: github/codeql-action/upload-sarif@babb554ede22fd5605947329c4d04d8e7a0b8155 # v3.27.7
+        uses: github/codeql-action/upload-sarif@df409f7d9260372bd5f19e5b04e83cb3c43714ae # v3.27.9
         with:
           sarif_file: sarif.output.json
 
@@ -233,7 +234,7 @@ jobs:
           add-cpes-if-none: true
 
       - name: Upload Grype scan result to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@babb554ede22fd5605947329c4d04d8e7a0b8155 # v3.27.7
+        uses: github/codeql-action/upload-sarif@df409f7d9260372bd5f19e5b04e83cb3c43714ae # v3.27.9
         continue-on-error: true
         with:
           sarif_file: ${{ steps.grype-scan.outputs.sarif }}
