@@ -40,7 +40,7 @@ jobs:
             api.scout.docker.com:443
             auth.docker.io:443
             cdn03.quay.io:443
-            cloudflarestorage.com:443
+            docker-images-prod.6aa30f8b08e16409b46e0173d6de2f56.r2.cloudflarestorage.com:443
             files.pythonhosted.org:443
             files.pythonhosted.org:65535
             fulcio.sigstore.dev:443
