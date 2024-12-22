@@ -113,7 +113,7 @@ Here's an example using Docker:
 ```shell
 docker run --rm \
   --mount type=bind,source=$(pwd)/config.yaml,target=/usr/src/app/config.yaml,readonly \
-  jkreileder/cf-ips-to-hcloud-fw:1.0.14
+  jkreileder/cf-ips-to-hcloud-fw:1.0.15
 ```
 
 (Add `--pull=always` if you use a rolling image tag.)
@@ -123,7 +123,7 @@ Docker images for `cf-ips-to-hcloud-fw` are available for both `linux/amd64` and
 
 - `1`: This tag always points to the latest `1.x.x` release.
 - `1.0`: This tag always points to the latest `1.0.x` release.
-- `1.0.14`: This tag points to the specific `1.0.14` release.
+- `1.0.15`: This tag points to the specific `1.0.15` release.
 - `main`: This tag points to the most recent development version of
   `cf-ips-to-hcloud-fw`. Use this at your own risk as it may contain unstable
   changes.
@@ -172,7 +172,7 @@ spec:
             runAsUser: 65534
           containers:
             - name: cf-ips-to-hcloud-fw
-              image: jkreileder/cf-ips-to-hcloud-fw:1.0.14
+              image: jkreileder/cf-ips-to-hcloud-fw:1.0.15
               # imagePullPolicy: Always # Uncomment this if you use a rolling image tag
               securityContext:
                 allowPrivilegeEscalation: false
