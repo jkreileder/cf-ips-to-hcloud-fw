@@ -1,5 +1,9 @@
 # Changelog
 
+## [v1.0.15] – 2024-12-22
+
+Maintenance release with updated dependencies.
+
 ## [v1.0.14] - 2024-11-07
 
 Maintenance release with fix PyPi release workflow.
