@@ -22,6 +22,6 @@ repos:
         args: [--fix]
       - id: ruff-format
   - repo: https://github.com/gitleaks/gitleaks
-    rev: 755acc85d71f928cf4c8a4696c7b2ff05c31e74f  # frozen: v8.21.3
+    rev: f6c8da9b934a0e278cacf52a190ed108d1b4e0d8  # frozen: v8.22.0
     hooks:
       - id: gitleaks
