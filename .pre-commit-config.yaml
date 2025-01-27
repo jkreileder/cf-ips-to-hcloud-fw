@@ -16,12 +16,12 @@ repos:
       - id: pretty-format-json
         args: [--autofix, --indent=4]
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: 73413df07b4ab0bf103ca1ae73c7cec5c0ace593  # frozen: v0.9.2
+    rev: 36b36942c52d8ce8ae6314461f2d86b1fda158e3  # frozen: v0.9.3
     hooks:
       - id: ruff
         args: [--fix]
       - id: ruff-format
   - repo: https://github.com/gitleaks/gitleaks
-    rev: fdb44522d34ace953737f8501287e0b4fba52887  # frozen: v8.23.1
+    rev: d3e94b115af09502fcbeceda2cda27e19decda52  # frozen: v8.23.2
     hooks:
       - id: gitleaks
