@@ -63,7 +63,7 @@ jobs:
         run: make venv
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@f6091c0113d1dcf9b98e269ee48e8a7e51b7bdd4 # v3.28.5
+        uses: github/codeql-action/init@17a820bf2e43b47be2c72b39cc905417bc1ab6d0 # v3.28.6
         with:
           languages: ${{ matrix.language }}
           queries: security-and-quality
@@ -72,6 +72,6 @@ jobs:
         run: make build
 
       - name: Perform CodeQL analysis
-        uses: github/codeql-action/analyze@f6091c0113d1dcf9b98e269ee48e8a7e51b7bdd4 # v3.28.5
+        uses: github/codeql-action/analyze@17a820bf2e43b47be2c72b39cc905417bc1ab6d0 # v3.28.6
         with:
           category: "/language:${{ matrix.language }}"
