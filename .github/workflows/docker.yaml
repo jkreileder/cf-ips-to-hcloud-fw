@@ -126,7 +126,7 @@ jobs:
           platforms: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' && 'linux/amd64,linux/arm64' || '' }}
           push: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' }}
           load: ${{ github.event_name == 'pull_request' || github.actor == 'dependabot[bot]' }}
-          sbom: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' && 'generator=docker/scout-sbom-indexer:1.16.1@sha256:a383f8c6b54bfd91a9ad70fc34aab994d379514bf0f2601e225eed80213710c6' || '' }}
+          sbom: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' && 'generator=docker/scout-sbom-indexer:1.16.3@sha256:6b848dcd661ae05260e2a3245132967a3147c0414d95117f385129047198e1e6' || '' }}
           tags: ${{ steps.docker-meta.outputs.tags }}
           labels: ${{ steps.docker-meta.outputs.labels }}
           annotations: ${{ steps.docker-meta.outputs.annotations }}

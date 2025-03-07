@@ -1,7 +1,7 @@
-# syntax=docker/dockerfile:1.12.1@sha256:93bfd3b68c109427185cd78b4779fc82b484b0b7618e36d0f104d4d801e66d25
+# syntax=docker/dockerfile:1.14.0@sha256:4c68376a702446fc3c79af22de146a148bc3367e73c25a5803d453b6b3f722fb
 # check=experimental=all;error=true
 
-FROM --platform=$BUILDPLATFORM python:3.13.2-slim-bookworm@sha256:ae9f9ac89467077ed1efefb6d9042132d28134ba201b2820227d46c9effd3174 AS builder
+FROM --platform=$BUILDPLATFORM python:3.13.2-slim-bookworm@sha256:f3614d98f38b0525d670f287b0474385952e28eb43016655dd003d0e28cf8652 AS builder
 
 WORKDIR /usr/src/app
 
@@ -34,7 +34,7 @@ RUN --mount=target=src/cf_ips_to_hcloud_fw,source=/src/cf_ips_to_hcloud_fw \
 EOF
 
 
-FROM python:3.13.2-alpine3.20@sha256:816feb29731cdee64b15b0ae91dd9f1cbc36765984ff8ea85a3d90f064417237 AS final-image
+FROM python:3.13.2-alpine3.21@sha256:323a717dc4a010fee21e3f1aac738ee10bb485de4e7593ce242b36ee48d6b352 AS final-image
 
 WORKDIR /usr/src/app
 
