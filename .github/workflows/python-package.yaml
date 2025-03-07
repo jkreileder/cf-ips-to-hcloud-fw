@@ -102,6 +102,14 @@ jobs:
           name: test-results-${{ matrix.python-version }}
           path: test-results.xml
 
+      - name: Upload test results to Codecov
+        if: always()
+        uses: codecov/test-results-action@5c441a7bcc06f8706cde90192857d337c5dab8a6 # v1.0.4
+        with:
+          files: ./test-results.xml
+          flags: python-${{ matrix.python-version }}
+          token: ${{ secrets.CODECOV_TOKEN }}
+
       - name: Upload coverage report to Codecov
         uses: codecov/codecov-action@13ce06bfc6bbe3ecf90edbbf1bc32fe5978ca1d3 # v5.3.1
         with:
