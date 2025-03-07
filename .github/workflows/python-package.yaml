@@ -107,7 +107,7 @@ jobs:
         with:
           files: ./coverage.xml
           flags: python-${{ matrix.python-version }}
-          use_oidc: true
+          token: ${{ secrets.CODECOV_TOKEN }}
 
       - name: Build
         run: make build
