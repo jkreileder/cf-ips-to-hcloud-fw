@@ -247,7 +247,7 @@ jobs:
       id-token: write
       packages: write
     # Can't pin with hash due to how this workflow works.
-    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v2.0.0
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v2.1.0
     with:
       image: ${{ vars.DOCKERHUB_USERNAME }}/cf-ips-to-hcloud-fw
       digest: ${{ needs.docker.outputs.digest }}
@@ -266,7 +266,7 @@ jobs:
       id-token: write
       packages: write
     # Can't pin with hash due to how this workflow works.
-    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v2.0.0
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v2.1.0
     with:
       image: quay.io/${{ vars.QUAY_USERNAME }}/cf-ips-to-hcloud-fw
       digest: ${{ needs.docker.outputs.digest }}
@@ -285,7 +285,7 @@ jobs:
       id-token: write
       packages: write
     # Can't pin with hash due to how this workflow works.
-    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v2.0.0
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v2.1.0
     with:
       image: ghcr.io/${{ github.repository_owner }}/cf-ips-to-hcloud-fw
       digest: ${{ needs.docker.outputs.digest }}
