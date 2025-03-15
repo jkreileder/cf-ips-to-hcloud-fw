@@ -34,3 +34,4 @@ test-results.xml
 .vscode/*
 !.vscode/extensions.json
 !.vscode/settings.json
+.qodo
