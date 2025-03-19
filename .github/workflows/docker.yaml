@@ -57,6 +57,7 @@ jobs:
             raw.githubusercontent.com:443
             registry-1.docker.io:443
             registry.npmjs.org:443
+            registry.scout.docker.com:443
             rekor.sigstore.dev:443
             toolbox-data.anchore.io:443
             tuf-repo-cdn.sigstore.dev:443
