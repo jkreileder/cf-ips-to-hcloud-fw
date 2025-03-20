@@ -89,9 +89,9 @@ importlib-metadata==8.6.1 \
     --hash=sha256:02a89390c1e15fdfdc0d7c6b25cb3e62650d0494005c97d6f148bf5b9787525e \
     --hash=sha256:310b41d755445d74569f993ccfc22838295d9fe005425094fad953d7f15c8580
     # via build
-iniconfig==2.0.0 \
-    --hash=sha256:2d91e135bf72d31a410b17c16da610a82cb55f6b0477d1a902134b24a455b8b3 \
-    --hash=sha256:b6a85871a79d2e3b22d2d1b94ac2824226a63c6b741c88f7ae975f18b6778374
+iniconfig==2.1.0 \
+    --hash=sha256:3abbd2e30b36733fee78f9c7f7308f2d0050e88f0087fd25c2645f63c773e1c7 \
+    --hash=sha256:9deba5723312380e77435581c6bf4935c94cbfab9b1ed33ef8d238ea168eb760
     # via pytest
 nodeenv==1.9.1 \
     --hash=sha256:6ec12890a2dab7946721edbfbcd91f3319c6ccc9aec47be7c7e6b7011ee6645f \
@@ -117,9 +117,9 @@ pyproject-hooks==1.2.0 \
     # via
     #   build
     #   pip-tools
-pyright==1.1.396 \
-    --hash=sha256:142901f5908f5a0895be3d3befcc18bedcdb8cc1798deecaec86ef7233a29b03 \
-    --hash=sha256:c635e473095b9138c471abccca22b9fedbe63858e0b40d4fc4b67da041891844
+pyright==1.1.397 \
+    --hash=sha256:07530fd65a449e4b0b28dceef14be0d8e0995a7a5b1bb2f3f897c3e548451ce3 \
+    --hash=sha256:2e93fba776e714a82b085d68f8345b01f91ba43e1ab9d513e79b70fc85906257
     # via -r requirements-dev.in
 pytest==8.3.5 \
     --hash=sha256:c69214aa47deac29fad6c2a4f590b9c4a9fdb16a403176fe154b79c0b4d4d820 \
@@ -209,7 +209,7 @@ pip==25.0.1 \
     --hash=sha256:88f96547ea48b940a3a385494e181e29fb8637898f88d88737c5049780f196ea \
     --hash=sha256:c46efd13b6aa8279f33f2864459c8ce587ea6a1a59ee20de055868d8f7688f7f
     # via pip-tools
-setuptools==76.1.0 \
-    --hash=sha256:34750dcb17d046929f545dec9b8349fe42bf4ba13ddffee78428aec422dbfb73 \
-    --hash=sha256:4959b9ad482ada2ba2320c8f1a8d8481d4d8d668908a7a1b84d987375cd7f5bd
+setuptools==77.0.1 \
+    --hash=sha256:81a234dff81a82bb52e522c8aef145d0dd4de1fd6de4d3b196d0f77dc2fded26 \
+    --hash=sha256:a1246a1b4178c66d7cf50c9fc6d530fac3f89bc284cf803c7fa878c41b1a03b2
     # via pip-tools
