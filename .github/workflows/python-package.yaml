@@ -104,14 +104,14 @@ jobs:
 
       - name: Upload test results to Codecov
         if: always()
-        uses: codecov/test-results-action@f2dba722c67b86c6caa034178c6e4d35335f6706 # v1.1.0
+        uses: codecov/test-results-action@47f89e9acb64b76debcd5ea40642d25a4adced9f # v1.1.1
         with:
           files: ./test-results.xml
           flags: python-${{ matrix.python-version }}
           token: ${{ secrets.CODECOV_TOKEN }}
 
       - name: Upload coverage report to Codecov
-        uses: codecov/codecov-action@ad3126e916f78f00edff4ed0317cf185271ccc2d # v5.4.2
+        uses: codecov/codecov-action@18283e04ce6e62d37312384ff67231eb8fd56d24 # v5.4.3
         with:
           files: ./coverage.xml
           flags: python-${{ matrix.python-version }}
@@ -122,7 +122,7 @@ jobs:
 
       - name: Generate SBOM
         if: ${{ matrix.python-version == '3.11' }}
-        uses: anchore/sbom-action@9f7302141466aa6482940f15371237e9d9f4c34a # v0.19.0
+        uses: anchore/sbom-action@e11c554f704a0b820cbf8c51673f6945e0731532 # v0.20.0
         with:
           format: spdx-json
           artifact-name: sbom-python.spdx.json
