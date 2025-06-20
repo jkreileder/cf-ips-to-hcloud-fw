@@ -1,6 +1,10 @@
 # Changelog
 
-## [v1.0.16] – 2025-06-19
+## [v1.0.17] – 2025-06-20
+
+Fix StepSecurity policy
+
+## [v1.0.16] – 2025-06-20
 
 Maintenance release with dependency and CI updates.
 
