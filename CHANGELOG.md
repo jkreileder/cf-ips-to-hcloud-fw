@@ -1,5 +1,13 @@
 # Changelog
 
+## [v1.0.16] – 2025-06-19
+
+Maintenance release with dependency and CI updates.
+
+- Updated Python and Docker base images
+- Bumped ruff, codeql-action, and other dependencies
+- Minor improvements to CI workflows
+
 ## [v1.0.15] – 2024-12-22
 
 Maintenance release with updated dependencies.
