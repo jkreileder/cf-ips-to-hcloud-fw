@@ -45,6 +45,7 @@ jobs:
             docker-images-prod.6aa30f8b08e16409b46e0173d6de2f56.r2.cloudflarestorage.com:443
             files.pythonhosted.org:443
             fulcio.sigstore.dev:443
+            get.anchore.io:443
             ghcr.io:443
             github.com:443
             grype.anchore.io:443
@@ -61,6 +62,7 @@ jobs:
             registry.npmjs.org:443
             registry.scout.docker.com:443
             rekor.sigstore.dev:443
+            release-assets.githubusercontent.com:443
             toolbox-data.anchore.io:443
             tuf-repo-cdn.sigstore.dev:443
             uploads.github.com:443
