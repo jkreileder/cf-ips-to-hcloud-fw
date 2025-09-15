@@ -30,7 +30,7 @@ jobs:
 
     steps:
       - name: Harden runner
-        uses: step-security/harden-runner@ec9f2d5744a09debf3a187a3f4f675c53b671911 # v2.13.0
+        uses: step-security/harden-runner@f4a75cfd619ee5ce8d5b864b0d183aff3c69b55a # v2.13.1
         with:
           disable-sudo: true
           egress-policy: block
@@ -73,7 +73,7 @@ jobs:
           persist-credentials: false
 
       - name: Install Cosign
-        uses: sigstore/cosign-installer@d58896d6a1865668819e1d91763c7751a165e159 # v3.9.2
+        uses: sigstore/cosign-installer@d7543c93d881b35a8faa02e8e3605f69b7a1ce62 # v3.10.0
 
       - name: Docker meta
         id: docker-meta
@@ -223,7 +223,7 @@ jobs:
       - name: Upload Docker Scout scan result to GitHub Security tab
         if: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.head.repo.fork) && github.actor != 'dependabot[bot]' }}
         continue-on-error: true
-        uses: github/codeql-action/upload-sarif@2d92b76c45b91eb80fc44c74ce3fce0ee94e8f9d # v3.29.5
+        uses: github/codeql-action/upload-sarif@192325c86100d080feab897ff886c34abd4c83a3 # v3.29.5
         with:
           sarif_file: sarif.output.json
 
@@ -237,7 +237,7 @@ jobs:
           add-cpes-if-none: true
 
       - name: Upload Grype scan result to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@2d92b76c45b91eb80fc44c74ce3fce0ee94e8f9d # v3.29.5
+        uses: github/codeql-action/upload-sarif@192325c86100d080feab897ff886c34abd4c83a3 # v3.29.5
         continue-on-error: true
         with:
           sarif_file: ${{ steps.grype-scan.outputs.sarif }}
