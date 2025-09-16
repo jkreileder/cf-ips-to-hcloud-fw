@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.17.0@sha256:e63addfe27b10e394a5f9f1e866961adc70d08573f1cb80f8d1a0999347b3553
 # check=experimental=all;error=true
 
-FROM --platform=$BUILDPLATFORM python:3.13.7-slim-bookworm@sha256:278990dd1269bcf2f8a77475da80575f6b0634c7591a75b55a2d71879645d277 AS builder
+FROM --platform=$BUILDPLATFORM python:3.13.7-slim-bookworm@sha256:5fa2567616c8d0e9a9470c8b4c1cb8b6f4d9f2fd45a548df393bed3537a7a324 AS builder
 
 WORKDIR /usr/src/app
 
