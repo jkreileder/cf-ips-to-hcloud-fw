@@ -138,7 +138,7 @@ jobs:
 
       - name: Generate SBOM
         if: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' }}
-        uses: anchore/sbom-action@da167eac915b4e86f08b264dbdbc867b61be6f0c # v0.20.5
+        uses: anchore/sbom-action@f8bdd1d8ac5e901a77a92f111440fdb1b593736b # v0.20.6
         with:
           image: ${{ vars.DOCKERHUB_USERNAME }}/cf-ips-to-hcloud-fw
           format: spdx-json
@@ -228,7 +228,7 @@ jobs:
           sarif_file: sarif.output.json
 
       - name: Scan image with Grype
-        uses: anchore/scan-action@1638637db639e0ade3258b51db49a9a137574c3e # v6.5.1
+        uses: anchore/scan-action@f6601287cdb1efc985d6b765bbf99cb4c0ac29d8 # v7.0.0
         id: grype-scan
         continue-on-error: true
         with:
