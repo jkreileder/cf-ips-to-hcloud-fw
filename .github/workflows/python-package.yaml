@@ -25,7 +25,7 @@ jobs:
           egress-policy: block
 
       - name: Upload
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
         with:
           name: event-file
           path: ${{ github.event_path }}
@@ -100,7 +100,7 @@ jobs:
 
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
         with:
           name: test-results-${{ matrix.python-version }}
           path: test-results.xml
@@ -125,7 +125,7 @@ jobs:
 
       - name: Generate SBOM
         if: ${{ matrix.python-version == '3.11' }}
-        uses: anchore/sbom-action@f8bdd1d8ac5e901a77a92f111440fdb1b593736b # v0.20.6
+        uses: anchore/sbom-action@8e94d75ddd33f69f691467e42275782e4bfefe84 # v0.20.9
         with:
           format: spdx-json
           artifact-name: sbom-python.spdx.json
@@ -150,7 +150,7 @@ jobs:
         run: cd dist && echo "hashes=$(sha256sum * | base64 -w0)" >> $GITHUB_OUTPUT
 
       - name: Store the distribution packages
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
         if: ${{ github.event_name != 'pull_request' && startsWith(github.ref, 'refs/tags/') && matrix.python-version == '3.11' }}
         with:
           name: python-package-distributions
@@ -200,7 +200,7 @@ jobs:
             tuf-repo-cdn.sigstore.dev:443
 
       - name: Download all the distribution packages
-        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
         with:
           name: python-package-distributions
           path: dist
@@ -238,7 +238,7 @@ jobs:
             upload.pypi.org:443
 
       - name: Download all the distribution packages
-        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
         with:
           name: python-package-distributions
           path: dist
@@ -266,7 +266,7 @@ jobs:
             uploads.github.com:443
 
       - name: Download all the distribution packages
-        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
         with:
           name: python-package-distributions
           path: dist
