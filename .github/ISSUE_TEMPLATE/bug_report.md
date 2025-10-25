@@ -26,7 +26,7 @@ A clear and concise description of what you expected to happen.
 **Environment (please complete the following information):**
  - cf-ips-to-hcloud-fw version: [e.g. 1.0.17]
  - Deployment method: [e.g. Docker, Python module]
- - If Python module, Python Version: [e.g. 3.13]
+ - If Python module, Python Version: [e.g. 3.14]
  - If Python module, OS: [e.g. MacOS 15.1]
 
 **Additional context**
