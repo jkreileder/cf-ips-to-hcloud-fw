@@ -1,6 +1,6 @@
 -c requirements.txt
 build
-pip==25.2
+pip==25.3
 pip-tools
 pyright
 pytest
