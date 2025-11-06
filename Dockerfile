@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.19.0@sha256:b6afd42430b15f2d2a4c5a02b919e98a525b785b1aaff16747d2f623364e39b6
 # check=experimental=all;error=true
 
-FROM --platform=$BUILDPLATFORM python:3.14.0-trixie@sha256:ae6100640e934a0e4d80464df460578d61d9648f0454631353607be749321d60 AS builder
+FROM --platform=$BUILDPLATFORM python:3.14.0-trixie@sha256:49abbd353ed1b33760614f952e03737c9f1870a79a0c66e82849f5ebf73e2044 AS builder
 
 WORKDIR /usr/src/app
 
