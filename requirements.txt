@@ -152,9 +152,9 @@ h11==0.16.0 \
     --hash=sha256:4e35b956cf45792e4caa5885e69fba00bdbc6ffafbfa020300e549b208ee5ff1 \
     --hash=sha256:63cf8bbe7522de3bf65932fda1d9c2772064ffb3dae62d55932da54b31cb6c86
     # via httpcore
-hcloud==2.9.0 \
-    --hash=sha256:16e149bc5b14281c77e6ae12dd5b27bdc258117fe987a5dbeaff047aaf8b8c00 \
-    --hash=sha256:32462fa2351ddb47a1a6ceb084d70c8358518224e44b4e0197f2e5c0f67ad8ef
+hcloud==2.10.0 \
+    --hash=sha256:1083bcb38eed7a658afe9826ffc1a2db1810ca8390a22f4b8c43787138e8b1ba \
+    --hash=sha256:7c57f0d617a2bfdcd33e2bd4b49057a6e9179a0ba3d8628873bbd1222c94d37e
     # via -r requirements.in
 httpcore==1.0.9 \
     --hash=sha256:2d400746a40668fc9dec9810239072b40b4484b640a8c38fd654a024c7a1bf55 \
