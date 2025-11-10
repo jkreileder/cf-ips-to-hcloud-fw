@@ -25,9 +25,9 @@ jobs:
           disable-sudo: true
           egress-policy: block
           allowed-endpoints: >
+            api.github.com:443
             ghcr.io:443
             github.com:443
-            api.github.com:443
             pkg-containers.githubusercontent.com:443
 
       - name: Checkout repository
