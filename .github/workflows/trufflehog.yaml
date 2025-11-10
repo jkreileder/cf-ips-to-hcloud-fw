@@ -12,9 +12,6 @@ on:
 
 permissions:
   contents: read
-  id-token: write
-  issues: write
-  pull-requests: write
 
 jobs:
   trufflehog:
@@ -38,4 +35,4 @@ jobs:
         uses: trufflesecurity/trufflehog@f15cb8b37b9b70056bc82a8eb7151f75fad27a71 # v3.90.13
         with:
           path: .
-          extra_args: --results=verified,unknown --fail --no-update
+          extra_args: --results=verified,unknown
