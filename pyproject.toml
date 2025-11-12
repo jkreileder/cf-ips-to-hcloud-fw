@@ -52,18 +52,21 @@ version = { attr = "cf_ips_to_hcloud_fw.__VERSION__" }
 dependencies = { file = ["requirements-pep508.txt"] }
 optional-dependencies.dev = { file = ["requirements-dev-pep508.txt"] }
 
-[tool.pytest.ini_options]
+[tool.pytest]
 pythonpath = ["src", "tests"]
 junit_family = "xunit1" # required by https://github.com/EnricoMi/publish-unit-test-result-action
-addopts = """
-    --junit-xml=test-results.xml
-    --cov=src
-    --cov-branch
-    --cov-report=xml
-    --cov-report=html
-    --cov-report=term-missing
-    --cov-fail-under=80
-"""
+addopts = [
+    "--junit-xml=test-results.xml",
+    "--cov=src",
+    "--cov-branch",
+    "--cov-report=xml",
+    "--cov-report=html",
+    "--cov-report=term-missing",
+    "--cov-fail-under=80"
+]
+
+[tool.coverage.run]
+core = "ctrace" # the test_config.py doesn't work with ctrace and python 3.14 yet
 
 [tool.pyright]
 include = ["src", "tests"]
