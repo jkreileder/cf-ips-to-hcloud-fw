@@ -53,7 +53,7 @@ RUN --mount=type=bind,from=uv-tools,source=/uv,target=/usr/bin/uv \
     --mount=target=pyproject.toml,source=/pyproject.toml \
     --mount=target=uv.lock,source=/uv.lock \
     --mount=type=cache,id=uv-cache,target=/root/.cache/uv \
-    uv sync --frozen --no-install-project
+    uv sync --frozen --no-group dev --no-install-project
 
 # Install wheel without dependencies
 RUN --mount=type=bind,from=uv-tools,source=/uv,target=/usr/bin/uv \
