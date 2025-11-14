@@ -1,5 +1,18 @@
 # Changelog
 
+<!-- markdownlint-disable MD024 -->
+
+## [v1.1.0] – 2025-11-14
+
+Feature release with CI hardening and new runtime guarantees.
+
+- **Breaking:** Dropped Python 3.9 support; the tested range now spans CPython 3.10–3.14 (#926, #947, #955)
+- Added a TruffleHog secret-scanning workflow to the GitHub Actions pipeline (#944)
+- Documented Copilot onboarding instructions for contributors (#933)
+- Updated test configuration and dependency mocks for better compatibility (#949)
+- Standardized array formatting and adopted Dockerfile syntax 1.20 (#950, #951)
+- Bumped Ruff, pip/pip-tools, and refreshed GitHub Actions and base images (#955, #954, #947, #945, #940, #935, #930, #956)
+
 ## [v1.0.17] – 2025-06-20
 
 Fix StepSecurity policy
