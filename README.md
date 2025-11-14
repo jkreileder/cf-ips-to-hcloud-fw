@@ -122,7 +122,7 @@ Docker images for `cf-ips-to-hcloud-fw` are available for both `linux/amd64` and
 `linux/arm64` architectures.  The Docker images support the following tags:
 
 - `1`: This tag always points to the latest `1.x.x` release.
-- `1.0`: This tag always points to the latest `1.0.x` release.
+- `1.1`: This tag always points to the latest `1.1.x` release.
 - `1.1.0`: This tag points to the specific `1.1.0` release.
 - `main`: This tag points to the most recent development version of
   `cf-ips-to-hcloud-fw`. Use this at your own risk as it may contain unstable
