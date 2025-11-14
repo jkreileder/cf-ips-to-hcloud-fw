@@ -50,7 +50,7 @@ Source = "https://github.com/jkreileder/cf-ips-to-hcloud-fw"
 Changelog = "https://github.com/jkreileder/cf-ips-to-hcloud-fw/blob/main/CHANGELOG.md"
 Documentation = "https://github.com/jkreileder/cf-ips-to-hcloud-fw"
 Issues = "https://github.com/jkreileder/cf-ips-to-hcloud-fw/issues"
-Twitter = "https://twitter/jkreileder"
+X = "https://x.com/jkreileder"
 Bluesky = "https://bsky.app/profile/jk.blackdown.de"
 PyPI = "https://pypi.org/project/cf-ips-to-hcloud-fw/"
 
