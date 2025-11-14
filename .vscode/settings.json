@@ -27,7 +27,7 @@
     "python.analysis.inlayHints.variableTypes": true,
     "python.missingPackage.severity": "Error",
     "python.testing.pytestArgs": [
-        "tests"
+        "--no-cov"
     ],
     "python.testing.pytestEnabled": true,
     "python.testing.unittestEnabled": false
