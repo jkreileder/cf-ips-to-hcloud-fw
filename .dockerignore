@@ -4,5 +4,4 @@
 !/LICENSE
 !/pyproject.toml
 !/README.md
-!/requirements-dev.txt
-!/requirements.txt
+!/uv.lock

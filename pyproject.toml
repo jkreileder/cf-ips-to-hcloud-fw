@@ -10,7 +10,13 @@ keywords = ["cloudflare", "hcloud", "hetzner", "firewall", "cli"]
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.10"
-dynamic = ["version", "dependencies", "optional-dependencies"]
+dynamic = ["version"]
+dependencies = [
+    "cloudflare",
+    "hcloud",
+    "pydantic",
+    "pyyaml",
+]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Environment :: Console",
@@ -49,8 +55,14 @@ where = ["src"]
 
 [tool.setuptools.dynamic]
 version = { attr = "cf_ips_to_hcloud_fw.__VERSION__" }
-dependencies = { file = ["requirements-pep508.txt"] }
-optional-dependencies.dev = { file = ["requirements-dev-pep508.txt"] }
+
+[dependency-groups]
+dev = [
+    "build",
+    "pyright",
+    "pytest-cov",
+    "ruff",
+]
 
 [tool.pytest]
 pythonpath = ["src", "tests"]
@@ -73,7 +85,7 @@ include = ["src", "tests"]
 strict = ["src", "tests"]
 reportMissingImports = true
 reportMissingTypeStubs = true
-venv = "venv"
+venv = ".venv"
 
 [tool.ruff]
 src = ["src"]
@@ -146,10 +158,3 @@ ignore = [
 
 [tool.ruff.lint.flake8-type-checking]
 runtime-evaluated-base-classes = ["pydantic.BaseModel"]
-
-[tool.pip-tools]
-generate-hashes = false
-newline = "LF"
-quiet = true
-strip-extras = false
-upgrade = true

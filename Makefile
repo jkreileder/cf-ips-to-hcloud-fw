@@ -5,53 +5,49 @@ SHELL := bash
 .DELETE_ON_ERROR:
 .SUFFIXES:
 
-SYSPYTHON := python3
-VENV := venv
+UV := uv
+VENV := .venv
 BIN := $(VENV)/bin
+SYNC_STAMP := $(VENV)/.uv-synced
 
-pip-dependencies := requirements.txt requirements-dev.txt
-pyproject-dependencies := $(patsubst %.txt,%-pep508.txt,$(pip-dependencies))
+UV_SYNC_FLAGS := --group dev --frozen
+UV_RUN_FLAGS := --no-sync
 
 .PHONY: all
 all: lint test build
 
-$(VENV): pyproject.toml
-	$(SYSPYTHON) -m venv $(VENV)
-	$(BIN)/pip install --require-hashes -r requirements-dev.txt
-	$(BIN)/pip install --require-hashes -r requirements.txt
-	touch $(VENV)
+$(SYNC_STAMP): pyproject.toml uv.lock
+	$(UV) sync $(UV_SYNC_FLAGS)
+	touch $(SYNC_STAMP)
+
+.PHONY: venv
+venv: $(SYNC_STAMP)
+
+.PHONY: sync
+sync: $(SYNC_STAMP)
 
 .PHONY: lint
-lint: $(VENV)
-	$(BIN)/ruff check .
-	$(BIN)/pyright --venvpath .
+lint: $(SYNC_STAMP)
+	$(UV) run $(UV_SYNC_FLAGS) ruff check .
+	$(UV) run $(UV_SYNC_FLAGS) pyright --venvpath .
 
 .PHONY: test
-test: $(VENV)
-	$(BIN)/pytest
+test: $(SYNC_STAMP)
+	$(UV) $(UV_SYNC_FLAGS) run pytest
 
 .PHONY: check
 check: lint test
 
 .PHONY: build
-build: $(VENV) $(pyproject-dependencies)
+build: $(SYNC_STAMP)
 	rm -rf dist
 	$(BIN)/python -m build
+
+.PHONY: upgrade-deps
+upgrade-deps:
+	$(UV) lock --upgrade
+	rm -f $(SYNC_STAMP)
 
 .PHONY: clean
 clean:
 	git clean -xdf
-
-$(pip-dependencies): %.txt: %.in
-	$(BIN)/pip-compile --no-allow-unsafe --generate-hashes --output-file=requirements.txt requirements.in
-	$(BIN)/pip-compile --allow-unsafe --generate-hashes --output-file=requirements-dev.txt requirements-dev.in
-
-.PHONY: regenerate-hashes
-regenerate-hashes: delete-hashes $(pip-dependencies)
-
-.PHONY: delete-hashes
-delete-hashes:
-	rm -f $(pip-dependencies)
-
-$(pyproject-dependencies): %-pep508.txt: %.txt
-	$(BIN)/pip-compile --allow-unsafe --output-file=$@ $<
