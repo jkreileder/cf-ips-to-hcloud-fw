@@ -1,6 +1,9 @@
 [build-system]
-requires = ["setuptools>=69"]
-build-backend = "setuptools.build_meta"
+requires = ["uv_build>=0.9.9,<0.10.0"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+source-include = ["uv.lock", "tests/**"]
 
 [project]
 name = "cf-ips-to-hcloud-fw"
@@ -9,8 +12,15 @@ description = "Update Hetzner Cloud firewall rules with Cloudflare IP ranges"
 keywords = ["cloudflare", "hcloud", "hetzner", "firewall", "cli"]
 readme = "README.md"
 license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.10"
-dynamic = ["version", "dependencies", "optional-dependencies"]
+version = "1.1.1.dev0"
+dependencies = [
+    "cloudflare",
+    "hcloud",
+    "pydantic",
+    "pyyaml",
+]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Environment :: Console",
@@ -40,17 +50,16 @@ Source = "https://github.com/jkreileder/cf-ips-to-hcloud-fw"
 Changelog = "https://github.com/jkreileder/cf-ips-to-hcloud-fw/blob/main/CHANGELOG.md"
 Documentation = "https://github.com/jkreileder/cf-ips-to-hcloud-fw"
 Issues = "https://github.com/jkreileder/cf-ips-to-hcloud-fw/issues"
-Twitter = "https://twitter/jkreileder"
+X = "https://x.com/jkreileder"
 Bluesky = "https://bsky.app/profile/jk.blackdown.de"
 PyPI = "https://pypi.org/project/cf-ips-to-hcloud-fw/"
 
-[tool.setuptools.packages.find]
-where = ["src"]
-
-[tool.setuptools.dynamic]
-version = { attr = "cf_ips_to_hcloud_fw.__VERSION__" }
-dependencies = { file = ["requirements-pep508.txt"] }
-optional-dependencies.dev = { file = ["requirements-dev-pep508.txt"] }
+[dependency-groups]
+dev = [
+    "pyright",
+    "pytest-cov",
+    "ruff",
+]
 
 [tool.pytest]
 pythonpath = ["src", "tests"]
@@ -73,7 +82,7 @@ include = ["src", "tests"]
 strict = ["src", "tests"]
 reportMissingImports = true
 reportMissingTypeStubs = true
-venv = "venv"
+venv = ".venv"
 
 [tool.ruff]
 src = ["src"]
@@ -146,10 +155,3 @@ ignore = [
 
 [tool.ruff.lint.flake8-type-checking]
 runtime-evaluated-base-classes = ["pydantic.BaseModel"]
-
-[tool.pip-tools]
-generate-hashes = false
-newline = "LF"
-quiet = true
-strip-extras = false
-upgrade = true

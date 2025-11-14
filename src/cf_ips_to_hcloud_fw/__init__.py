@@ -1,3 +1,10 @@
 from __future__ import annotations
 
-from cf_ips_to_hcloud_fw.version import __VERSION__ as __VERSION__
+from importlib import metadata
+
+try:
+    __version__ = metadata.version("cf-ips-to-hcloud-fw")
+except metadata.PackageNotFoundError:
+    __version__ = "local"
+
+__all__ = ["__version__"]

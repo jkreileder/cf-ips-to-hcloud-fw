@@ -2,6 +2,15 @@
 
 <!-- markdownlint-disable MD024 -->
 
+## [v1.1.1] – Unreleased
+
+Maintenance release that migrates dependency handling to `uv` and switches the build backend to `uv_build`
+
+- Adopted `uv` for dependency syncing, builds, and the Docker pipeline, including pinning image digests and link modes for reproducible containers (#960)
+- Switched GitHub workflows to `astral-sh/setup-uv` so Python and uv are provisioned consistently (#960)
+- Reworked version detection to rely on `importlib.metadata` with a tested fallback when package metadata is unavailable (#960)
+- Ensured license files ship with the sdist, and documented the new tooling in contributor instructions (#960)
+
 ## [v1.1.0] – 2025-11-14
 
 Feature release with CI hardening and new runtime guarantees.

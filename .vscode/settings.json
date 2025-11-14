@@ -25,7 +25,6 @@
     "python.analysis.inlayHints.functionReturnTypes": true,
     "python.analysis.inlayHints.pytestParameters": true,
     "python.analysis.inlayHints.variableTypes": true,
-    "python.analysis.typeCheckingMode": "strict",
     "python.missingPackage.severity": "Error",
     "python.testing.pytestArgs": [
         "--no-cov"
