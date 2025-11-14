@@ -2,6 +2,9 @@
 requires = ["uv_build>=0.9.9,<0.10.0"]
 build-backend = "uv_build"
 
+[tool.uv.build-backend]
+source-include = ["uv.lock", "tests/**"]
+
 [project]
 name = "cf-ips-to-hcloud-fw"
 authors = [{ name = "Jürgen Kreileder" }, { email = "jk@blackdown.de" }]
@@ -9,6 +12,7 @@ description = "Update Hetzner Cloud firewall rules with Cloudflare IP ranges"
 keywords = ["cloudflare", "hcloud", "hetzner", "firewall", "cli"]
 readme = "README.md"
 license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.10"
 version = "1.1.1-dev"
 dependencies = [
