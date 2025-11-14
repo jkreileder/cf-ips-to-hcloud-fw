@@ -5,6 +5,8 @@ FROM ghcr.io/astral-sh/uv:0.9.9@sha256:f6e3549ed287fee0ddde2460a2a74a2d74366f84b
 
 FROM --platform=$BUILDPLATFORM python:3.14.0-trixie@sha256:efde2ffbe55ff8120ef87129f0b880471eccd9581882fbaa40b9f98ea2ebb5f2 AS builder
 
+ENV UV_LINK_MODE=clone
+
 WORKDIR /usr/src/app
 
 # Resolve and install project + dev dependencies into .venv
@@ -41,7 +43,7 @@ FROM python:3.14.0-alpine3.22@sha256:8373231e1e906ddfb457748bfc032c4c06ada8c759b
 
 WORKDIR /usr/src/app
 
-ENV PYTHONFAULTHANDLER=1 PYTHONDONTWRITEBYTECODE=1
+ENV UV_LINK_MODE=copy PYTHONFAULTHANDLER=1 PYTHONDONTWRITEBYTECODE=1
 
 # Remove unneeded gdbm dependency with GPL-3.0 license
 RUN apk add --no-network --virtual .python-rundeps $(apk info --no-network -qR .python-rundeps | grep -v gdbm)
