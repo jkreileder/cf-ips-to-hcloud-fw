@@ -11,7 +11,6 @@ BIN := $(VENV)/bin
 SYNC_STAMP := $(VENV)/.uv-synced
 
 UV_SYNC_FLAGS := --group dev --frozen
-UV_RUN_FLAGS := --no-sync
 
 .PHONY: all
 all: lint test build
