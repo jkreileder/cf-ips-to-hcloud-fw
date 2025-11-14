@@ -52,7 +52,6 @@ PyPI = "https://pypi.org/project/cf-ips-to-hcloud-fw/"
 
 [dependency-groups]
 dev = [
-    "build",
     "pyright",
     "pytest-cov",
     "ruff",
