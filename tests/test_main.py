@@ -37,7 +37,7 @@ def test_parser_version(capfd: pytest.CaptureFixture[str]) -> None:
     assert exc.value.code == 0
     out, _err = capfd.readouterr()
     assert out.strip() == __version__
-    assert re.match(r"^\d+\.\d+\.\d+\.(dev\d+)?$", __version__)
+    assert re.match(r"^\d+\.\d+\.\d+(\.dev\d+)?$", __version__)
 
 
 def test_parser_version_no_metadata(monkeypatch: pytest.MonkeyPatch) -> None:
