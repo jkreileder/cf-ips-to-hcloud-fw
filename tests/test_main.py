@@ -1,9 +1,14 @@
 from __future__ import annotations
 
+import importlib
+import re
 from unittest.mock import MagicMock, patch
 
+import pytest
 from pydantic import SecretStr
 
+import cf_ips_to_hcloud_fw
+from cf_ips_to_hcloud_fw import __version__
 from cf_ips_to_hcloud_fw.__main__ import create_parser, main  # noqa: PLC2701
 from cf_ips_to_hcloud_fw.models import Project
 
@@ -22,6 +27,31 @@ def test_create_parser() -> None:
     args = parser.parse_args(["-c", "config2.yaml"])
     assert args.config == "config2.yaml"
     assert args.debug is False
+
+
+def test_parser_version(capfd: pytest.CaptureFixture[str]) -> None:
+    parser = create_parser()
+    with pytest.raises(SystemExit) as exc:
+        parser.parse_args(["-v"])
+    assert exc.type is SystemExit
+    assert exc.value.code == 0
+    out, _err = capfd.readouterr()
+    assert out.strip() == __version__
+    assert re.match(r"^\d+\.\d+\.\d+\.(dev\d+)?$", __version__)
+
+
+def test_parser_version_no_metadata(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(
+        "cf_ips_to_hcloud_fw.metadata.version",
+        MagicMock(side_effect=cf_ips_to_hcloud_fw.metadata.PackageNotFoundError),
+    )
+
+    try:
+        importlib.reload(cf_ips_to_hcloud_fw)
+        assert cf_ips_to_hcloud_fw.__version__ == "local"
+    finally:
+        monkeypatch.undo()
+        importlib.reload(cf_ips_to_hcloud_fw)
 
 
 @patch("cf_ips_to_hcloud_fw.__main__.create_parser", MagicMock())

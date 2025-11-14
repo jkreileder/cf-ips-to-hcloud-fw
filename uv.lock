@@ -53,6 +53,7 @@ wheels = [
 
 [[package]]
 name = "cf-ips-to-hcloud-fw"
+version = "1.1.1.dev0"
 source = { editable = "." }
 dependencies = [
     { name = "cloudflare" },

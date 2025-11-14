@@ -24,14 +24,16 @@ RUN --mount=type=bind,from=uv-tools,source=/uv,target=/usr/bin/uv \
     --mount=target=tests,source=/tests \
     --mount=target=LICENSE,source=/LICENSE \
     --mount=target=pyproject.toml,source=/pyproject.toml \
+    --mount=target=uv.lock,source=/uv.lock \
     --mount=target=README.md,source=/README.md \
     --mount=type=cache,id=uv-cache,target=/root/.cache/uv \
     --mount=type=cache,id=npm,target=/root/.npm <<EOF
     set -eux
+    uv sync --group dev --frozen
     uv run --no-sync ruff check --output-format=github
     uv run --no-sync pyright --venvpath .
     uv run --no-sync pytest
-    uv run --no-sync python -m build
+    uv build
 EOF
 
 

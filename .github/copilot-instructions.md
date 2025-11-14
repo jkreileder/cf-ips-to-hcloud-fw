@@ -13,7 +13,7 @@
 
 ## Daily Flow
 - First bootstrap: `make venv` (calls `uv sync`, creates `.venv/`, installs default + dev groups from `uv.lock`). Later targets refresh the env when the lock or `pyproject.toml` changes.
-- Default loop: `make lint` (ruff + pyright) → `make test` (pytest, coverage≥80, writes `coverage.xml` + `htmlcov/`) → `make build` (`python -m build`). `make` runs all three.
+- Default loop: `make lint` (ruff + pyright) → `make test` (pytest, coverage≥80, writes `coverage.xml` + `htmlcov/`) → `make build` (`uv build`). `make` runs all three.
 - `make clean` wraps `git clean -xdf`; it nukes `.venv/` and every untracked artifact.
 - Run the CLI via `.venv/bin/cf-ips-to-hcloud-fw -c config.yaml`; `-d` enables debug logs, `-v` prints the packaged version. Config entries provide `token` + `firewalls` list.
 

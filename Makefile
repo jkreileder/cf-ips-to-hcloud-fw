@@ -33,7 +33,7 @@ lint: $(SYNC_STAMP)
 
 .PHONY: test
 test: $(SYNC_STAMP)
-	$(UV) $(UV_SYNC_FLAGS) run pytest
+	$(UV) run $(UV_SYNC_FLAGS) pytest
 
 .PHONY: check
 check: lint test
@@ -41,7 +41,7 @@ check: lint test
 .PHONY: build
 build: $(SYNC_STAMP)
 	rm -rf dist
-	$(BIN)/python -m build
+	$(UV) build
 
 .PHONY: upgrade-deps
 upgrade-deps:

@@ -2,11 +2,11 @@ from __future__ import annotations
 
 import argparse
 
+from cf_ips_to_hcloud_fw import __version__
 from cf_ips_to_hcloud_fw.cloudflare import get_cloudflare_cidrs
 from cf_ips_to_hcloud_fw.config import read_config
 from cf_ips_to_hcloud_fw.custom_logging import setup_logging
 from cf_ips_to_hcloud_fw.firewall import update_project
-from cf_ips_to_hcloud_fw.version import __VERSION__
 
 
 def create_parser() -> argparse.ArgumentParser:
@@ -16,7 +16,7 @@ def create_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "-c", "--config", help="config file", metavar="CONFIGFILE", required=True
     )
-    parser.add_argument("-v", "--version", action="version", version=__VERSION__)
+    parser.add_argument("-v", "--version", action="version", version=__version__)
     parser.add_argument("-d", "--debug", action="store_true")
     return parser
 
