@@ -87,14 +87,17 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Make venv
-        run: make venv
+      - name: Sync dependencies
+        run: uv sync --group dev --frozen
 
-      - name: Lint
-        run: make lint
+      - name: Lint (ruff)
+        run: uv run --group dev --frozen ruff check .
+
+      - name: Type check (pyright)
+        run: uv run --group dev --frozen pyright --venvpath .
 
       - name: Test
-        run: make test
+        run: uv run --group dev --frozen pytest
 
       - name: Upload test results
         if: always()
@@ -119,7 +122,9 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
 
       - name: Build
-        run: make build
+        run: |
+          rm -rf dist
+          uv build
 
       - name: Generate SBOM
         if: ${{ matrix.python-version == '3.11' }}
