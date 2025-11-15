@@ -46,9 +46,6 @@ WORKDIR /usr/src/app
 
 ENV UV_LINK_MODE=copy PYTHONFAULTHANDLER=1 PYTHONDONTWRITEBYTECODE=1
 
-# Remove unneeded gdbm dependency with GPL-3.0 license
-RUN apk add --no-network --virtual .python-rundeps $(apk info --no-network -qR .python-rundeps | grep -v gdbm)
-
 # Resolve and install dependencies
 RUN --mount=type=bind,from=uv-tools-alpine,source=/usr/local/bin/uv,target=/usr/local/bin/uv \
     --mount=target=pyproject.toml,source=/pyproject.toml \
