@@ -91,13 +91,13 @@ jobs:
         run: uv sync --group dev --frozen
 
       - name: Lint (ruff)
-        run: uv run --group dev --frozen ruff check .
+        run: uv run --no-sync ruff check --output-format=github
 
       - name: Type check (pyright)
-        run: uv run --group dev --frozen pyright --venvpath .
+        run: uv run --no-sync pyright --venvpath .
 
       - name: Test
-        run: uv run --group dev --frozen pytest
+        run: uv run --no-sync pytest
 
       - name: Upload test results
         if: always()
