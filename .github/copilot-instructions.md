@@ -14,7 +14,7 @@
 ## Daily Flow
 - First bootstrap: `make venv` (calls `uv sync`, creates `.venv/`, installs default + dev groups from `uv.lock`). Later targets refresh the env when the lock or `pyproject.toml` changes.
 - Default loop: `make lint` (ruff + pyright) → `make test` (pytest, coverage≥80, writes `coverage.xml` + `htmlcov/`) → `make build` (`uv build`). `make` runs all three.
-- `make clean` wraps `git clean -xdf`; it nukes `.venv/` and every untracked artifact.
+- `make clean` wraps `git clean -xdf`; it nukes `.venv/` and every untracked artifact if you need a hard reset.
 - Run the CLI via `.venv/bin/cf-ips-to-hcloud-fw -c config.yaml`; `-d` enables debug logs, `-v` prints the packaged version. Config entries provide `token` + `firewalls` list.
 
 ## Dependency & Packaging Rules
@@ -23,7 +23,7 @@
 - Docker builder runs via `uv` (sync, lint, test, build) and the final image installs using the lock file.
 
 ## CI & Quality Gates
-- `python-package.yaml` runs `make venv lint test build` on CPython 3.10–3.14, uploads coverage, SBOM, and attestations.
+- `python-package.yaml` runs the uv sync/lint/test/build steps directly on CPython 3.10–3.14, uploads coverage, SBOM, and attestations.
 - `docker.yaml` performs multi-arch builds, security scans (Docker Scout + Grype), signing, and SLSA provenance.
 - Additional workflows cover CodeQL, dependency review, scorecard, and pytest result publication.
 
