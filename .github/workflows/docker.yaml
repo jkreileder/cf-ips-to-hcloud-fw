@@ -142,7 +142,7 @@ jobs:
         if: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' }}
         uses: anchore/sbom-action@8e94d75ddd33f69f691467e42275782e4bfefe84 # v0.20.9
         with:
-          image: ${{ vars.DOCKERHUB_USERNAME }}/cf-ips-to-hcloud-fw
+          image: ghcr.io/${{ github.repository_owner }}/cf-ips-to-hcloud-fw
           format: spdx-json
           artifact-name: sbom-docker.spdx.json
           output-file: sbom-docker.spdx.json
