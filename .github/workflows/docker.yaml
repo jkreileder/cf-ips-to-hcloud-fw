@@ -35,6 +35,7 @@ jobs:
           disable-sudo: true
           egress-policy: block
           allowed-endpoints: >
+            *.cloudfront.net:443
             api.dso.docker.com:443
             api.github.com:443
             api.scout.docker.com:443
@@ -42,7 +43,6 @@ jobs:
             cdn01.quay.io:443
             cdn02.quay.io:443
             cdn03.quay.io:443
-            d2glxqk2uabbnd.cloudfront.net:443
             docker-images-prod.6aa30f8b08e16409b46e0173d6de2f56.r2.cloudflarestorage.com:443
             files.pythonhosted.org:443
             fulcio.sigstore.dev:443
