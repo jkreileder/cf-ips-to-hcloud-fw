@@ -55,17 +55,17 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "cloudflare" },
-    { name = "hcloud" },
-    { name = "pydantic" },
-    { name = "pyyaml" },
+    { name = "cloudflare", specifier = ">=4.3.1" },
+    { name = "hcloud", specifier = ">=2.11.1" },
+    { name = "pydantic", specifier = ">=2.12.4" },
+    { name = "pyyaml", specifier = ">=6.0.3" },
 ]
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "pyright" },
-    { name = "pytest-cov" },
-    { name = "ruff" },
+    { name = "pyright", specifier = ">=1.1.407" },
+    { name = "pytest-cov", specifier = ">=7.0.0" },
+    { name = "ruff", specifier = ">=0.14.5" },
 ]
 
 [[package]]
