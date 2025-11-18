@@ -20,8 +20,9 @@ please make sure to:
 1. Fork the repository and create a new branch for your changes.
 2. Ensure that your code follows the project's coding style and conventions.
 3. Write clear and concise commit messages.
-4. Include tests for your changes, if applicable.
-5. Update the documentation, if necessary.
+4. Sign your commits and add a DCO sign-off (see PR template for the requirement).
+5. Include tests for your changes, if applicable.
+6. Update the documentation, if necessary.
 
 ## Code of Conduct
 
