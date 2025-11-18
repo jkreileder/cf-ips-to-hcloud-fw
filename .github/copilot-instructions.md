@@ -29,6 +29,11 @@
 - `docker.yaml` performs multi-arch builds, security scans (Docker Scout + Grype), signing, and SLSA provenance.
 - Additional workflows cover CodeQL, dependency review, scorecard, and pytest result publication.
 
+### Additional repo maintenance tools
+- `.dockerignore` — present at the repository root and used by the `docker.yaml` workflow; it intentionally keeps the Docker build context small by whitelisting only project files needed for the container (the `src` package, `tests`, `LICENSE`, `pyproject.toml`, `README.md`, and `uv.lock`). See `.dockerignore` if you get container build surprises.
+- `pre-commit` — a `.pre-commit-config.yaml` file is present and configured to run utilities like `ruff` and `gitleaks`. New contributors should install hooks with `pre-commit install` or `prek install` (this is typically handled during `make venv`) and run `pre-commit run --all-files` to check everything locally.
+- Commit sign-offs — PRs require developer sign-off using `git commit -s`; you can see the PR checklist in `.github/pull_request_template.md`. This is the project DCO requirement. GitHub also enforces cryptographically-signed commits for this repository via branch protection — you must configure GPG/SSH commit signing locally or use the `-S` flag to sign commits if required. Note that package and image artifacts are also cryptographically signed during CI.
+
 ## Gotchas
 - Python 3.14 emits a benign Pydantic V1 warning; CI accepts it.
 - Make recipes run under `bash -eu -o pipefail`; avoid zshisms.
