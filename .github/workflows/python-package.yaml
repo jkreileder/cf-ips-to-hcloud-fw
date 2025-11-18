@@ -1,4 +1,4 @@
-name: Build, Sign, and Publish Python Package
+name: Build, sign, and publish Python package
 
 on:
   push:

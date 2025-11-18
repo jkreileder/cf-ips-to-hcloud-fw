@@ -1,4 +1,4 @@
-name: CodeQL
+name: CodeQL code scanning
 
 on:
   push:
