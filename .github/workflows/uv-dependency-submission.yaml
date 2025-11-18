@@ -6,7 +6,7 @@ on:
     branches:
       - main
     paths:
-      - '**/uv.lock'
+      - "**/uv.lock"
 
 permissions: {}
 
