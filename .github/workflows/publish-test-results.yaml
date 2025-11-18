@@ -1,9 +1,9 @@
-name: Publish Test Results
+name: Publish test results
 
 on:
   workflow_run:
     workflows:
-      - Build, Sign, and Publish Python Package
+      - Build, sign, and publish Python package
     types:
       - completed
 

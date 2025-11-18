@@ -1,4 +1,4 @@
-name: Docker Build, Push, Sign, and Scan
+name: Docker build, push, sign, and scan
 
 on:
   workflow_dispatch:

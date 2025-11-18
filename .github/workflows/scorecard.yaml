@@ -1,4 +1,4 @@
-name: Scorecard Supply-chain Security Analysis
+name: Scorecard supply-chain security analysis
 
 on:
   # For Branch-Protection check. Only the default branch is supported. See
