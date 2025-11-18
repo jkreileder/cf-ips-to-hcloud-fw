@@ -9,6 +9,8 @@
 - `cloudflare.py` wraps the Cloudflare SDK, validates with `CloudflareCIDRs`, and fails via `log_error_and_exit`.
 - `firewall.py` edits Hetzner rules selected by `__CLOUDFLARE_IPS_*__` markers, then calls `client.firewalls.set_rules`.
 - `config.py` loads YAML into `Project` models; empty/invalid configs exit early.
+- `models.py` defines Pydantic structures (`CloudflareCIDRs`, `Project`) used for validation and config.
+- `custom_logging.py` handles logging setup and exit routines (`log_error_and_exit`).
 - Tests in `tests/` mirror modules with mocked SDK clients for fast runs.
 
 ## Daily Flow
