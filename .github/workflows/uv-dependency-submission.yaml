@@ -1,5 +1,5 @@
 # Until GitHub's automatic dependency submission supports uv.lock, keep this workflow active
-name: Uv dependency submission
+name: uv dependency submission
 on:
   workflow_dispatch:
   push:
