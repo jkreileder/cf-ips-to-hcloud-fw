@@ -33,7 +33,7 @@
 - `.dockerignore` — present at the repository root and used by the `docker.yaml` workflow; it intentionally keeps the Docker build context small by whitelisting only project files needed for the container (the `src` package, `tests`, `LICENSE`, `pyproject.toml`, `README.md`, and `uv.lock`). See `.dockerignore` if you get container build surprises.
 - `pre-commit` — a `.pre-commit-config.yaml` file is present and configured to run utilities like `ruff` and `gitleaks`. New contributors should install hooks with `pre-commit install` or `prek install`.
 - Commit sign-offs — PRs require developer sign-off using `git commit -s`; you can see the PR checklist in `.github/pull_request_template.md`. This is the project DCO requirement. GitHub also enforces cryptographically-signed commits for this repository via branch protection — you must configure GPG/SSH commit signing locally or use the `-S` flag to sign commits if required. Note that package and image artifacts are also cryptographically signed during CI.
-- Commit style — commit messages should follow Conventional Commits (type: scope: subject).
+- Commit style — commit messages should follow Conventional Commits (`<type>[optional scope]: <description>`), e.g., `fix(auth): resolve login issue`.
 
 ## Gotchas
 - Python 3.14 emits a benign Pydantic V1 warning; CI accepts it.
