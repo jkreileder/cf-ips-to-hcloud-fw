@@ -6,8 +6,6 @@ FROM ghcr.io/astral-sh/uv:0.9.10-alpine3.22@sha256:80772b4c10f55f3a83857bbeb2dbf
 
 FROM --platform=$BUILDPLATFORM public.ecr.aws/docker/library/python:3.14.0-trixie@sha256:3fd62bea517655424fb4a781e74233c6386d51ba790d5e2ecf843f892c693303 AS builder
 
-ENV UV_LINK_MODE=copy
-
 WORKDIR /usr/src/app
 
 # Resolve and install project + dev dependencies into .venv
@@ -17,7 +15,7 @@ RUN --mount=type=bind,from=uv-tools-trixie,source=/usr/local/bin/uv,target=/usr/
     --mount=type=cache,id=uv-cache,target=/root/.cache/uv \
     --mount=type=cache,id=npm,target=/root/.npm <<EOF
     set -eux
-    uv sync --group dev --frozen --no-install-project
+    uv sync --link-mode copy --group dev --frozen --no-install-project
     uv run --no-project pyright --version
 EOF
 
@@ -32,7 +30,7 @@ RUN --mount=type=bind,from=uv-tools-trixie,source=/usr/local/bin/uv,target=/usr/
     --mount=type=cache,id=uv-cache,target=/root/.cache/uv \
     --mount=type=cache,id=npm,target=/root/.npm <<EOF
     set -eux
-    uv sync --group dev --frozen
+    uv sync --link-mode copy --group dev --frozen
     uv run --no-sync ruff check --output-format=github
     uv run --no-sync pyright --venvpath .
     uv run --no-sync pytest
@@ -44,14 +42,14 @@ FROM public.ecr.aws/docker/library/python:3.14.0-alpine3.22@sha256:8373231e1e906
 
 WORKDIR /usr/src/app
 
-ENV UV_LINK_MODE=copy PYTHONFAULTHANDLER=1 PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONFAULTHANDLER=1 PYTHONDONTWRITEBYTECODE=1
 
 # Resolve and install dependencies
 RUN --mount=type=bind,from=uv-tools-alpine,source=/usr/local/bin/uv,target=/usr/local/bin/uv \
     --mount=target=pyproject.toml,source=/pyproject.toml \
     --mount=target=uv.lock,source=/uv.lock \
     --mount=type=cache,id=uv-cache,target=/root/.cache/uv \
-    uv sync --frozen --no-group dev --no-install-project
+    uv sync --link-mode copy --frozen --no-group dev --no-install-project
 
 # Install wheel without dependencies
 RUN --mount=type=bind,from=uv-tools-alpine,source=/usr/local/bin/uv,target=/usr/local/bin/uv \
