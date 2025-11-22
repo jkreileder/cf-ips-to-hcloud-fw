@@ -9,6 +9,11 @@ if TYPE_CHECKING:  # pragma: no cover
 
 
 def setup_logging(args: argparse.Namespace) -> None:
+    """Configure root logging with optional debug-level verbosity.
+
+    Args:
+        args: Parsed CLI arguments that include the `debug` flag.
+    """
     logging.basicConfig(
         level=logging.getLevelName(logging.DEBUG if args.debug else logging.INFO),
         format=(
@@ -20,5 +25,10 @@ def setup_logging(args: argparse.Namespace) -> None:
 
 
 def log_error_and_exit(msg: str) -> NoReturn:
+    """Emit an error and terminate the process with exit code 1.
+
+    Args:
+        msg: Pre-formatted error message to log before exiting.
+    """
     logging.error(msg)
     sys.exit(1)

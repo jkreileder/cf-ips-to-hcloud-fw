@@ -14,6 +14,7 @@ from cf_ips_to_hcloud_fw.models import Project
 def test_read_config_file_not_found(
     mock_logging: MagicMock, mock_open: MagicMock
 ) -> None:
+    """Ensure read_config exits cleanly when the config path is missing."""
     with pytest.raises(SystemExit) as e:
         read_config("config.yaml")
     assert e.type is SystemExit
@@ -27,6 +28,7 @@ def test_read_config_file_not_found(
 def test_read_config_file_is_a_directory(
     mock_logging: MagicMock, mock_open: MagicMock
 ) -> None:
+    """Detect directories passed as config files and exit."""
     with pytest.raises(SystemExit) as e:
         read_config("config.yaml")
     assert e.type is SystemExit
@@ -40,6 +42,7 @@ def test_read_config_file_is_a_directory(
 def test_read_config_file_is_unreadable(
     mock_logging: MagicMock, mock_open: MagicMock
 ) -> None:
+    """Verify unreadable files trigger an error log and exit."""
     with pytest.raises(SystemExit) as e:
         read_config("config.yaml")
     assert e.type is SystemExit
@@ -51,6 +54,7 @@ def test_read_config_file_is_unreadable(
 @patch("builtins.open", mock_open())
 @patch("logging.error")
 def test_read_config_empty(mock_logging: MagicMock) -> None:
+    """Empty files fail validation and abort execution."""
     with pytest.raises(SystemExit) as e:
         read_config("config.yaml")
     assert e.type is SystemExit
@@ -62,6 +66,7 @@ def test_read_config_empty(mock_logging: MagicMock) -> None:
 @patch("builtins.open", mock_open(read_data="[]"))
 @patch("logging.warning")
 def test_read_config_empty_list(mock_logging: MagicMock) -> None:
+    """Empty project lists exit with code 0 after warning the operator."""
     with pytest.raises(SystemExit) as e:
         read_config("config.yaml")
     assert e.type is SystemExit
@@ -74,6 +79,7 @@ def test_read_config_empty_list(mock_logging: MagicMock) -> None:
 @patch("builtins.open", mock_open(read_data="v: ]["))
 @patch("logging.error")
 def test_read_config_broken_yaml(mock_logging: MagicMock) -> None:
+    """Malformed YAML surfaces as an error message and exit."""
     with pytest.raises(SystemExit) as e:
         read_config("config.yaml")
     assert e.type is SystemExit
@@ -93,5 +99,6 @@ def test_read_config_broken_yaml(mock_logging: MagicMock) -> None:
     ),
 )
 def test_read_config() -> None:
+    """Happy-path parsing returns validated Project instances."""
     projects = read_config("config.yaml")
     assert projects == [Project(token=SecretStr("token"), firewalls=["fw-1"])]

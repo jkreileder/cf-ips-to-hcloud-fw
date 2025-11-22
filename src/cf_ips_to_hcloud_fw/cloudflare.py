@@ -11,6 +11,12 @@ from cf_ips_to_hcloud_fw.models import CloudflareCIDRs, CloudflareIPNetworks
 
 
 def cf_ips_list() -> cloudflare.types.ips.IPListResponse | None:
+    """Call Cloudflare's `ips.list` endpoint and return the raw response.
+
+    Returns:
+        cloudflare.types.ips.IPListResponse | None: Raw API response, or None
+        when the SDK returns no payload.
+    """
     cf = cloudflare.Cloudflare(api_key="dummy")  # required to pass credential check
     try:
         return cf.ips.list()
@@ -19,6 +25,11 @@ def cf_ips_list() -> cloudflare.types.ips.IPListResponse | None:
 
 
 def get_cloudflare_cidrs() -> CloudflareCIDRs:
+    """Fetch, validate, and sort the Cloudflare IPv4/IPv6 CIDR lists.
+
+    Returns:
+        CloudflareCIDRs: Sanitized CIDR model ready for downstream consumers.
+    """
     ips_model = cf_ips_list()
     if ips_model is None:
         log_error_and_exit("Cloudflare/ips.list: no response")

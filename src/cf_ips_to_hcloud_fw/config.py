@@ -11,6 +11,14 @@ from cf_ips_to_hcloud_fw.models import Project
 
 
 def read_config(config_file: str) -> list[Project]:
+    """Load and validate project definitions from a YAML file.
+
+    Args:
+        config_file: Absolute or relative path to the YAML config file.
+
+    Returns:
+        list[Project]: Ordered list of validated project definitions.
+    """
     try:
         with open(config_file, encoding="utf-8") as file:
             config = yaml.safe_load(file)
