@@ -31,6 +31,7 @@ from cf_ips_to_hcloud_fw.models import CloudflareCIDRs, Project
     ],
 )
 def test_update_source_ips(*, ips: list[str], cidrs: list[str], expected: bool) -> None:
+    """update_source_ips should rewrite rules whenever the CIDR list changes."""
     rule = FirewallRule(FirewallRule.DIRECTION_IN, FirewallRule.PROTOCOL_TCP, ips)
     fw = Firewall(rules=[rule])
     needs_update = update_source_ips(fw, rule, cidrs, "")
@@ -52,6 +53,7 @@ def test_update_source_ips(*, ips: list[str], cidrs: list[str], expected: bool) 
 def test_update_firewall_rule(
     mock_update_source_ips: MagicMock, *, ipv4: bool, ipv6: bool, kind: str
 ) -> None:
+    """update_firewall_rule selects the correct CIDR set per IPv4/IPv6 flags."""
     r = FirewallRule(FirewallRule.DIRECTION_IN, FirewallRule.PROTOCOL_TCP, [])
     fw = Firewall(1, "fw-1", rules=[r])
     cf_ips = CloudflareCIDRs(ipv4_cidrs=["127.1/32"], ipv6_cidrs=["::1/64"])
@@ -76,6 +78,7 @@ def test_update_firewall_rule(
 def test_update_firewall(
     mock_firewalls_set_rules: MagicMock, mock_update_firewall_rule: MagicMock
 ) -> None:
+    """update_firewall mutates every Cloudflare-tagged inbound rule and saves."""
     client = MagicMock()
     fw = Firewall(
         name="fw-1",
@@ -132,6 +135,7 @@ def test_update_firewall_already_up_to_date(
     mock_firewalls_set_rules: MagicMock,
     mock_update_firewall_rule: MagicMock,
 ) -> None:
+    """Firewalls already matching the CIDRs must not trigger set_rules calls."""
     client = MagicMock()
     fw = Firewall(
         name="fw-1",
@@ -195,6 +199,7 @@ def test_update_firewall_already_up_to_date(
 )
 @patch("cf_ips_to_hcloud_fw.firewall.Client")
 def test_fw_set_rules(mock_client: MagicMock, *, rules: list[FirewallRule]) -> None:
+    """fw_set_rules forwards the current rule list to the SDK verbatim."""
     expected = rules or []
     fw = Firewall(name="fw-1", rules=rules)
     fw_set_rules(mock_client, fw)
@@ -204,6 +209,7 @@ def test_fw_set_rules(mock_client: MagicMock, *, rules: list[FirewallRule]) -> N
 @patch("cf_ips_to_hcloud_fw.firewall.Client")
 @patch("logging.error")
 def test_fw_set_rules_fail(mock_logging: MagicMock, mock_client: MagicMock) -> None:
+    """fw_set_rules surfaces API exceptions via log_error_and_exit."""
     fw = Firewall(name="fw-1", rules=[])
     mock_client.firewalls.set_rules.side_effect = APIException(
         "Test exception", "Message", "Details"
@@ -224,6 +230,7 @@ def test_update_firewall_no_rules(
     mock_firewalls_set_rules: MagicMock,
     mock_update_firewall_rule: MagicMock,
 ) -> None:
+    """Firewalls without rules are ignored and never patched."""
     fw = Firewall(name="fw-1", rules=[])
     cf_ips = CloudflareCIDRs(ipv4_cidrs=["127.1/32"], ipv6_cidrs=["::1/64"])
 
@@ -238,6 +245,7 @@ def test_update_firewall_no_rules(
 def test_update_project_found(
     mock_update_firewall: MagicMock, mock_client: MagicMock
 ) -> None:
+    """update_project iterates firewalls and calls update_firewall on hits."""
     fw = Firewall(1, "fw-1")
     cf_ips = CloudflareCIDRs(ipv4_cidrs=["127.1/32"], ipv6_cidrs=["::1/64"])
     mock_client.return_value.firewalls.get_by_name.return_value = fw
@@ -253,6 +261,7 @@ def test_update_project_found(
 def test_update_project_not_found(
     mock_logging: MagicMock, mock_update_firewall: MagicMock, mock_client: MagicMock
 ) -> None:
+    """Missing firewall names must log an error but continue processing."""
     mock_client.return_value.firewalls.get_by_name.return_value = None
     project = Project(token=SecretStr("token-1"), firewalls=["fw-1"])
     update_project(
@@ -266,6 +275,7 @@ def test_update_project_not_found(
 @patch("cf_ips_to_hcloud_fw.firewall.Client")
 @patch("logging.error")
 def test_update_project_fail(mock_logging: MagicMock, mock_client: MagicMock) -> None:
+    """Exceptions from get_by_name bubble up via log_error_and_exit."""
     mock_client.return_value.firewalls.get_by_name.side_effect = APIException(
         "Test exception", "Message", "Details"
     )

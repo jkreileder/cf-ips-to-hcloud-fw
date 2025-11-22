@@ -17,6 +17,12 @@ CF_ALL = "__CLOUDFLARE_IPS__"
 
 
 def update_project(project: Project, cf_cidrs: CloudflareCIDRs) -> None:
+    """Synchronize every firewall listed in a project with the latest CIDRs.
+
+    Args:
+        project: Project definition that holds the API token and firewall names.
+        cf_cidrs: Cloudflare CIDR model downloaded at runtime.
+    """
     client = Client(token=project.token.get_secret_value())
     for name in project.firewalls:
         try:
@@ -33,6 +39,17 @@ def update_project(project: Project, cf_cidrs: CloudflareCIDRs) -> None:
 def update_source_ips(
     fw: Firewall, rule: FirewallRule, cidrs: list[str], kind: str
 ) -> bool:
+    """Update a rule's source CIDRs when they differ.
+
+    Args:
+        fw: Firewall currently being mutated.
+        rule: Individual firewall rule within the firewall.
+        cidrs: Desired list of CIDR strings.
+        kind: Human-readable tag (IPv4/IPv6) for logging.
+
+    Returns:
+        bool: True when the rule was modified.
+    """
     needs_update = rule.source_ips != cidrs
     if needs_update:
         rule.source_ips = cidrs
@@ -52,6 +69,18 @@ def update_firewall_rule(
     ipv4: bool,
     ipv6: bool,
 ) -> bool:
+    """Apply the correct IPv4/IPv6 CIDRs to a single firewall rule if marked.
+
+    Args:
+        fw: Firewall currently being mutated (used for logging).
+        rule: Rule candidate to inspect/update.
+        cf_cidrs: Cloudflare CIDR model downloaded at runtime.
+        ipv4: Whether the rule should receive IPv4 ranges.
+        ipv6: Whether the rule should receive IPv6 ranges.
+
+    Returns:
+        bool: True when the rule needed a change.
+    """
     if not ipv4 and not ipv6:
         return False
 
@@ -65,6 +94,12 @@ def update_firewall_rule(
 
 
 def fw_set_rules(client: Client, fw: Firewall) -> None:
+    """Persist rule updates to Hetzner via the SDK, aborting on API errors.
+
+    Args:
+        client: Authenticated Hetzner Cloud client.
+        fw: Firewall whose rules were modified earlier in the flow.
+    """
     logging.info(f"Updating rules for hcloud firewall {fw.name!r}")
     try:
         rules = fw.rules or []
@@ -74,6 +109,13 @@ def fw_set_rules(client: Client, fw: Firewall) -> None:
 
 
 def update_firewall(client: Client, fw: Firewall, cf_cidrs: CloudflareCIDRs) -> None:
+    """Refresh all Cloudflare-tagged rules on a firewall and push changes.
+
+    Args:
+        client: Authenticated Hetzner Cloud client.
+        fw: Firewall retrieved from the API.
+        cf_cidrs: Cloudflare CIDR model downloaded at runtime.
+    """
     if fw.rules:
         needs_update = False
         for rule in fw.rules:

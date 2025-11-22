@@ -10,6 +10,11 @@ from cf_ips_to_hcloud_fw.firewall import update_project
 
 
 def create_parser() -> argparse.ArgumentParser:
+    """Construct the CLI parser with config, version, and debug switches.
+
+    Returns:
+        argparse.ArgumentParser: Parser configured for this CLI.
+    """
     parser = argparse.ArgumentParser(
         description="Update Hetzner Cloud firewall rules with Cloudflare IP ranges"
     )
@@ -22,6 +27,7 @@ def create_parser() -> argparse.ArgumentParser:
 
 
 def main() -> None:
+    """Parse arguments, configure logging, and run the sync workflow."""
     parser = create_parser()
     args = parser.parse_args()
     setup_logging(args)

@@ -14,6 +14,7 @@ from cf_ips_to_hcloud_fw.models import Project
 
 
 def test_create_parser() -> None:
+    """CLI parser should expose the expected options and defaults."""
     parser = create_parser()
     assert "-c" in parser._option_string_actions
     assert "--config" in parser._option_string_actions
@@ -30,6 +31,7 @@ def test_create_parser() -> None:
 
 
 def test_parser_version(capfd: pytest.CaptureFixture[str]) -> None:
+    """`-v` should print the package version and exit cleanly."""
     parser = create_parser()
     with pytest.raises(SystemExit) as exc:
         parser.parse_args(["-v"])
@@ -41,6 +43,7 @@ def test_parser_version(capfd: pytest.CaptureFixture[str]) -> None:
 
 
 def test_parser_version_no_metadata(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Fallback to 'local' when importlib.metadata cannot find the package."""
     monkeypatch.setattr(
         "importlib.metadata.version",
         MagicMock(side_effect=importlib.metadata.PackageNotFoundError),
@@ -64,6 +67,7 @@ def test_parser_version_no_metadata(monkeypatch: pytest.MonkeyPatch) -> None:
 @patch("cf_ips_to_hcloud_fw.__main__.get_cloudflare_cidrs", MagicMock())
 @patch("cf_ips_to_hcloud_fw.__main__.update_project")
 def test_main(mock_update_project: MagicMock, mock_projects: MagicMock) -> None:
+    """main should iterate every parsed project and call update_project."""
     main()
     assert mock_update_project.call_count == len(mock_projects.return_value)
     for i, project in enumerate(mock_projects.return_value):

@@ -19,6 +19,7 @@ from cf_ips_to_hcloud_fw.models import CloudflareCIDRs
 def test_cf_ips_list_api_connection_error(
     mock_logging: MagicMock, mock_cloudflare: MagicMock
 ) -> None:
+    """cf_ips_list exits when the Cloudflare client raises a connection error."""
     mock_cloudflare.return_value.ips.list.side_effect = cloudflare.APITimeoutError(
         httpx.Request("GET", "https://api.cloudflare.com/client/v4/ips")
     )
@@ -37,6 +38,7 @@ def test_cf_ips_list_api_connection_error(
 def test_cf_ips_list_api_status_error(
     mock_logging: MagicMock, mock_cloudflare: MagicMock
 ) -> None:
+    """cf_ips_list exits when the Cloudflare API returns a non-success status."""
     mock_cloudflare.return_value.ips.list.side_effect = cloudflare.RateLimitError(
         "rate-limit",
         response=httpx.Response(
@@ -59,6 +61,7 @@ def test_cf_ips_list_api_status_error(
 )
 @patch("logging.error")
 def test_get_cloudflare_cidrs_no_response(mock_logging: MagicMock) -> None:
+    """get_cloudflare_cidrs aborts when the SDK returns an empty payload."""
     with pytest.raises(SystemExit) as e:
         get_cloudflare_cidrs()
     assert e.type is SystemExit
@@ -77,6 +80,7 @@ def test_get_cloudflare_cidrs_no_response(mock_logging: MagicMock) -> None:
 )
 @patch("logging.error")
 def test_get_cloudflare_cidrs_invalid(mock_logging: MagicMock) -> None:
+    """Invalid IP payloads propagate a validation error through log_error_and_exit."""
     with pytest.raises(SystemExit) as e:
         get_cloudflare_cidrs()
     assert e.type is SystemExit
@@ -95,6 +99,7 @@ def test_get_cloudflare_cidrs_invalid(mock_logging: MagicMock) -> None:
     ),
 )
 def test_get_cloudflare_cidrs() -> None:
+    """Valid payloads are converted to sorted CloudflareCIDRs instances."""
     result = get_cloudflare_cidrs()
     assert result == CloudflareCIDRs(
         ipv4_cidrs=["198.27.128.0/21", "199.27.128.0/21"],
