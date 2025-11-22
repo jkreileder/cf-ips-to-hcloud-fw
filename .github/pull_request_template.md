@@ -8,6 +8,7 @@ Please ensure that your PR fulfills the following requirements:
 - [ ] I have read the [contributing
   guidelines](https://github.com/jkreileder/cf-ips-to-hcloud-fw/blob/main/.github/CONTRIBUTING.md).
 - [ ] I have used the 'sign off' commits (git commit -s).
+- [ ] PR title follows Conventional Commits format: `<type>[optional scope]: <description>` (e.g. `chore(deps): bump ruff to v0.14.6`).
 - [ ] I have added or updated the appropriate unit tests.
 - [ ] I have updated the documentation accordingly.
 
