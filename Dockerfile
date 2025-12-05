@@ -32,7 +32,8 @@ RUN --mount=type=bind,from=uv-tools-trixie,source=/usr/local/bin/uv,target=/usr/
     set -eux
     uv sync --link-mode copy --group dev --frozen
     uv run --no-sync ruff check --output-format=github
-    uv run --no-sync pyright --venvpath .
+    uv run --no-sync ty check
+    uv run --no-sync pyright
     uv run --no-sync pytest
     uv build
 EOF
@@ -55,7 +56,7 @@ RUN --mount=type=bind,from=uv-tools-alpine,source=/usr/local/bin/uv,target=/usr/
 RUN --mount=type=bind,from=uv-tools-alpine,source=/usr/local/bin/uv,target=/usr/local/bin/uv \
     --mount=from=builder,target=/dist,source=/usr/src/app/dist \
     --mount=type=cache,id=uv-cache,target=/root/.cache/uv \
-    uv pip install --no-compile --force-reinstall --no-deps /dist/*.whl
+    uv pip install --link-mode copy --no-compile --force-reinstall --no-deps /dist/*.whl
 
 USER 65534
 
