@@ -19,9 +19,13 @@ repos:
     rev: 1a1f58ba4c35362efe8fed2279715a905baee93d  # frozen: v0.14.8
     hooks:
       - id: ruff-check
-        args: [--fix]
+        args: [--fix, --exit-non-zero-on-fix]
       - id: ruff-format
   - repo: https://github.com/gitleaks/gitleaks
     rev: 2ca41cc1372d1e939a6a879f18cdc19fc1cac1ce  # frozen: v8.30.0
     hooks:
       - id: gitleaks
+  - repo: https://github.com/rhysd/actionlint
+    rev: a443f344ff32813837fa49f7aa6cbc478d770e62  # frozen: v1.7.9
+    hooks:
+      - id: actionlint
