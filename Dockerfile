@@ -56,7 +56,7 @@ RUN --mount=type=bind,from=uv-tools-alpine,source=/usr/local/bin/uv,target=/usr/
 RUN --mount=type=bind,from=uv-tools-alpine,source=/usr/local/bin/uv,target=/usr/local/bin/uv \
     --mount=from=builder,target=/dist,source=/usr/src/app/dist \
     --mount=type=cache,id=uv-cache,target=/root/.cache/uv \
-    uv pip install --link-mode copy --no-compile --force-reinstall --no-deps /dist/*.whl
+    uv pip install --no-compile --force-reinstall --no-deps /dist/*.whl
 
 USER 65534
 
