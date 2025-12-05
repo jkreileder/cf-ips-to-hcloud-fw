@@ -4,8 +4,9 @@
 
 ## [v1.1.1] – Unreleased
 
-Maintenance release that migrates dependency handling to `uv` and switches the build backend to `uv_build`
+Maintenance release with `uv` migration and improved API response validation.
 
+- Added validation to detect empty IPv4 or IPv6 CIDR lists from Cloudflare API responses to prevent incomplete firewall rules
 - Adopted `uv` for dependency syncing, builds, and the Docker pipeline, including pinning image digests and link modes for reproducible containers (#960)
 - Switched GitHub workflows to `astral-sh/setup-uv` so Python and uv are provisioned consistently (#960)
 - Reworked version detection to rely on `importlib.metadata` with a tested fallback when package metadata is unavailable (#960)

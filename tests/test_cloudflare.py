@@ -73,6 +73,44 @@ def test_get_cloudflare_cidrs_no_response(mock_logging: MagicMock) -> None:
     "cf_ips_to_hcloud_fw.cloudflare.cf_ips_list",
     MagicMock(
         return_value=cloudflare.types.ips.ip_list_response.PublicIPIPs(
+            ipv4_cidrs=[],
+            ipv6_cidrs=["2400:cb00::/32"],
+        )
+    ),
+)
+@patch("logging.error")
+def test_get_cloudflare_cidrs_empty_ipv4(mock_logging: MagicMock) -> None:
+    """get_cloudflare_cidrs aborts when the API returns an empty IPv4 CIDR list."""
+    with pytest.raises(SystemExit) as e:
+        get_cloudflare_cidrs()
+    assert e.type is SystemExit
+    assert e.value.code == 1
+    mock_logging.assert_called_once_with("Cloudflare/ips.list: empty IPv4 CIDR list")
+
+
+@patch(
+    "cf_ips_to_hcloud_fw.cloudflare.cf_ips_list",
+    MagicMock(
+        return_value=cloudflare.types.ips.ip_list_response.PublicIPIPs(
+            ipv4_cidrs=["198.27.128.0/21"],
+            ipv6_cidrs=[],
+        )
+    ),
+)
+@patch("logging.error")
+def test_get_cloudflare_cidrs_empty_ipv6(mock_logging: MagicMock) -> None:
+    """get_cloudflare_cidrs aborts when the API returns an empty IPv6 CIDR list."""
+    with pytest.raises(SystemExit) as e:
+        get_cloudflare_cidrs()
+    assert e.type is SystemExit
+    assert e.value.code == 1
+    mock_logging.assert_called_once_with("Cloudflare/ips.list: empty IPv6 CIDR list")
+
+
+@patch(
+    "cf_ips_to_hcloud_fw.cloudflare.cf_ips_list",
+    MagicMock(
+        return_value=cloudflare.types.ips.ip_list_response.PublicIPIPs(
             ipv4_cidrs=["399.27.128.0/21", "198.27.128.0/21"],
             ipv6_cidrs=["2400:cb00::/32", "1400:cb00::/32"],
         )
