@@ -40,6 +40,11 @@ def get_cloudflare_cidrs() -> CloudflareCIDRs:
     except ValidationError as e:
         log_error_and_exit(f"Cloudflare/ips.list didn't validate: {e}")
 
+    if not cf_ips.ipv4_cidrs:
+        log_error_and_exit("Cloudflare/ips.list: empty IPv4 CIDR list")
+    if not cf_ips.ipv6_cidrs:
+        log_error_and_exit("Cloudflare/ips.list: empty IPv6 CIDR list")
+
     cf_ips.ipv4_cidrs.sort()
     cf_ips.ipv6_cidrs.sort()
     logging.info("Got Cloudflare IPs")
