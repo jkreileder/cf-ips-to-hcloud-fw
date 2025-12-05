@@ -93,8 +93,11 @@ jobs:
       - name: Lint (ruff)
         run: uv run --no-sync ruff check --output-format=github
 
+      - name: Type check (ty)
+        run: uv run --no-sync ty check
+
       - name: Type check (pyright)
-        run: uv run --no-sync pyright --venvpath .
+        run: uv run --no-sync pyright
 
       - name: Test
         run: uv run --no-sync pytest

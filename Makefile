@@ -27,8 +27,9 @@ sync: $(SYNC_STAMP)
 
 .PHONY: lint
 lint: $(SYNC_STAMP)
-	$(UV) run $(UV_SYNC_FLAGS) ruff check .
-	$(UV) run $(UV_SYNC_FLAGS) pyright --venvpath .
+	$(UV) run $(UV_SYNC_FLAGS) ruff check
+	$(UV) run $(UV_SYNC_FLAGS) ty check
+	$(UV) run $(UV_SYNC_FLAGS) pyright
 
 .PHONY: test
 test: $(SYNC_STAMP)
