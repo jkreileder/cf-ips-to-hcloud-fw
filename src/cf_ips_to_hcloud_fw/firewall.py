@@ -24,8 +24,6 @@ def update_project(
     Args:
         project: Project definition that holds the API token and firewall names.
         cf_cidrs: Cloudflare CIDR model downloaded at runtime.
-
-    Args:
         project_index: 1-based index of the project being processed, used for logging.
 
     Returns:
