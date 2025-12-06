@@ -1,6 +1,6 @@
 **
-!/src/cf_ips_to_hcloud_fw/*.py
-!/tests/*.py
+!/src
+!/tests
 !/LICENSE
 !/pyproject.toml
 !/README.md
