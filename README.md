@@ -24,6 +24,10 @@ rules up-to-date with the current Cloudflare IP ranges.
 - [Configuration](#configuration)
   - [Preparing the Hetzner Cloud Firewall](#preparing-the-hetzner-cloud-firewall)
   - [Configuring the Application](#configuring-the-application)
+- [Usage](#usage)
+  - [Command-line Options](#command-line-options)
+- [Contributing](#contributing)
+- [Security](#security)
 
 ## Overview
 
