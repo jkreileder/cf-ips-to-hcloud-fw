@@ -33,10 +33,9 @@ def test_create_parser() -> None:
 def test_parser_version(capfd: pytest.CaptureFixture[str]) -> None:
     """`-v` should print the package version and exit cleanly."""
     parser = create_parser()
-    with pytest.raises(SystemExit) as exc:
+    with pytest.raises(SystemExit) as e:
         parser.parse_args(["-v"])
-    assert exc.type is SystemExit
-    assert exc.value.code == 0
+    assert e.value.code == 0
     out, _err = capfd.readouterr()
     assert out.strip() == cf_ips_to_hcloud_fw.__version__
     assert re.match(r"^\d+\.\d+\.\d+(\.dev\d+)?$", cf_ips_to_hcloud_fw.__version__)

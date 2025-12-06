@@ -17,7 +17,6 @@ def test_read_config_file_not_found(
     """Ensure read_config exits cleanly when the config path is missing."""
     with pytest.raises(SystemExit) as e:
         read_config("config.yaml")
-    assert e.type is SystemExit
     assert e.value.code == 1
     mock_open.assert_called_once_with("config.yaml", encoding="utf-8")
     mock_logging.assert_called_once_with("Config file 'config.yaml' not found.")
@@ -31,7 +30,6 @@ def test_read_config_file_is_a_directory(
     """Detect directories passed as config files and exit."""
     with pytest.raises(SystemExit) as e:
         read_config("config.yaml")
-    assert e.type is SystemExit
     assert e.value.code == 1
     mock_open.assert_called_once_with("config.yaml", encoding="utf-8")
     mock_logging.assert_called_once_with("Config file 'config.yaml' is a directory.")
@@ -45,7 +43,6 @@ def test_read_config_file_is_unreadable(
     """Verify unreadable files trigger an error log and exit."""
     with pytest.raises(SystemExit) as e:
         read_config("config.yaml")
-    assert e.type is SystemExit
     assert e.value.code == 1
     mock_open.assert_called_once_with("config.yaml", encoding="utf-8")
     mock_logging.assert_called_once_with("Config file 'config.yaml' is unreadable.")
@@ -57,7 +54,6 @@ def test_read_config_empty(mock_logging: MagicMock) -> None:
     """Empty files fail validation and abort execution."""
     with pytest.raises(SystemExit) as e:
         read_config("config.yaml")
-    assert e.type is SystemExit
     assert e.value.code == 1
     mock_logging.assert_called_once()
     assert "Config file 'config.yaml' is broken: " in mock_logging.call_args[0][0]
@@ -69,7 +65,6 @@ def test_read_config_empty_list(mock_logging: MagicMock) -> None:
     """Empty project lists exit with code 0 after warning the operator."""
     with pytest.raises(SystemExit) as e:
         read_config("config.yaml")
-    assert e.type is SystemExit
     assert e.value.code == 0
     mock_logging.assert_called_once_with(
         "Config file 'config.yaml' contains no projects - exiting",
@@ -82,7 +77,6 @@ def test_read_config_broken_yaml(mock_logging: MagicMock) -> None:
     """Malformed YAML surfaces as an error message and exit."""
     with pytest.raises(SystemExit) as e:
         read_config("config.yaml")
-    assert e.type is SystemExit
     assert e.value.code == 1
     mock_logging.assert_called_once()
     assert "Error reading config file 'config.yaml': " in mock_logging.call_args[0][0]
@@ -119,7 +113,6 @@ def test_read_config_extra_field_rejected(mock_logging: MagicMock) -> None:
     """Config with misspelled or extra fields is rejected due to extra='forbid'."""
     with pytest.raises(SystemExit) as e:
         read_config("config.yaml")
-    assert e.type is SystemExit
     assert e.value.code == 1
     mock_logging.assert_called_once()
     error_msg = mock_logging.call_args[0][0]
@@ -144,7 +137,6 @@ def test_read_config_unknown_key_rejected(mock_logging: MagicMock) -> None:
     """Config with unknown keys alongside valid ones is rejected."""
     with pytest.raises(SystemExit) as e:
         read_config("config.yaml")
-    assert e.type is SystemExit
     assert e.value.code == 1
     mock_logging.assert_called_once()
     error_msg = mock_logging.call_args[0][0]
@@ -167,7 +159,6 @@ def test_read_config_empty_firewalls_rejected(mock_logging: MagicMock) -> None:
     """Config with empty firewalls list is rejected due to min_length=1."""
     with pytest.raises(SystemExit) as e:
         read_config("config.yaml")
-    assert e.type is SystemExit
     assert e.value.code == 1
     mock_logging.assert_called_once()
     error_msg = mock_logging.call_args[0][0]
@@ -188,7 +179,6 @@ def test_read_config_missing_firewalls_rejected(mock_logging: MagicMock) -> None
     """Config missing required firewalls field is rejected."""
     with pytest.raises(SystemExit) as e:
         read_config("config.yaml")
-    assert e.type is SystemExit
     assert e.value.code == 1
     mock_logging.assert_called_once()
     error_msg = mock_logging.call_args[0][0]
