@@ -25,3 +25,14 @@ def test_project_single_firewall() -> None:
     """Project model accepts a single firewall."""
     project = Project(token=SecretStr("my-token"), firewalls=["fw-1"])
     assert project.firewalls == ["fw-1"]
+
+
+def test_project_extra_field_rejected() -> None:
+    """Project model rejects unknown fields."""
+    with pytest.raises(ValidationError) as e:
+        Project(
+            token=SecretStr("my-token"),
+            firewalls=["fw-1"],
+            unknown_field="value",  # pyright: ignore[reportCallIssue] # type: ignore[unknown-argument]
+        )
+    assert "Extra inputs are not permitted" in str(e.value)
