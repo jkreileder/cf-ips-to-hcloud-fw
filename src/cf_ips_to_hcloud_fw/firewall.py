@@ -16,14 +16,18 @@ CF_IPV6 = "__CLOUDFLARE_IPS_V6__"
 CF_ALL = "__CLOUDFLARE_IPS__"
 
 
-def update_project(project: Project, cf_cidrs: CloudflareCIDRs) -> None:
+def update_project(project: Project, cf_cidrs: CloudflareCIDRs) -> list[str]:
     """Synchronize every firewall listed in a project with the latest CIDRs.
 
     Args:
         project: Project definition that holds the API token and firewall names.
         cf_cidrs: Cloudflare CIDR model downloaded at runtime.
+
+    Returns:
+        list[str]: Names of firewalls that were not found and skipped.
     """
     client = Client(token=project.token.get_secret_value())
+    skipped: list[str] = []
     for name in project.firewalls:
         try:
             fw = client.firewalls.get_by_name(name)
@@ -33,7 +37,9 @@ def update_project(project: Project, cf_cidrs: CloudflareCIDRs) -> None:
             logging.info(f"Inspecting hcloud firewall {name!r}")
             update_firewall(client, fw, cf_cidrs)
         else:
-            logging.error(f"hcloud firewall {name!r} not found")
+            logging.debug(f"hcloud firewall {name!r} not found")
+            skipped.append(name)
+    return skipped
 
 
 def update_source_ips(

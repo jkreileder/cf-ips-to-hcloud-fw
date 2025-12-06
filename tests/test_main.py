@@ -64,10 +64,32 @@ def test_parser_version_no_metadata(monkeypatch: pytest.MonkeyPatch) -> None:
     ],
 )
 @patch("cf_ips_to_hcloud_fw.__main__.get_cloudflare_cidrs", MagicMock())
-@patch("cf_ips_to_hcloud_fw.__main__.update_project")
+@patch("cf_ips_to_hcloud_fw.__main__.update_project", return_value=[])
 def test_main(mock_update_project: MagicMock, mock_projects: MagicMock) -> None:
     """main should iterate every parsed project and call update_project."""
     main()
     assert mock_update_project.call_count == len(mock_projects.return_value)
     for i, project in enumerate(mock_projects.return_value):
         assert mock_update_project.call_args_list[i][0][0] == project
+
+
+@patch("cf_ips_to_hcloud_fw.__main__.create_parser", MagicMock())
+@patch(
+    "cf_ips_to_hcloud_fw.__main__.read_config",
+    return_value=[
+        Project(token=SecretStr("token-1"), firewalls=["fw-1", "fw-2"]),
+    ],
+)
+@patch("cf_ips_to_hcloud_fw.__main__.get_cloudflare_cidrs", MagicMock())
+@patch("cf_ips_to_hcloud_fw.__main__.update_project", return_value=["fw-2", "fw-3"])
+@patch("logging.error")
+def test_main_with_skipped_firewalls(
+    mock_logging: MagicMock,
+    mock_update_project: MagicMock,  # noqa: ARG001
+    mock_read_config: MagicMock,  # noqa: ARG001
+) -> None:
+    """main should exit with code 1 when firewalls are skipped."""
+    with pytest.raises(SystemExit) as e:
+        main()
+    assert e.value.code == 1
+    mock_logging.assert_called_once_with("Some firewalls have been skipped: fw-2, fw-3")
