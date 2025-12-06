@@ -1,29 +1,64 @@
 <!--
 Thank you for your contribution to cf-ips-to-hcloud-fw!
-Please ensure that your PR fulfills the following requirements:
+
+This PR template helps us review changes consistently. Please fill out all sections
+and verify the checklist before submitting.
 -->
 
-### Checklist
+## Description
 
-- [ ] I have read the [contributing
-  guidelines](https://github.com/jkreileder/cf-ips-to-hcloud-fw/blob/main/.github/CONTRIBUTING.md).
-- [ ] I have used the 'sign off' commits (git commit -s).
-- [ ] PR title follows Conventional Commits format: `<type>[optional scope]: <description>` (e.g. `chore(deps): bump ruff to v0.14.6`).
-- [ ] I have added or updated the appropriate unit tests.
-- [ ] I have updated the documentation accordingly.
+<!-- Provide a clear summary of the changes in this PR -->
 
-### Type of Change
-<!-- Please check the one that applies to this PR using "x". -->
-- [ ] Bug fix
-- [ ] New feature
+## Motivation
+
+<!-- Why are these changes needed? Link issues with "Fixes #<number>" if applicable -->
+
+## Type of Change
+
+<!-- Mark the relevant option(s) with an "x" -->
+
+- [ ] Bug fix (fixes #issue_number)
+- [ ] New feature (related to #issue_number)
+- [ ] Performance improvement
+- [ ] Dependency update
 - [ ] Documentation update
-- [ ] Other (please describe)
+- [ ] Other: ___________________
 
-### Impact of Change
-<!-- What impact will this have on existing functionality? -->
+## Changes Made
 
-### Change Description
-<!-- Please provide a description of the change here -->
+<!-- List the key changes in this PR -->
 
-### Fixes Issue(s)
-<!-- If this PR fixes any issue(s), please list them here (fixes #<issue number>) -->
+-
+-
+-
+
+## Testing
+
+<!-- Describe how you tested these changes -->
+
+- [ ] Added or updated unit tests
+- [ ] All tests pass locally (`make test`)
+- [ ] Coverage maintained or improved (target: ≥80%)
+- [ ] Linting passes (`make lint`)
+
+## Documentation
+
+<!-- Mark which documentation has been updated -->
+
+- [ ] README.md updated
+- [ ] Docstrings/comments added or updated
+- [ ] CHANGELOG.md entry added (if user-facing)
+- [ ] No documentation changes needed
+
+## Checklist
+
+- [ ] I have read the [contributing guidelines](.github/CONTRIBUTING.md)
+- [ ] PR title follows [Conventional Commits](https://www.conventionalcommits.org/): `<type>[optional scope]: <description>`
+  - Example: `fix(firewall): resolve rule sync issue` or `chore(deps): bump ruff to v0.14.6`
+- [ ] Commits are signed off with `git commit -s` (required for DCO compliance)
+- [ ] No merge conflicts
+- [ ] Code follows project style (automatically checked via `make lint`)
+
+## Additional Notes
+
+<!-- Any additional context, screenshots, or notes? -->
