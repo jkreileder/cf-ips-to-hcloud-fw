@@ -25,7 +25,6 @@ def test_cf_ips_list_api_connection_error(
     )
     with pytest.raises(SystemExit) as e:
         cf_ips_list()
-    assert e.type is SystemExit
     assert e.value.code == 1
     mock_cloudflare.return_value.ips.list.assert_called_once()
     mock_logging.assert_called_once_with(
@@ -49,7 +48,6 @@ def test_cf_ips_list_api_status_error(
     )
     with pytest.raises(SystemExit) as e:
         cf_ips_list()
-    assert e.type is SystemExit
     assert e.value.code == 1
     mock_cloudflare.return_value.ips.list.assert_called_once()
     mock_logging.assert_called_once_with("Error getting CloudFlare IPs: rate-limit")
@@ -64,7 +62,6 @@ def test_get_cloudflare_cidrs_no_response(mock_logging: MagicMock) -> None:
     """get_cloudflare_cidrs aborts when the SDK returns an empty payload."""
     with pytest.raises(SystemExit) as e:
         get_cloudflare_cidrs()
-    assert e.type is SystemExit
     assert e.value.code == 1
     mock_logging.assert_called_once_with("Cloudflare/ips.list: no response")
 
@@ -83,7 +80,6 @@ def test_get_cloudflare_cidrs_empty_ipv4(mock_logging: MagicMock) -> None:
     """get_cloudflare_cidrs aborts when the API returns an empty IPv4 CIDR list."""
     with pytest.raises(SystemExit) as e:
         get_cloudflare_cidrs()
-    assert e.type is SystemExit
     assert e.value.code == 1
     mock_logging.assert_called_once_with("Cloudflare/ips.list: empty IPv4 CIDR list")
 
@@ -102,7 +98,6 @@ def test_get_cloudflare_cidrs_empty_ipv6(mock_logging: MagicMock) -> None:
     """get_cloudflare_cidrs aborts when the API returns an empty IPv6 CIDR list."""
     with pytest.raises(SystemExit) as e:
         get_cloudflare_cidrs()
-    assert e.type is SystemExit
     assert e.value.code == 1
     mock_logging.assert_called_once_with("Cloudflare/ips.list: empty IPv6 CIDR list")
 
@@ -121,7 +116,6 @@ def test_get_cloudflare_cidrs_invalid(mock_logging: MagicMock) -> None:
     """Invalid IP payloads propagate a validation error through log_error_and_exit."""
     with pytest.raises(SystemExit) as e:
         get_cloudflare_cidrs()
-    assert e.type is SystemExit
     assert e.value.code == 1
     mock_logging.assert_called_once()
     assert "Cloudflare/ips.list didn't validate" in mock_logging.call_args[0][0]
