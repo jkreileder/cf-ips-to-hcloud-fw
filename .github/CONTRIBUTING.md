@@ -28,7 +28,7 @@ please make sure to:
 
 1. Fork the repository and create a new branch for your changes.
 2. Ensure that your code follows the project's coding style and conventions by running `make lint`.
-3. Write tests for your changes; we maintain >80% code coverage.
+3. Write tests for your changes; we maintain at least 80% code coverage.
 4. Run `make test` to verify your changes don't break existing functionality.
 5. Write clear and concise commit messages.
 6. Commit messages should follow the [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) style: `<type>[optional scope]: <description>`. For example:
