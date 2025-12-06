@@ -7,7 +7,7 @@
 Maintenance release with `uv` migration and improved API response validation.
 
 - Added validation to detect empty IPv4 or IPv6 CIDR lists from Cloudflare API responses to prevent incomplete firewall rules
-- **Security:** Enabled strict Pydantic validation (`extra="forbid"`) on all models to reject config typos and unknown fields, preventing silent misconfigurations
+- **Security:** Enabled strict Pydantic validation (`extra="forbid"`) on the configuration model to reject config typos and unknown fields, preventing silent misconfigurations
 - Added `min_length=1` validation for the `firewalls` field to ensure at least one firewall is specified in configuration
 - Adopted `uv` for dependency syncing, builds, and the Docker pipeline, including pinning image digests and link modes for reproducible containers (#960)
 - Switched GitHub workflows to `astral-sh/setup-uv` so Python and uv are provisioned consistently (#960)
