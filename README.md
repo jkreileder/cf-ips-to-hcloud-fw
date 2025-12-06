@@ -19,6 +19,7 @@ rules up-to-date with the current Cloudflare IP ranges.
 - [Installation](#installation)
   - [Using Python](#using-python)
     - [Using pipx (Recommended)](#using-pipx-recommended)
+    - [Using uvx (Recommended)](#using-uvx-recommended)
     - [Using pip](#using-pip)
   - [Docker and Kubernetes](#docker-and-kubernetes)
 - [Configuration](#configuration)
@@ -54,8 +55,9 @@ description is equivalent to having `__CLOUDFLARE_IPS__` there.
 ### Using Python
 
 To install `cf-ips-to-hcloud-fw` using Python, we recommend using
-[`pipx`](https://pipx.pypa.io/).  `pipx` is a tool for installing and running
-Python applications in isolated environments.
+[`pipx`](https://pipx.pypa.io/) or [`uvx`](https://docs.astral.sh/uv/guides/tools/).
+Both are tools for installing and running Python applications in isolated
+environments. If you already have `uv` installed, `uvx` is the quickest option.
 
 #### Using pipx (Recommended)
 
@@ -77,6 +79,21 @@ To upgrade `cf-ips-to-hcloud-fw`, run:
 
 > [!TIP]
 > To upgrade `cf-ips-to-hcloud-fw`, run `pipx upgrade cf-ips-to-hcloud-fw`.
+
+#### Using uvx (Recommended)
+
+If you have `uv` installed, you can run `cf-ips-to-hcloud-fw` directly without
+installing it:
+
+```shell
+uvx cf-ips-to-hcloud-fw -c config.yaml
+```
+
+This approach automatically downloads and runs the latest version in an isolated
+environment without modifying your system Python.
+
+> [!TIP]
+> `uvx` always fetches and runs the latest version, so no upgrade command is needed.
 
 #### Using pip
 
