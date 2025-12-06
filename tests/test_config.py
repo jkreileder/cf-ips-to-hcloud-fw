@@ -102,3 +102,96 @@ def test_read_config() -> None:
     """Happy-path parsing returns validated Project instances."""
     projects = read_config("config.yaml")
     assert projects == [Project(token=SecretStr("token"), firewalls=["fw-1"])]
+
+
+@patch(
+    "builtins.open",
+    mock_open(
+        read_data="""
+- token: token
+  firewall_names:
+    - fw-1
+""",
+    ),
+)
+@patch("logging.error")
+def test_read_config_extra_field_rejected(mock_logging: MagicMock) -> None:
+    """Config with misspelled or extra fields is rejected due to extra='forbid'."""
+    with pytest.raises(SystemExit) as e:
+        read_config("config.yaml")
+    assert e.type is SystemExit
+    assert e.value.code == 1
+    mock_logging.assert_called_once()
+    error_msg = mock_logging.call_args[0][0]
+    assert "Config file 'config.yaml' is broken:" in error_msg
+    assert "Extra inputs are not permitted" in error_msg
+    assert "firewall_names" in error_msg
+
+
+@patch(
+    "builtins.open",
+    mock_open(
+        read_data="""
+- token: token
+  firewalls:
+    - fw-1
+  extra_key: extra_value
+""",
+    ),
+)
+@patch("logging.error")
+def test_read_config_unknown_key_rejected(mock_logging: MagicMock) -> None:
+    """Config with unknown keys alongside valid ones is rejected."""
+    with pytest.raises(SystemExit) as e:
+        read_config("config.yaml")
+    assert e.type is SystemExit
+    assert e.value.code == 1
+    mock_logging.assert_called_once()
+    error_msg = mock_logging.call_args[0][0]
+    assert "Config file 'config.yaml' is broken:" in error_msg
+    assert "Extra inputs are not permitted" in error_msg
+    assert "extra_key" in error_msg
+
+
+@patch(
+    "builtins.open",
+    mock_open(
+        read_data="""
+- token: token
+  firewalls: []
+""",
+    ),
+)
+@patch("logging.error")
+def test_read_config_empty_firewalls_rejected(mock_logging: MagicMock) -> None:
+    """Config with empty firewalls list is rejected due to min_length=1."""
+    with pytest.raises(SystemExit) as e:
+        read_config("config.yaml")
+    assert e.type is SystemExit
+    assert e.value.code == 1
+    mock_logging.assert_called_once()
+    error_msg = mock_logging.call_args[0][0]
+    assert "Config file 'config.yaml' is broken:" in error_msg
+    assert "at least 1 item" in error_msg.lower() or "min_length" in error_msg.lower()
+
+
+@patch(
+    "builtins.open",
+    mock_open(
+        read_data="""
+- token: token
+""",
+    ),
+)
+@patch("logging.error")
+def test_read_config_missing_firewalls_rejected(mock_logging: MagicMock) -> None:
+    """Config missing required firewalls field is rejected."""
+    with pytest.raises(SystemExit) as e:
+        read_config("config.yaml")
+    assert e.type is SystemExit
+    assert e.value.code == 1
+    mock_logging.assert_called_once()
+    error_msg = mock_logging.call_args[0][0]
+    assert "Config file 'config.yaml' is broken:" in error_msg
+    assert "firewalls" in error_msg.lower()
+    assert "required" in error_msg.lower() or "missing" in error_msg.lower()

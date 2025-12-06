@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from ipaddress import IPv4Network, IPv6Network
 
-from pydantic import BaseModel, SecretStr
+from pydantic import BaseModel, ConfigDict, Field, SecretStr
 
 
 class CloudflareIPNetworks(BaseModel):
@@ -16,5 +16,7 @@ class CloudflareCIDRs(BaseModel):
 
 
 class Project(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     token: SecretStr
-    firewalls: list[str]
+    firewalls: list[str] = Field(min_length=1)
