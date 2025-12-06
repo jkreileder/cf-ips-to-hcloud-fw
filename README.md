@@ -224,3 +224,31 @@ your API tokens and the names of the firewalls you want to update:
   firewalls:
     - default
 ```
+
+## Usage
+
+Run the tool with your configuration file:
+
+```shell
+cf-ips-to-hcloud-fw -c config.yaml
+```
+
+### Command-line Options
+
+- `-c, --config FILE`: Path to the configuration file (required)
+- `-d, --debug`: Enable debug logging for troubleshooting
+- `-v, --version`: Display the installed version
+
+Example with debug logging:
+
+```shell
+cf-ips-to-hcloud-fw -c config.yaml -d
+```
+
+## Contributing
+
+Contributions are welcome! Please see [CONTRIBUTING.md](.github/CONTRIBUTING.md) for guidelines on how to contribute to this project.
+
+## Security
+
+If you discover a security vulnerability, please see [SECURITY.md](SECURITY.md) for responsible disclosure instructions.
