@@ -4,10 +4,12 @@ config.yaml
 # Python cache and compiled files
 __pycache__
 *.py[cod]
+.mypy_cache
 
 # Virtual environments
 .venv
 venv
+.python-version
 
 # Build artifacts
 build
@@ -19,16 +21,23 @@ requirements*-pep508.txt
 
 # Test and coverage reports
 .coverage
+.coverage.*
 .pytest_cache
 .ruff_cache
 coverage.xml
 htmlcov
 test-results.xml
 
+# OS artifacts
+.DS_Store
+
 # IDE and editor files
 .idea
 *.swp
 *~
+.env
+\#*#
+.#*
 
 # VS Code specific (excluding project setup)
 .vscode/*
