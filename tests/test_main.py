@@ -88,14 +88,13 @@ def test_main(mock_update_project: MagicMock, mock_projects: MagicMock) -> None:
 )
 @patch("logging.error")
 def test_main_with_skipped_firewalls(
-    mock_logging: MagicMock,
-    mock_update_project: MagicMock,  # noqa: ARG001
-    mock_read_config: MagicMock,  # noqa: ARG001
+    mock_logging: MagicMock, mock_update_project: MagicMock, mock_projects: MagicMock
 ) -> None:
     """main should exit with code 1 when firewalls are skipped."""
     with pytest.raises(SystemExit) as e:
         main()
     assert e.value.code == 1
+    assert mock_update_project.call_count == len(mock_projects.return_value)
     mock_logging.assert_called_once_with(
         "Some firewalls have been skipped: project 1:fw-2, project 1:fw-3"
     )
@@ -116,14 +115,13 @@ def test_main_with_skipped_firewalls(
 )
 @patch("logging.error")
 def test_main_with_skipped_firewalls_multiple_projects(
-    mock_logging: MagicMock,
-    mock_update_project: MagicMock,  # noqa: ARG001
-    mock_read_config: MagicMock,  # noqa: ARG001
+    mock_logging: MagicMock, mock_update_project: MagicMock, mock_projects: MagicMock
 ) -> None:
     """Aggregate skipped firewalls across multiple projects before exiting."""
     with pytest.raises(SystemExit) as e:
         main()
     assert e.value.code == 1
+    assert mock_update_project.call_count == len(mock_projects.return_value)
     mock_logging.assert_called_once_with(
         "Some firewalls have been skipped: "
         "project 1:fw-1, project 2:fw-3, project 2:fw-4"
