@@ -18,9 +18,9 @@ rules up-to-date with the current Cloudflare IP ranges.
 - [Overview](#overview)
 - [Installation](#installation)
   - [Using Python](#using-python)
-    - [Using pipx (Recommended)](#using-pipx-recommended)
-    - [Using uvx (Recommended)](#using-uvx-recommended)
-    - [Using pip](#using-pip)
+    - [Using `pipx` (Recommended for Most Users)](#using-pipx-recommended-for-most-users)
+    - [Using `uvx` (Recommended for `uv` Users)](#using-uvx-recommended-for-uv-users)
+    - [Using `pip`](#using-pip)
   - [Docker and Kubernetes](#docker-and-kubernetes)
 - [Configuration](#configuration)
   - [Preparing the Hetzner Cloud Firewall](#preparing-the-hetzner-cloud-firewall)
@@ -59,9 +59,9 @@ To install `cf-ips-to-hcloud-fw` using Python, we recommend using
 Both are tools for installing and running Python applications in isolated
 environments. If you already have `uv` installed, `uvx` is the quickest option.
 
-#### Using pipx (Recommended)
+#### Using `pipx` (Recommended for Most Users)
 
-1. Install `cf-ips-to-hcloud-fw` using pipx:
+1. Install `cf-ips-to-hcloud-fw` using `pipx`:
 
     ```shell
     pipx install cf-ips-to-hcloud-fw
@@ -80,7 +80,7 @@ To upgrade `cf-ips-to-hcloud-fw`, run:
 > [!TIP]
 > To upgrade `cf-ips-to-hcloud-fw`, run `pipx upgrade cf-ips-to-hcloud-fw`.
 
-#### Using uvx (Recommended)
+#### Using `uvx` (Recommended for `uv` Users)
 
 If you have `uv` installed, you can run `cf-ips-to-hcloud-fw` directly without
 installing it:
@@ -95,10 +95,10 @@ environment without modifying your system Python.
 > [!TIP]
 > `uvx` always fetches and runs the latest version, so no upgrade command is needed.
 
-#### Using pip
+#### Using `pip`
 
 We strongly recommend using a virtual environment when installing Python
-packages with pip. This helps to avoid conflicts between packages and allows you
+packages with `pip`. This helps to avoid conflicts between packages and allows you
 to manage packages on a per-project basis.
 
 1. Create a virtual environment:
