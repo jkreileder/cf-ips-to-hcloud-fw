@@ -2,10 +2,11 @@
 
 <!-- markdownlint-disable MD024 -->
 
-## [v1.1.1] – Unreleased
+## [v1.2.0] – Unreleased
 
-Maintenance release with `uv` migration and improved API response validation.
+Feature release with `uv` migration, improved API response validation, and enhanced error handling.
 
+- **Breaking:** Changed exit behavior when firewalls are not found—the CLI now exits with code 1 and reports all skipped firewalls instead of silently continuing
 - Added validation to detect empty IPv4 or IPv6 CIDR lists from Cloudflare API responses to prevent incomplete firewall rules
 - **Security:** Enabled strict Pydantic validation (`extra="forbid"`) on the configuration model to reject config typos and unknown fields, preventing silent misconfigurations
 - Added `min_length=1` validation for the `firewalls` field to ensure at least one firewall is specified in configuration

@@ -5,7 +5,7 @@ import argparse
 from cf_ips_to_hcloud_fw import __version__
 from cf_ips_to_hcloud_fw.cloudflare import get_cloudflare_cidrs
 from cf_ips_to_hcloud_fw.config import read_config
-from cf_ips_to_hcloud_fw.custom_logging import setup_logging
+from cf_ips_to_hcloud_fw.custom_logging import log_error_and_exit, setup_logging
 from cf_ips_to_hcloud_fw.firewall import update_project
 
 
@@ -34,8 +34,14 @@ def main() -> None:
 
     projects = read_config(args.config)
     cf_cidrs = get_cloudflare_cidrs()
-    for project in projects:
-        update_project(project, cf_cidrs)
+    all_skipped: list[str] = []
+    for idx, project in enumerate(projects, start=1):
+        skipped = update_project(project, cf_cidrs, idx)
+        all_skipped.extend(skipped)
+
+    if all_skipped:
+        msg = f"Some firewalls have been skipped: {', '.join(all_skipped)}"
+        log_error_and_exit(msg)
 
 
 if __name__ == "__main__":  # pragma: no cover
