@@ -17,7 +17,6 @@ def test_project_no_firewall_fails() -> None:
     """Project model rejects empty firewall list."""
     with pytest.raises(ValidationError) as e:
         Project(token=SecretStr("my-token"), firewalls=[])
-    assert e.type is ValidationError
     assert "List should have at least 1 item after validation, not 0" in str(e.value)
 
 
