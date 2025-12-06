@@ -251,8 +251,10 @@ cf-ips-to-hcloud-fw -c config.yaml -d
 
 ## Contributing
 
-Contributions are welcome! Please see [CONTRIBUTING.md](.github/CONTRIBUTING.md) for guidelines on how to contribute to this project.
+Contributions are welcome! Please see [CONTRIBUTING.md](.github/CONTRIBUTING.md) for
+guidelines on how to contribute to this project.
 
 ## Security
 
-If you discover a security vulnerability, please see [SECURITY.md](SECURITY.md) for responsible disclosure instructions.
+If you discover a security vulnerability, please see [SECURITY.md](SECURITY.md) for
+responsible disclosure instructions.
