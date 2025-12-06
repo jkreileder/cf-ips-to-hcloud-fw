@@ -249,7 +249,7 @@ def test_update_project_found(
     cf_ips = CloudflareCIDRs(ipv4_cidrs=["127.1/32"], ipv6_cidrs=["::1/64"])
     mock_client.return_value.firewalls.get_by_name.return_value = fw
     project = Project(token=SecretStr("token-1"), firewalls=["fw-1"])
-    skipped = update_project(project, cf_ips)
+    skipped = update_project(project, cf_ips, 1)
     assert skipped == []
     mock_client.return_value.firewalls.get_by_name.assert_called_once_with("fw-1")
     mock_update_firewall.assert_called_once_with(mock_client.return_value, fw, cf_ips)
@@ -265,12 +265,16 @@ def test_update_project_not_found(
     mock_client.return_value.firewalls.get_by_name.return_value = None
     project = Project(token=SecretStr("token-1"), firewalls=["fw-1"])
     skipped = update_project(
-        project, CloudflareCIDRs(ipv4_cidrs=["127.1/32"], ipv6_cidrs=["::1/64"])
+        project,
+        CloudflareCIDRs(ipv4_cidrs=["127.1/32"], ipv6_cidrs=["::1/64"]),
+        1,
     )
-    assert skipped == ["fw-1"]
+    assert skipped == ["project 1:fw-1"]
     mock_client.return_value.firewalls.get_by_name.assert_called_once_with("fw-1")
     mock_update_firewall.assert_not_called()
-    mock_logging.assert_called_once_with("hcloud firewall 'fw-1' not found")
+    mock_logging.assert_called_once_with(
+        "hcloud firewall 'fw-1' not found in project 1"
+    )
 
 
 @patch("cf_ips_to_hcloud_fw.firewall.Client")
@@ -283,7 +287,9 @@ def test_update_project_fail(mock_logging: MagicMock, mock_client: MagicMock) ->
     project = Project(token=SecretStr("token-1"), firewalls=["fw-1", "fw-2"])
     with pytest.raises(SystemExit) as e:
         update_project(
-            project, CloudflareCIDRs(ipv4_cidrs=["127.1/32"], ipv6_cidrs=["::1/64"])
+            project,
+            CloudflareCIDRs(ipv4_cidrs=["127.1/32"], ipv6_cidrs=["::1/64"]),
+            1,
         )
     assert e.value.code == 1
     mock_client.return_value.firewalls.get_by_name.assert_called_once_with("fw-1")

@@ -35,8 +35,8 @@ def main() -> None:
     projects = read_config(args.config)
     cf_cidrs = get_cloudflare_cidrs()
     all_skipped: list[str] = []
-    for project in projects:
-        skipped = update_project(project, cf_cidrs)
+    for idx, project in enumerate(projects, start=1):
+        skipped = update_project(project, cf_cidrs, idx)
         all_skipped.extend(skipped)
 
     if all_skipped:
