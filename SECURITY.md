@@ -28,7 +28,7 @@ information or guidance.
 
 We aim to:
 
-- We strive to acknowledge receipt of your report within 48 hours
+- Acknowledge receipt of your report within 48 hours
 - Provide an initial assessment within 5 business days
 - Release a patch for confirmed vulnerabilities in a timely manner
 
