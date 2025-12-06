@@ -18,12 +18,17 @@ rules up-to-date with the current Cloudflare IP ranges.
 - [Overview](#overview)
 - [Installation](#installation)
   - [Using Python](#using-python)
-    - [Using pipx (Recommended)](#using-pipx-recommended)
-    - [Using pip](#using-pip)
+    - [Using `pipx` (Recommended for Most Users)](#using-pipx-recommended-for-most-users)
+    - [Using `uvx` (Recommended for `uv` Users)](#using-uvx-recommended-for-uv-users)
+    - [Using `pip`](#using-pip)
   - [Docker and Kubernetes](#docker-and-kubernetes)
 - [Configuration](#configuration)
   - [Preparing the Hetzner Cloud Firewall](#preparing-the-hetzner-cloud-firewall)
   - [Configuring the Application](#configuring-the-application)
+- [Usage](#usage)
+  - [Command-line Options](#command-line-options)
+- [Contributing](#contributing)
+- [Security](#security)
 
 ## Overview
 
@@ -50,12 +55,13 @@ description is equivalent to having `__CLOUDFLARE_IPS__` there.
 ### Using Python
 
 To install `cf-ips-to-hcloud-fw` using Python, we recommend using
-[`pipx`](https://pipx.pypa.io/).  `pipx` is a tool for installing and running
-Python applications in isolated environments.
+[`pipx`](https://pipx.pypa.io/) or [`uvx`](https://docs.astral.sh/uv/guides/tools/).
+Both are tools for installing and running Python applications in isolated
+environments. If you already have `uv` installed, `uvx` is the quickest option.
 
-#### Using pipx (Recommended)
+#### Using `pipx` (Recommended for Most Users)
 
-1. Install `cf-ips-to-hcloud-fw` using pipx:
+1. Install `cf-ips-to-hcloud-fw` using `pipx`:
 
     ```shell
     pipx install cf-ips-to-hcloud-fw
@@ -74,10 +80,25 @@ To upgrade `cf-ips-to-hcloud-fw`, run:
 > [!TIP]
 > To upgrade `cf-ips-to-hcloud-fw`, run `pipx upgrade cf-ips-to-hcloud-fw`.
 
-#### Using pip
+#### Using `uvx` (Recommended for `uv` Users)
+
+If you have `uv` installed, you can run `cf-ips-to-hcloud-fw` directly without
+installing it:
+
+```shell
+uvx cf-ips-to-hcloud-fw -c config.yaml
+```
+
+This approach automatically downloads and runs the latest version in an isolated
+environment without modifying your system Python.
+
+> [!TIP]
+> `uvx` always fetches and runs the latest version, so no upgrade command is needed.
+
+#### Using `pip`
 
 We strongly recommend using a virtual environment when installing Python
-packages with pip. This helps to avoid conflicts between packages and allows you
+packages with `pip`. This helps to avoid conflicts between packages and allows you
 to manage packages on a per-project basis.
 
 1. Create a virtual environment:
@@ -224,3 +245,33 @@ your API tokens and the names of the firewalls you want to update:
   firewalls:
     - default
 ```
+
+## Usage
+
+Run the tool with your configuration file:
+
+```shell
+cf-ips-to-hcloud-fw -c config.yaml
+```
+
+### Command-line Options
+
+- `-c, --config FILE`: Path to the configuration file (required)
+- `-d, --debug`: Enable debug logging for troubleshooting
+- `-v, --version`: Display the installed version
+
+Example with debug logging:
+
+```shell
+cf-ips-to-hcloud-fw -c config.yaml -d
+```
+
+## Contributing
+
+Contributions are welcome! Please see [CONTRIBUTING.md](.github/CONTRIBUTING.md) for
+guidelines on how to contribute to this project.
+
+## Security
+
+If you discover a security vulnerability, please see [SECURITY.md](SECURITY.md) for
+responsible disclosure instructions.

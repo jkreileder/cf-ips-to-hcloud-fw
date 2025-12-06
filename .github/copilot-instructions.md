@@ -48,3 +48,4 @@
 - Make recipes run under `bash -eu -o pipefail`; avoid zshisms.
 - Missing wheels or odd installs? Remove `.venv/` (or `make clean`) then rerun `make venv`.
 - Preserve the `__CLOUDFLARE_IPS_*__` description tokens; firewall matching logic depends on them.
+- When editing `README.md`, update the table of contents if you add, remove, or rename sections. The TOC is manually maintained and marked with `<!-- omit in toc -->` for the title.
