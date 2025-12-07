@@ -70,8 +70,9 @@ def test_main(mock_update_project: MagicMock, mock_projects: MagicMock) -> None:
     main()
     assert mock_update_project.call_count == len(mock_projects.return_value)
     for i, project in enumerate(mock_projects.return_value):
-        assert mock_update_project.call_args_list[i][0][0] == project
-        assert mock_update_project.call_args_list[i][0][2] == i + 1
+        call_kwargs = mock_update_project.call_args_list[i].kwargs
+        assert call_kwargs["project"] == project
+        assert call_kwargs["project_index"] == i + 1
 
 
 @patch("cf_ips_to_hcloud_fw.__main__.create_parser", MagicMock())
