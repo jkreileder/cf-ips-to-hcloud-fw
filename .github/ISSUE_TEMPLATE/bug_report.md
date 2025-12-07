@@ -23,7 +23,7 @@ A clear and concise description of what actually happened.
 If applicable, paste error messages, stack traces, or relevant log output (enable `-d` flag for debug logs).
 
 **Environment**
-- cf-ips-to-hcloud-fw version: [e.g. 1.1.0]
+- cf-ips-to-hcloud-fw version: [e.g. 1.2.0]
 - Deployment method: [e.g. Docker, Python module]
 - If Python module, Python version: [e.g. 3.14]
 - If Python module, OS: [e.g. macOS 15.1]
