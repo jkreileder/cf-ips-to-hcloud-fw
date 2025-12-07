@@ -2,7 +2,7 @@
 
 <!-- markdownlint-disable MD024 -->
 
-## [v1.2.1] - Unreleased
+## [v1.2.1] – Unreleased
 
 ## [v1.2.0] – 2025-12-07
 
