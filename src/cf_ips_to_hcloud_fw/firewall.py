@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, NamedTuple
 
 from hcloud import APIException, Client
 from hcloud.firewalls.domain import Firewall, FirewallRule
@@ -16,8 +16,18 @@ CF_IPV6 = "__CLOUDFLARE_IPS_V6__"
 CF_ALL = "__CLOUDFLARE_IPS__"
 
 
+class IPVersionTargets(NamedTuple):
+    """
+    Structure holding boolean flags indicating which IP versions (IPv4/IPv6)
+    should be targeted for firewall rule updates.
+    """
+
+    ipv4: bool
+    ipv6: bool
+
+
 def update_project(
-    project: Project, cf_cidrs: CloudflareCIDRs, project_index: int
+    *, project: Project, cf_cidrs: CloudflareCIDRs, project_index: int
 ) -> list[str]:
     """Synchronize every firewall listed in a project with the latest CIDRs.
 
@@ -35,20 +45,25 @@ def update_project(
         try:
             fw = client.firewalls.get_by_name(name)
         except APIException as e:
-            log_error_and_exit(f"hcloud/firewalls.get_by_name failed for {name!r}: {e}")
+            log_error_and_exit(
+                "hcloud/firewalls.get_by_name failed for "
+                f"{name!r} in project {project_index}: {e}"
+            )
         if fw:
-            logging.info(f"Inspecting hcloud firewall {name!r}")
-            update_firewall(client, fw, cf_cidrs)
+            logging.info(
+                f"Inspecting hcloud firewall {name!r} in project {project_index}"
+            )
+            update_firewall(client, fw, cf_cidrs, project_index=project_index)
         else:
             logging.debug(
                 f"hcloud firewall {name!r} not found in project {project_index}"
             )
-            skipped.append(f"project {project_index}:{name}")
+            skipped.append(f"project {project_index}:{name!r}")
     return skipped
 
 
 def update_source_ips(
-    fw: Firewall, rule: FirewallRule, cidrs: list[str], kind: str
+    fw: Firewall, rule: FirewallRule, cidrs: list[str], kind: str, *, project_index: int
 ) -> bool:
     """Update a rule's source CIDRs when they differ.
 
@@ -57,6 +72,7 @@ def update_source_ips(
         rule: Individual firewall rule within the firewall.
         cidrs: Desired list of CIDR strings.
         kind: Human-readable tag (IPv4/IPv6) for logging.
+        project_index: 1-based index of the project being processed, used for logging.
 
     Returns:
         bool: True when the rule was modified.
@@ -65,10 +81,14 @@ def update_source_ips(
     if needs_update:
         rule.source_ips = cidrs
         logging.debug(
-            f"Updating {fw.name!r}/{rule.description!r} with {kind} addresses"
+            f"Updating {fw.name!r}/{rule.description!r} in project {project_index} "
+            f"with {kind} addresses"
         )
     else:
-        logging.debug(f"{fw.name!r}/{rule.description!r} already up-to-date")
+        logging.debug(
+            f"{fw.name!r}/{rule.description!r} in project {project_index} "
+            "already up-to-date"
+        )
     return needs_update
 
 
@@ -76,9 +96,9 @@ def update_firewall_rule(
     fw: Firewall,
     rule: FirewallRule,
     cf_cidrs: CloudflareCIDRs,
+    ip_targets: IPVersionTargets,
     *,
-    ipv4: bool,
-    ipv6: bool,
+    project_index: int,
 ) -> bool:
     """Apply the correct IPv4/IPv6 CIDRs to a single firewall rule if marked.
 
@@ -86,13 +106,13 @@ def update_firewall_rule(
         fw: Firewall currently being mutated (used for logging).
         rule: Rule candidate to inspect/update.
         cf_cidrs: Cloudflare CIDR model downloaded at runtime.
-        ipv4: Whether the rule should receive IPv4 ranges.
-        ipv6: Whether the rule should receive IPv6 ranges.
+        ip_targets: Targeted IP versions for this rule.
+        project_index: 1-based index of the project being processed, used for logging.
 
     Returns:
         bool: True when the rule needed a change.
     """
-    if not ipv4 and not ipv6:
+    if not ip_targets.ipv4 and not ip_targets.ipv6:
         return False
 
     ip_types: dict[tuple[bool, bool], tuple[list[str], str]] = {
@@ -100,47 +120,66 @@ def update_firewall_rule(
         (True, False): (cf_cidrs.ipv4_cidrs, "IPv4"),
         (False, True): (cf_cidrs.ipv6_cidrs, "IPv6"),
     }
-    ip_cidrs, ip_type = ip_types[ipv4, ipv6]
-    return update_source_ips(fw, rule, ip_cidrs, ip_type)
+    ip_cidrs, ip_type = ip_types[ip_targets.ipv4, ip_targets.ipv6]
+    return update_source_ips(fw, rule, ip_cidrs, ip_type, project_index=project_index)
 
 
-def fw_set_rules(client: Client, fw: Firewall) -> None:
+def fw_set_rules(client: Client, fw: Firewall, project_index: int) -> None:
     """Persist rule updates to Hetzner via the SDK, aborting on API errors.
 
     Args:
         client: Authenticated Hetzner Cloud client.
         fw: Firewall whose rules were modified earlier in the flow.
+        project_index: 1-based index of the project being processed, used for logging.
     """
-    logging.info(f"Updating rules for hcloud firewall {fw.name!r}")
+    logging.info(
+        f"Updating rules for hcloud firewall {fw.name!r} in project {project_index}"
+    )
     try:
         rules = fw.rules or []
         client.firewalls.set_rules(fw, rules)
     except APIException as e:
-        log_error_and_exit(f"hcloud/firewall.set_rules failed for {fw.name!r}: {e}")
+        log_error_and_exit(
+            f"hcloud/firewall.set_rules failed for {fw.name!r} in project "
+            f"{project_index}: {e}"
+        )
 
 
-def update_firewall(client: Client, fw: Firewall, cf_cidrs: CloudflareCIDRs) -> None:
+def update_firewall(
+    client: Client, fw: Firewall, cf_cidrs: CloudflareCIDRs, *, project_index: int
+) -> None:
     """Refresh all Cloudflare-tagged rules on a firewall and push changes.
 
     Args:
         client: Authenticated Hetzner Cloud client.
         fw: Firewall retrieved from the API.
         cf_cidrs: Cloudflare CIDR model downloaded at runtime.
+        project_index: 1-based index of the project being processed, used for logging.
     """
     if fw.rules:
         needs_update = False
         for rule in fw.rules:
             if rule.direction == FirewallRule.DIRECTION_IN and rule.description:
+                ip_targets = IPVersionTargets(
+                    ipv4=CF_ALL in rule.description or CF_IPV4 in rule.description,
+                    ipv6=CF_ALL in rule.description or CF_IPV6 in rule.description,
+                )
                 needs_update |= update_firewall_rule(
                     fw,
                     rule,
                     cf_cidrs,
-                    ipv4=CF_ALL in rule.description or CF_IPV4 in rule.description,
-                    ipv6=CF_ALL in rule.description or CF_IPV6 in rule.description,
+                    ip_targets,
+                    project_index=project_index,
                 )
         if needs_update:
-            fw_set_rules(client, fw)
+            fw_set_rules(client, fw, project_index=project_index)
         else:
-            logging.info(f"hcloud firewall {fw.name!r} already up-to-date")
+            logging.info(
+                f"hcloud firewall {fw.name!r} in project {project_index} "
+                "already up-to-date"
+            )
     else:
-        logging.warning(f"hcloud firewall {fw.name!r} has no rules - ignoring it")
+        logging.warning(
+            f"hcloud firewall {fw.name!r} in project {project_index} "
+            "has no rules - ignoring it"
+        )

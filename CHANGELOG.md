@@ -14,6 +14,18 @@ Feature release with `uv` migration, improved API response validation, and enhan
 - Switched GitHub workflows to `astral-sh/setup-uv` so Python and uv are provisioned consistently (#960)
 - Reworked version detection to rely on `importlib.metadata` with a tested fallback when package metadata is unavailable (#960)
 - Ensured license files ship with the sdist, and documented the new tooling in contributor instructions (#960)
+- Changed firewall module API and logging for better context and resilience
+  - Added `project_index` context to logging and function calls across the firewall module
+    (update_project, update_firewall, fw_set_rules, update_source_ips, update_firewall_rule)
+  - `update_firewall_rule` now receives an `IPVersionTargets` NamedTuple (ipv4, ipv6)
+    instead of separate boolean flags, simplifying the callsite and improving clarity
+  - `update_project` and several helper functions were converted to keyword-only
+    style for clearer call semantics and to reduce positional-argument confusion
+  - Output and skipped-firewall messages now use repr(name) to safely represent
+    firewall names that include quotes or special characters (new tests added)
+  - **Breaking:** Function signatures were changed (see above). If you consume
+    these functions externally, please update calls and review the docs or
+    pin to an earlier release.
 
 ## [v1.1.0] – 2025-11-14
 
