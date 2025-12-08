@@ -1,5 +1,5 @@
 [build-system]
-requires = ["uv_build>=0.9.9,<0.10.0"]
+requires = ["uv_build>=0.9.16,<0.10.0"]
 build-backend = "uv_build"
 
 [tool.uv.build-backend]
@@ -18,7 +18,7 @@ version = "1.2.1.dev1"
 dependencies = [
     "cloudflare>=4.3.1",
     "hcloud>=2.11.1",
-    "pydantic>=2.12.4",
+    "pydantic>=2.12.5",
     "pyyaml>=6.0.3",
 ]
 classifiers = [
@@ -58,8 +58,8 @@ PyPI = "https://pypi.org/project/cf-ips-to-hcloud-fw/"
 dev = [
     "pyright>=1.1.407",
     "pytest-cov>=7.0.0",
-    "ruff>=0.14.5",
-    "ty>=0.0.1a31",
+    "ruff>=0.14.8",
+    "ty>=0.0.1a32",
 ]
 
 [tool.pytest]

@@ -57,7 +57,7 @@ dev = [
 requires-dist = [
     { name = "cloudflare", specifier = ">=4.3.1" },
     { name = "hcloud", specifier = ">=2.11.1" },
-    { name = "pydantic", specifier = ">=2.12.4" },
+    { name = "pydantic", specifier = ">=2.12.5" },
     { name = "pyyaml", specifier = ">=6.0.3" },
 ]
 
@@ -65,8 +65,8 @@ requires-dist = [
 dev = [
     { name = "pyright", specifier = ">=1.1.407" },
     { name = "pytest-cov", specifier = ">=7.0.0" },
-    { name = "ruff", specifier = ">=0.14.5" },
-    { name = "ty", specifier = ">=0.0.1a31" },
+    { name = "ruff", specifier = ">=0.14.8" },
+    { name = "ty", specifier = ">=0.0.1a32" },
 ]
 
 [[package]]
