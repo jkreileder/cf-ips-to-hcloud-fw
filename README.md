@@ -325,8 +325,8 @@ gh attestation verify oci://$IMAGE \
   --signer-workflow $GH_REPO/.github/workflows/docker.yaml@refs/tags/v$VERSION
 
 # The SBOMs are attached to the now verified image, you can view with
-DIGEST=$(docker scout attest list --format json $IMAGE --predicate-type https://spdx.dev/Document |
-  jq -r 'limit(1; .[] | select(.reference | startswith("jkreileder/cf-ips-to-hcloud-fw")) | .digest)')
+DIGEST=$(docker scout attest list --format json $IMAGE --predicate-type https://spdx.dev/Document \
+  | jq -r 'limit(1; .[] | select(.reference | startswith("jkreileder/cf-ips-to-hcloud-fw")) | .digest)')
 docker scout attest get $IMAGE $DIGEST --predicate-type https://spdx.dev/Document
 ```
 
