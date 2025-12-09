@@ -9,21 +9,31 @@ Maintenance release with dependency and CI updates.
 - Added SLSA attestation verification instructions for Python wheels, source
   distributions, and container images in the README
 - Clarified container image references for Docker Hub, Quay.io, and GHCR
-- Simplified the Docker release workflow by removing Cosign signing and separate SBOM attestation steps (SBOMs are still embedded in images via Docker Scout),
+- Simplified the Docker release workflow by removing Cosign signing and separate SBOM
+  attestation steps (SBOMs are still embedded in images via Docker Scout),
   while retaining build provenance attestations
 
 ## [v1.2.0] – 2025-12-07
 
-Feature release with `uv` migration, improved API response validation, and enhanced error handling.
+Feature release with `uv` migration, improved API response validation, and enhanced error
+handling.
 
-- **Breaking:** Changed exit behavior when firewalls are not found—the CLI now exits with code 1 and reports all skipped firewalls instead of silently continuing
-- Added validation to detect empty IPv4 or IPv6 CIDR lists from Cloudflare API responses to prevent incomplete firewall rules
-- **Security:** Enabled strict Pydantic validation (`extra="forbid"`) on the configuration model to reject config typos and unknown fields, preventing silent misconfigurations
-- Added `min_length=1` validation for the `firewalls` field to ensure at least one firewall is specified in configuration
-- Adopted `uv` for dependency syncing, builds, and the Docker pipeline, including pinning image digests and link modes for reproducible containers (#960)
-- Switched GitHub workflows to `astral-sh/setup-uv` so Python and uv are provisioned consistently (#960)
-- Reworked version detection to rely on `importlib.metadata` with a tested fallback when package metadata is unavailable (#960)
-- Ensured license files ship with the sdist, and documented the new tooling in contributor instructions (#960)
+- **Breaking:** Changed exit behavior when firewalls are not found—the CLI now exits with
+  code 1 and reports all skipped firewalls instead of silently continuing
+- Added validation to detect empty IPv4 or IPv6 CIDR lists from Cloudflare API responses to
+  prevent incomplete firewall rules
+- **Security:** Enabled strict Pydantic validation (`extra="forbid"`) on the configuration
+  model to reject config typos and unknown fields, preventing silent misconfigurations
+- Added `min_length=1` validation for the `firewalls` field to ensure at least one firewall
+  is specified in configuration
+- Adopted `uv` for dependency syncing, builds, and the Docker pipeline, including pinning
+  image digests and link modes for reproducible containers (#960)
+- Switched GitHub workflows to `astral-sh/setup-uv` so Python and uv are provisioned
+  consistently (#960)
+- Reworked version detection to rely on `importlib.metadata` with a tested fallback when
+  package metadata is unavailable (#960)
+- Ensured license files ship with the sdist, and documented the new tooling in contributor
+  instructions (#960)
 - Changed firewall module API and logging for better context and resilience
   - Added `project_index` context to logging and function calls across the firewall module
     (update_project, update_firewall, fw_set_rules, update_source_ips, update_firewall_rule)
@@ -41,12 +51,14 @@ Feature release with `uv` migration, improved API response validation, and enhan
 
 Feature release with CI hardening and new runtime guarantees.
 
-- **Breaking:** Dropped Python 3.9 support; the tested range now spans CPython 3.10–3.14 (#926, #947, #955)
+- **Breaking:** Dropped Python 3.9 support; the tested range now spans CPython 3.10–3.14 (#926,
+  #947, #955)
 - Added a TruffleHog secret-scanning workflow to the GitHub Actions pipeline (#944)
 - Documented Copilot onboarding instructions for contributors (#933)
 - Updated test configuration and dependency mocks for better compatibility (#949)
 - Standardized array formatting and adopted Dockerfile syntax 1.20 (#950, #951)
-- Bumped Ruff, pip/pip-tools, and refreshed GitHub Actions and base images (#955, #954, #947, #945, #940, #935, #930, #956)
+- Bumped Ruff, pip/pip-tools, and refreshed GitHub Actions and base images (#955, #954,
+  #947, #945, #940, #935, #930, #956)
 
 ## [v1.0.17] – 2025-06-20
 
@@ -130,7 +142,8 @@ Maintenance release with updated dependencies.
 ### Changed
 
 - Updated Python base image in Dockerfile
-- Upgraded `pyright` to 1.1.350, `ruff` & `ruff-pre-commit` to v0.2.1, `pydantic` to 2.6.1, and pip to 24.0
+- Upgraded `pyright` to 1.1.350, `ruff` & `ruff-pre-commit` to v0.2.1, `pydantic`
+  to 2.6.1, and pip to 24.0
 - Updated `certifi`, `urllib3`, and pluggy versions
 - Updated ruff and gitleaks pre-commit hooks and ruff configuration
 - Bumped various GitHub actions and Docker actions
@@ -159,7 +172,8 @@ Maintenance release with updated dependencies.
 - Bump anchore/scan-action from 3.5.0 to 3.6.0 (#69)
 - Bump actions/upload-artifact from 4.1.0 to 4.2.0 (#66)
 - Bump github/codeql-action from 3.23.0 to 3.23.1 (#65)
-- Refactor: Modularize Cloudflare, hcloud firewall, config and logging functionality into separate modules (#64)
+- Refactor: Modularize Cloudflare, hcloud firewall, config and logging functionality
+  into separate modules (#64)
 - Update pyright to version 1.1.347 (#63)
 - Update pyright to version 1.1.346 (#62)
 - Bump actions/upload-artifact from 4.0.0 to 4.1.0 (#60)
