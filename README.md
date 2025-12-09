@@ -28,6 +28,9 @@ rules up-to-date with the current Cloudflare IP ranges.
   - [Configuring the Application](#configuring-the-application)
 - [Usage](#usage)
   - [Command-line Options](#command-line-options)
+- [Verifying SLSA attestations](#verifying-slsa-attestations)
+  - [Verifying Python Wheels and Source Code](#verifying-python-wheels-and-source-code)
+  - [Verifying Docker Images](#verifying-docker-images)
 - [Contributing](#contributing)
 - [Security](#security)
 
@@ -153,9 +156,9 @@ Docker images for `cf-ips-to-hcloud-fw` are available for both `linux/amd64` and
 
 You can find the Docker images at:
 
-- [Docker Hub](https://hub.docker.com/r/jkreileder/cf-ips-to-hcloud-fw)
-- [Quay.io](https://quay.io/repository/jkreileder/cf-ips-to-hcloud-fw)
-- [GitHub Packages](https://github.com/jkreileder/cf-ips-to-hcloud-fw/pkgs/container/cf-ips-to-hcloud-fw)
+- [Docker Hub](https://hub.docker.com/r/jkreileder/cf-ips-to-hcloud-fw): `jkreileder/cf-ips-to-hcloud-fw` or `docker.io/jkreileder/cf-ips-to-hcloud-fw`
+- [Quay.io](https://quay.io/repository/jkreileder/cf-ips-to-hcloud-fw): `quay.io/jkreileder/cf-ips-to-hcloud-fw`
+- [GitHub Packages](https://github.com/jkreileder/cf-ips-to-hcloud-fw/pkgs/container/cf-ips-to-hcloud-fw): `ghcr.io/jkreileder/cf-ips-to-hcloud-fw`
 
 Here's an example of how to create a Kubernetes Secret for your
 [configuration](#configuration):
@@ -265,6 +268,62 @@ Example with debug logging:
 
 ```shell
 cf-ips-to-hcloud-fw -c config.yaml -d
+```
+
+## Verifying SLSA attestations
+
+Build provenance metadata and SBOM attestations are published with every artifact so you
+can verify their authenticity and contents.
+
+These attestations are cryptographically signed. Use the commands below to validate
+the signatures. For GitHub-hosted artifacts you can further restrict verification
+with `--signer-workflow`. Container attestations can be fetched with `docker scout
+attest get` after verifying build provenance.
+
+### Verifying Python Wheels and Source Code
+
+```shell
+GH_REPO=jkreileder/cf-ips-to-hcloud-fw
+VERSION=1.2.0
+
+# Verifying build provenance
+gh attestation verify cf_ips_to_hcloud_fw-$VERSION-py3-none-any.whl \
+  --repo $GH_REPO \
+  --signer-workflow $GH_REPO/.github/workflows/python-package.yaml@refs/tags/v$VERSION
+gh attestation verify cf_ips_to_hcloud_fw-$VERSION.tar.gz \
+  --repo $GH_REPO \
+  --signer-workflow $GH_REPO/.github/workflows/python-package.yaml@refs/tags/v$VERSION
+
+# Verifying and showing SBOM (only available for the the wheel)
+gh attestation verify cf_ips_to_hcloud_fw-$VERSION-py3-none-any.whl \
+  --repo $GH_REPO \
+  --signer-workflow $GH_REPO/.github/workflows/python-package.yaml@refs/tags/v$VERSION \
+  --predicate-type https://spdx.dev/Document/v2.3
+# Add --format json --jq '.[].verificationResult.statement.predicate' to also output the SBOM
+```
+
+### Verifying Docker Images
+
+It's recommended that you use an immutable image reference (pin to a digest) to avoid
+[TOCTOU attacks](https://github.com/slsa-framework/slsa-verifier?tab=readme-ov-file#toctou-attacks).
+
+Build provenance:
+
+```shell
+GH_REPO=jkreileder/cf-ips-to-hcloud-fw
+IMAGE_REPO=docker.io/jkreileder/cf-ips-to-hcloud-fw
+VERSION=1.2.0
+IMAGE=$IMAGE_REPO@$(crane digest $IMAGE_REPO:$VERSION)
+
+# Verifying build provenance
+gh attestation verify oci://$IMAGE \
+  --repo $GH_REPO \
+  --signer-workflow $GH_REPO/.github/workflows/docker.yaml@refs/tags/v$VERSION
+
+# The SBOMs are attached to the now verified image, you can view with
+DIGEST=$(docker scout attest list --format json $IMAGE --predicate-type https://spdx.dev/Document \
+  | jq -r 'limit(1; .[] | select(.reference | startswith("jkreileder/cf-ips-to-hcloud-fw")) | .digest)')
+docker scout attest get $IMAGE $DIGEST --predicate-type https://spdx.dev/Document
 ```
 
 ## Contributing

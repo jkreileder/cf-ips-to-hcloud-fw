@@ -74,9 +74,6 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Install Cosign
-        uses: sigstore/cosign-installer@faadad0cce49287aee09b3a48701e75088a2c6ad # v4.0.0
-
       - name: Docker meta
         id: docker-meta
         uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051 # v5.10.0
@@ -138,42 +135,6 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Generate SBOM
-        if: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' }}
-        uses: anchore/sbom-action@fbfd9c6c189226748411491745178e0c2017392d # v0.20.10
-        with:
-          image: ghcr.io/${{ github.repository_owner }}/cf-ips-to-hcloud-fw
-          format: spdx-json
-          artifact-name: sbom-docker.spdx.json
-          output-file: sbom-docker.spdx.json
-
-      - name: Generate SBOM attestation for DockerHub
-        if: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' }}
-        uses: actions/attest-sbom@4651f806c01d8637787e274ac3bdf724ef169f34 # v3.0.0
-        with:
-          subject-name: index.docker.io/${{ vars.DOCKERHUB_USERNAME }}/cf-ips-to-hcloud-fw
-          subject-digest: ${{ steps.build-and-push.outputs.digest }}
-          sbom-path: sbom-docker.spdx.json
-          push-to-registry: true
-
-      - name: Generate SBOM attestation for Quay
-        if: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' }}
-        uses: actions/attest-sbom@4651f806c01d8637787e274ac3bdf724ef169f34 # v3.0.0
-        with:
-          subject-name: quay.io/${{ vars.QUAY_USERNAME }}/cf-ips-to-hcloud-fw
-          subject-digest: ${{ steps.build-and-push.outputs.digest }}
-          sbom-path: sbom-docker.spdx.json
-          push-to-registry: true
-
-      - name: Generate SBOM attestation for GitHub Container Registry
-        if: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' }}
-        uses: actions/attest-sbom@4651f806c01d8637787e274ac3bdf724ef169f34 # v3.0.0
-        with:
-          subject-name: ghcr.io/${{ github.repository_owner }}/cf-ips-to-hcloud-fw
-          subject-digest: ${{ steps.build-and-push.outputs.digest }}
-          sbom-path: sbom-docker.spdx.json
-          push-to-registry: true
-
       - name: Generate artifact attestation for DockerHub
         if: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' }}
         uses: actions/attest-build-provenance@977bb373ede98d70efdf65b84cb5f73e068dcc2a # v3.0.0
@@ -197,18 +158,6 @@ jobs:
           subject-name: ghcr.io/${{ github.repository_owner }}/cf-ips-to-hcloud-fw
           subject-digest: ${{ steps.build-and-push.outputs.digest }}
           push-to-registry: true
-
-      - name: Sign the images with GitHub OIDC Token
-        if: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' }}
-        run: |
-          images=""
-          for tag in ${TAGS}; do
-            images+="${tag}@${DIGEST} "
-          done
-          cosign sign --recursive --yes ${images}
-        env:
-          DIGEST: ${{ steps.build-and-push.outputs.digest }}
-          TAGS: ${{ steps.docker-meta.outputs.tags }}
 
       - name: Analyze for critical and high CVEs with Docker Scout
         if: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.head.repo.fork) && github.actor != 'dependabot[bot]' }}
