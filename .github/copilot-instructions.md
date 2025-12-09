@@ -87,7 +87,7 @@
 - Preserve the `__CLOUDFLARE_IPS_*__` description tokens; firewall matching
   logic depends on them.
 - When editing `README.md`, update the table of contents if you add, remove,
-   or rename sections. The TOC is manually maintained and marked with
+  or rename sections. The TOC is manually maintained and marked with
   `<!-- omit in toc -->` for the title.
 
 - Markdown style: When creating or editing Markdown files, aim for a
