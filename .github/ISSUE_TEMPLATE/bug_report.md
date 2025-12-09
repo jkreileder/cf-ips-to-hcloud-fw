@@ -24,7 +24,6 @@ A clear and concise description of what actually happened.
 If applicable, paste error messages, stack traces, or relevant log output (enable `-d` flag for
 debug logs).
 
-<!-- markdownlint-disable-line MD036 -->
 **Environment**<!-- markdownlint-disable-line MD036 -->
 
 - cf-ips-to-hcloud-fw version: [e.g. 1.2.0]
