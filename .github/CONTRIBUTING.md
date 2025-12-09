@@ -31,7 +31,9 @@ please make sure to:
 3. Write tests for your changes; we maintain at least 80% code coverage.
 4. Run `make test` to verify your changes don't break existing functionality.
 5. Write clear and concise commit messages.
-6. Commit messages should follow the [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) style: `<type>[optional scope]: <description>`. For example:
+6. Commit messages should follow the [Conventional
+   Commits](https://www.conventionalcommits.org/en/v1.0.0/) style: `<type>[optional scope]:
+   <description>`. For example:
    - `feat: add new feature`
    - `fix(auth): resolve login issue`
    - `docs(contributing): update guidelines`

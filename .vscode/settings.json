@@ -1,7 +1,10 @@
 {
     "[markdown]": {
         "editor.defaultFormatter": "yzhang.markdown-all-in-one",
-        "editor.formatOnSave": true
+        "editor.formatOnSave": true,
+        "editor.rulers": [
+            100
+        ]
     },
     "[python]": {
         "editor.codeActionsOnSave": {
