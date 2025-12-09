@@ -294,12 +294,8 @@ gh attestation verify cf_ips_to_hcloud_fw-$VERSION.tar.gz \
   --repo $GH_REPO \
   --signer-workflow $GH_REPO/.github/workflows/python-package.yaml@refs/tags/v$VERSION
 
-# Verifying and showing SBOM
+# Verifying and showing SBOM (only available for the the wheel)
 gh attestation verify cf_ips_to_hcloud_fw-$VERSION-py3-none-any.whl \
-  --repo $GH_REPO \
-  --signer-workflow $GH_REPO/.github/workflows/python-package.yaml@refs/tags/v$VERSION \
-  --predicate-type https://spdx.dev/Document/v2.3
-gh attestation verify cf_ips_to_hcloud_fw-$VERSION.tar.gz \
   --repo $GH_REPO \
   --signer-workflow $GH_REPO/.github/workflows/python-package.yaml@refs/tags/v$VERSION \
   --predicate-type https://spdx.dev/Document/v2.3
