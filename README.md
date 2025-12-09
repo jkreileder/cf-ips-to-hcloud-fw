@@ -28,7 +28,7 @@ rules up-to-date with the current Cloudflare IP ranges.
   - [Configuring the Application](#configuring-the-application)
 - [Usage](#usage)
   - [Command-line Options](#command-line-options)
-- [Verifying SLSA attestations](#verifying-slsa-attestations)
+- [Verifying SLSA Attestations](#verifying-slsa-attestations)
   - [Verifying Python Wheels and Source Code](#verifying-python-wheels-and-source-code)
   - [Verifying Docker Images](#verifying-docker-images)
 - [Contributing](#contributing)
@@ -156,9 +156,12 @@ Docker images for `cf-ips-to-hcloud-fw` are available for both `linux/amd64` and
 
 You can find the Docker images at:
 
-- [Docker Hub](https://hub.docker.com/r/jkreileder/cf-ips-to-hcloud-fw): `jkreileder/cf-ips-to-hcloud-fw` or `docker.io/jkreileder/cf-ips-to-hcloud-fw`
-- [Quay.io](https://quay.io/repository/jkreileder/cf-ips-to-hcloud-fw): `quay.io/jkreileder/cf-ips-to-hcloud-fw`
-- [GitHub Packages](https://github.com/jkreileder/cf-ips-to-hcloud-fw/pkgs/container/cf-ips-to-hcloud-fw): `ghcr.io/jkreileder/cf-ips-to-hcloud-fw`
+- [Docker Hub](https://hub.docker.com/r/jkreileder/cf-ips-to-hcloud-fw):
+  `jkreileder/cf-ips-to-hcloud-fw` or `docker.io/jkreileder/cf-ips-to-hcloud-fw`
+- [Quay.io](https://quay.io/repository/jkreileder/cf-ips-to-hcloud-fw):
+  `quay.io/jkreileder/cf-ips-to-hcloud-fw`
+- [GitHub Packages](https://github.com/jkreileder/cf-ips-to-hcloud-fw/pkgs/container/cf-ips-to-hcloud-fw):
+  `ghcr.io/jkreileder/cf-ips-to-hcloud-fw`
 
 Here's an example of how to create a Kubernetes Secret for your
 [configuration](#configuration):
@@ -270,7 +273,7 @@ Example with debug logging:
 cf-ips-to-hcloud-fw -c config.yaml -d
 ```
 
-## Verifying SLSA attestations
+## Verifying SLSA Attestations
 
 Build provenance metadata and SBOM attestations are published with every artifact so you
 can verify their authenticity and contents.

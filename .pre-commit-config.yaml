@@ -29,3 +29,7 @@ repos:
     rev: a443f344ff32813837fa49f7aa6cbc478d770e62  # frozen: v1.7.9
     hooks:
       - id: actionlint
+  - repo: https://github.com/DavidAnson/markdownlint-cli2
+    rev: 7339935a3036f096ee0d7f1f047a9ec41707d4c1  # frozen: v0.20.0
+    hooks:
+      - id: markdownlint-cli2

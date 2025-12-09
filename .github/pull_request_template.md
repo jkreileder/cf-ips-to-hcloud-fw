@@ -4,6 +4,7 @@ Thank you for your contribution to cf-ips-to-hcloud-fw!
 This PR template helps us review changes consistently. Please fill out all sections
 and verify the checklist before submitting.
 -->
+<!-- markdownlint-disable MD041 -->
 
 ## Description
 
@@ -53,7 +54,8 @@ and verify the checklist before submitting.
 ## Checklist
 
 - [ ] I have read the [contributing guidelines](.github/CONTRIBUTING.md)
-- [ ] PR title follows [Conventional Commits](https://www.conventionalcommits.org/): `<type>[optional scope]: <description>`
+- [ ] PR title follows [Conventional Commits](https://www.conventionalcommits.org/):
+     `<type>[optional scope]: <description>`
   - Example: `fix(firewall): resolve rule sync issue` or `chore(deps): bump ruff to v0.14.6`
 - [ ] Commits are signed off with `git commit -s` (required for DCO compliance)
 - [ ] No merge conflicts

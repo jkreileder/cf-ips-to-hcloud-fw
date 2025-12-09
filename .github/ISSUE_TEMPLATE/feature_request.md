@@ -14,7 +14,8 @@ A clear and concise description of what the problem is. Ex. I'm always frustrate
 A clear and concise description of what you want to happen.
 
 **Use case**
-Describe how this feature would be used (e.g., automating firewall updates for multiple cloud providers, handling specific CIDR ranges).
+Describe how this feature would be used (e.g., automating firewall updates for multiple cloud
+providers, handling specific CIDR ranges).
 
 **Describe alternatives you've considered**
 A clear and concise description of any alternative solutions or features you've considered.
