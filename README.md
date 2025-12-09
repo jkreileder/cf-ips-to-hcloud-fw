@@ -31,6 +31,7 @@ rules up-to-date with the current Cloudflare IP ranges.
 - [Verifying SLSA attestations](#verifying-slsa-attestations)
   - [Verifying Python Wheels and Source Code](#verifying-python-wheels-and-source-code)
   - [Verify Docker Images](#verify-docker-images)
+  - [Verifying Docker Images](#verifying-docker-images)
 - [Contributing](#contributing)
 - [Security](#security)
 
@@ -303,14 +304,12 @@ gh attestation verify cf_ips_to_hcloud_fw-$VERSION.tar.gz \
   --repo $GH_REPO \
   --signer-workflow $GH_REPO/.github/workflows/python-package.yaml@refs/tags/v$VERSION \
   --predicate-type https://spdx.dev/Document/v2.3
-# Add
-#   --format json --jq '.[].verificationResult.statement.predicate'
-# to also output the SBOM
+# Add --format json --jq '.[].verificationResult.statement.predicate' to also output the SBOM
 ```
 
 ### Verify Docker Images
 
-It's recommended that you use an immutable image reference (pin to a digest) to avoid
+### Verifying Docker Images
 [TOCTOU attacks](https://github.com/slsa-framework/slsa-verifier?tab=readme-ov-file#toctou-attacks).
 
 Build provenance:
