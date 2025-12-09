@@ -308,6 +308,7 @@ gh attestation verify cf_ips_to_hcloud_fw-$VERSION.tar.gz \
 
 ### Verifying Docker Images
 
+It's recommended that you use an immutable image reference (pin to a digest) to avoid
 [TOCTOU attacks](https://github.com/slsa-framework/slsa-verifier?tab=readme-ov-file#toctou-attacks).
 
 Build provenance:
