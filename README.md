@@ -28,7 +28,7 @@ rules up-to-date with the current Cloudflare IP ranges.
   - [Configuring the Application](#configuring-the-application)
 - [Usage](#usage)
   - [Command-line Options](#command-line-options)
-- [Verifying SLSA attestations](#verifying-slsa-attestations)
+- [Verifying SLSA Attestations](#verifying-slsa-attestations)
   - [Verifying Python Wheels and Source Code](#verifying-python-wheels-and-source-code)
   - [Verifying Docker Images](#verifying-docker-images)
 - [Contributing](#contributing)
@@ -270,7 +270,7 @@ Example with debug logging:
 cf-ips-to-hcloud-fw -c config.yaml -d
 ```
 
-## Verifying SLSA attestations
+## Verifying SLSA Attestations
 
 Build provenance metadata and SBOM attestations are published with every artifact so you
 can verify their authenticity and contents.
