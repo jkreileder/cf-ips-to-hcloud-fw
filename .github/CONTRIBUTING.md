@@ -40,6 +40,12 @@ please make sure to:
 7. Sign your commits with `git commit -s` and ensure they are cryptographically signed (GPG/SSH).
 8. Update the documentation and CHANGELOG if necessary.
 9. Ensure all pre-commit hooks pass before pushing.
+10. Markdown style: When creating or editing Markdown files, aim for a
+   maximum line width of 100 characters and wrap prose at sentence
+   boundaries where practical. Code blocks, tables, YAML snippets, and
+   long URLs are exceptions and may exceed the limit. We include a
+   100-column editor ruler for Markdown in `.vscode/settings.json` to
+   help match this guideline.
 
 ## Code of Conduct
 

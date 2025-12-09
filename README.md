@@ -156,9 +156,12 @@ Docker images for `cf-ips-to-hcloud-fw` are available for both `linux/amd64` and
 
 You can find the Docker images at:
 
-- [Docker Hub](https://hub.docker.com/r/jkreileder/cf-ips-to-hcloud-fw): `jkreileder/cf-ips-to-hcloud-fw` or `docker.io/jkreileder/cf-ips-to-hcloud-fw`
-- [Quay.io](https://quay.io/repository/jkreileder/cf-ips-to-hcloud-fw): `quay.io/jkreileder/cf-ips-to-hcloud-fw`
-- [GitHub Packages](https://github.com/jkreileder/cf-ips-to-hcloud-fw/pkgs/container/cf-ips-to-hcloud-fw): `ghcr.io/jkreileder/cf-ips-to-hcloud-fw`
+- [Docker Hub](https://hub.docker.com/r/jkreileder/cf-ips-to-hcloud-fw):
+  `jkreileder/cf-ips-to-hcloud-fw` or `docker.io/jkreileder/cf-ips-to-hcloud-fw`
+- [Quay.io](https://quay.io/repository/jkreileder/cf-ips-to-hcloud-fw):
+  `quay.io/jkreileder/cf-ips-to-hcloud-fw`
+- [GitHub Packages](https://github.com/jkreileder/cf-ips-to-hcloud-fw/pkgs/container/cf-ips-to-hcloud-fw):
+  `ghcr.io/jkreileder/cf-ips-to-hcloud-fw`
 
 Here's an example of how to create a Kubernetes Secret for your
 [configuration](#configuration):
