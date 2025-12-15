@@ -25,7 +25,7 @@ jobs:
           egress-policy: block
 
       - name: Upload
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
           name: event-file
           path: ${{ github.event_path }}
@@ -83,7 +83,7 @@ jobs:
           persist-credentials: false
 
       - name: Set up Python ${{ matrix.python-version }} and install uv
-        uses: astral-sh/setup-uv@ed21f2f24f8dd64503750218de024bcf64c7250a # v7.1.5
+        uses: astral-sh/setup-uv@681c641aba71e4a1c380be3ab5e12ad51f415867 # v7.1.6
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -104,7 +104,7 @@ jobs:
 
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
           name: test-results-${{ matrix.python-version }}
           path: test-results.xml
@@ -158,7 +158,7 @@ jobs:
         run: cd dist && echo "hashes=$(sha256sum * | base64 -w0)" >> $GITHUB_OUTPUT
 
       - name: Store the distribution packages
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         if: ${{ github.event_name != 'pull_request' && startsWith(github.ref, 'refs/tags/') && matrix.python-version == '3.11' }}
         with:
           name: python-package-distributions
@@ -208,7 +208,7 @@ jobs:
             tuf-repo-cdn.sigstore.dev:443
 
       - name: Download all the distribution packages
-        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
         with:
           name: python-package-distributions
           path: dist
@@ -246,7 +246,7 @@ jobs:
             upload.pypi.org:443
 
       - name: Download all the distribution packages
-        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
         with:
           name: python-package-distributions
           path: dist
@@ -274,7 +274,7 @@ jobs:
             uploads.github.com:443
 
       - name: Download all the distribution packages
-        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
         with:
           name: python-package-distributions
           path: dist

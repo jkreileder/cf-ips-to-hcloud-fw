@@ -55,7 +55,7 @@ jobs:
           persist-credentials: false
 
       - name: Set up Python ${{ matrix.python-version }} and install uv
-        uses: astral-sh/setup-uv@ed21f2f24f8dd64503750218de024bcf64c7250a # v7.1.5
+        uses: astral-sh/setup-uv@681c641aba71e4a1c380be3ab5e12ad51f415867 # v7.1.6
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -63,7 +63,7 @@ jobs:
         run: uv sync --group dev --frozen
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@cf1bb45a277cb3c205638b2cd5c984db1c46a412 # v3.29.5
+        uses: github/codeql-action/init@1b168cd39490f61582a9beae412bb7057a6b2c4e # v3.29.5
         with:
           languages: ${{ matrix.language }}
           queries: security-and-quality
@@ -74,7 +74,7 @@ jobs:
           uv build
 
       - name: Perform CodeQL analysis
-        uses: github/codeql-action/analyze@cf1bb45a277cb3c205638b2cd5c984db1c46a412 # v3.29.5
+        uses: github/codeql-action/analyze@1b168cd39490f61582a9beae412bb7057a6b2c4e # v3.29.5
         with:
           category: "/language:${{ matrix.language }}"
 
@@ -105,12 +105,12 @@ jobs:
           persist-credentials: false
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@cf1bb45a277cb3c205638b2cd5c984db1c46a412 # v3.29.5
+        uses: github/codeql-action/init@1b168cd39490f61582a9beae412bb7057a6b2c4e # v3.29.5
         with:
           languages: actions
           queries: security-and-quality
 
       - name: Perform CodeQL analysis
-        uses: github/codeql-action/analyze@cf1bb45a277cb3c205638b2cd5c984db1c46a412 # v3.29.5
+        uses: github/codeql-action/analyze@1b168cd39490f61582a9beae412bb7057a6b2c4e # v3.29.5
         with:
           category: "/language:actions"
