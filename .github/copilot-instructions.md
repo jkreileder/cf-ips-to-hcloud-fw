@@ -62,8 +62,8 @@
   `LICENSE`, `pyproject.toml`, `README.md`, and `uv.lock`). See `.dockerignore`
   if you get container build surprises.
 - `pre-commit` — a `.pre-commit-config.yaml` file is present and configured to
-  run utilities like `ruff`, `gitleaks`, and `actionlint`. New contributors
-  should install hooks with `pre-commit install` or `prek install`.
+  run utilities like `ruff` and `gitleaks`. New contributors should install hooks
+  with `pre-commit install` or `prek install`.
 - Commit sign-offs — PRs require developer sign-off using `git commit -s`;
   you can see the PR checklist in `.github/pull_request_template.md`. This is
   the project DCO requirement. GitHub also enforces cryptographically-signed
