@@ -17,7 +17,7 @@ requires-python = ">=3.10"
 version = "1.2.1.dev1"
 dependencies = [
     "cloudflare>=4.3.1",
-    "hcloud>=2.14.0",
+    "hcloud>=2.16.0",
     "pydantic>=2.12.5",
     "pyyaml>=6.0.3",
 ]
@@ -58,8 +58,8 @@ PyPI = "https://pypi.org/project/cf-ips-to-hcloud-fw/"
 dev = [
     "pyright>=1.1.408",
     "pytest-cov>=7.0.0",
-    "ruff>=0.14.11",
-    "ty>=0.0.10",
+    "ruff>=0.14.14",
+    "ty>=0.0.13",
 ]
 
 [tool.pytest]
