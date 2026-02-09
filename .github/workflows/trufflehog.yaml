@@ -20,7 +20,7 @@ jobs:
 
     steps:
       - name: Harden runner
-        uses: step-security/harden-runner@e3f713f2d8f53843e71c69a996d56f51aa9adfb9 # v2.14.1
+        uses: step-security/harden-runner@5ef0c079ce82195b2a36a210272d6b661572d83e # v2.14.2
         with:
           disable-sudo: true
           egress-policy: block
@@ -37,7 +37,7 @@ jobs:
           persist-credentials: false
 
       - name: Run TruffleHog
-        uses: trufflesecurity/trufflehog@7f4e37db2d928c18ddd7ddf0604f8f7d1f5793ec # v3.93.0
+        uses: trufflesecurity/trufflehog@7635b24fd512a2e817dd3e9dd661caaf035a079d # v3.93.1
         with:
           path: .
           extra_args: --results=verified,unknown
