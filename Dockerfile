@@ -4,7 +4,7 @@
 FROM --platform=$BUILDPLATFORM ghcr.io/astral-sh/uv:0.10.0-trixie@sha256:8375c025ea8dcd19e38b03a0b2d78d2581f2799e085a01a20ec2b8c70b05b59e AS uv-tools-trixie
 FROM ghcr.io/astral-sh/uv:0.10.0-alpine3.22@sha256:454459f810a85f72b35d5b08c59d074a3c891afb81ce571dd97060247a18630d AS uv-tools-alpine
 
-FROM --platform=$BUILDPLATFORM public.ecr.aws/docker/library/python:3.14.2-trixie@sha256:5ef4340ecf26915e4e782504641277a4f64e8ac1b9c467087bd6712d1e1cb9a7 AS builder
+FROM --platform=$BUILDPLATFORM public.ecr.aws/docker/library/python:3.14.3-trixie@sha256:abc08a893f14b116d97079a69f1a8c0b5c33df65a7e5af8ff6356aa6d41d40aa AS builder
 
 WORKDIR /usr/src/app
 
@@ -39,7 +39,7 @@ RUN --mount=type=bind,from=uv-tools-trixie,source=/usr/local/bin/uv,target=/usr/
 EOF
 
 
-FROM public.ecr.aws/docker/library/python:3.14.2-alpine3.22@sha256:91859223a313a4407c239afb3a8e68bddc3dbfb0d24ddc5bdeb029136b55b150 AS final-image
+FROM public.ecr.aws/docker/library/python:3.14.3-alpine3.22@sha256:b0d9cd5ed77285b2563c86ca10b53578249ca1a08d14e5b69b7970884a9fb539 AS final-image
 
 WORKDIR /usr/src/app
 
