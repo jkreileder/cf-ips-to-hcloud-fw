@@ -34,7 +34,7 @@ def get_cloudflare_cidrs() -> CloudflareCIDRs:
     if ips_model is None:
         log_error_and_exit("Cloudflare/ips.list: no response")
     try:
-        ips_dict = ips_model.model_dump()  # ty: ignore[possibly-missing-attribute]
+        ips_dict = ips_model.model_dump()
         TypeAdapter(CloudflareIPNetworks).validate_python(ips_dict)  # sanity check
         cf_ips = TypeAdapter(CloudflareCIDRs).validate_python(ips_dict)
     except ValidationError as e:

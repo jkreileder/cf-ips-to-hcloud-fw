@@ -9,7 +9,7 @@ import pytest
 from pydantic import SecretStr
 
 import cf_ips_to_hcloud_fw
-from cf_ips_to_hcloud_fw.__main__ import create_parser, main  # noqa: PLC2701
+from cf_ips_to_hcloud_fw.__main__ import create_parser, main
 from cf_ips_to_hcloud_fw.models import Project
 
 
