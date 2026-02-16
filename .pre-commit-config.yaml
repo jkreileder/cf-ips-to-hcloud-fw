@@ -22,10 +22,10 @@ repos:
         args: [--fix, --exit-non-zero-on-fix]
       - id: ruff-format
   - repo: https://github.com/gitleaks/gitleaks
-    rev: 6eaad039603a4de39fddd1cf5f727391efe9974e  # frozen: v8.30.0
+    rev: 2ca41cc1372d1e939a6a879f18cdc19fc1cac1ce  # frozen: v8.30.0
     hooks:
       - id: gitleaks
   - repo: https://github.com/DavidAnson/markdownlint-cli2
-    rev: 7339935a3036f096ee0d7f1f047a9ec41707d4c1  # frozen: v0.20.0
+    rev: 5387279b3b4c24822c0f86d4df4f28b37e3e8992  # frozen: v0.21.0
     hooks:
       - id: markdownlint-cli2
