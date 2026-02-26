@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Harden runner
-        uses: step-security/harden-runner@5ef0c079ce82195b2a36a210272d6b661572d83e # v2.14.2
+        uses: step-security/harden-runner@a90bcbc6539c36a85cdfeb73f7e2f433735f215b # v2.15.0
         with:
           disable-sudo: true
           egress-policy: block
@@ -51,7 +51,7 @@ jobs:
 
     steps:
       - name: Harden runner
-        uses: step-security/harden-runner@5ef0c079ce82195b2a36a210272d6b661572d83e # v2.14.2
+        uses: step-security/harden-runner@a90bcbc6539c36a85cdfeb73f7e2f433735f215b # v2.15.0
         with:
           disable-sudo: true
           egress-policy: block
@@ -132,7 +132,7 @@ jobs:
 
       - name: Generate SBOM
         if: ${{ matrix.python-version == '3.11' }}
-        uses: anchore/sbom-action@28d71544de8eaf1b958d335707167c5f783590ad # v0.22.2
+        uses: anchore/sbom-action@17ae1740179002c89186b61233e0f892c3118b11 # v0.23.0
         with:
           format: spdx-json
           artifact-name: sbom-python.spdx.json
@@ -140,14 +140,14 @@ jobs:
 
       - name: Generate SBOM attestation
         if: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' && matrix.python-version == '3.11' }}
-        uses: actions/attest-sbom@4651f806c01d8637787e274ac3bdf724ef169f34 # v3.0.0
+        uses: actions/attest-sbom@07e74fc4e78d1aad915e867f9a094073a9f71527 # v4.0.0
         with:
           subject-path: dist/*.whl
           sbom-path: sbom-python.spdx.json
 
       - name: Generate artifact attestation
         if: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' && matrix.python-version == '3.11' }}
-        uses: actions/attest-build-provenance@96278af6caaf10aea03fd8d33a09a777ca52d62f # v3.2.0
+        uses: actions/attest-build-provenance@e4d4f7c39adfa4c260fb5c147f0622000aa14b99 # v4.0.0
         with:
           subject-path: |
             dist/*.whl
@@ -196,7 +196,7 @@ jobs:
 
     steps:
       - name: Harden runner
-        uses: step-security/harden-runner@5ef0c079ce82195b2a36a210272d6b661572d83e # v2.14.2
+        uses: step-security/harden-runner@a90bcbc6539c36a85cdfeb73f7e2f433735f215b # v2.15.0
         with:
           disable-sudo: true
           egress-policy: block
@@ -234,7 +234,7 @@ jobs:
 
     steps:
       - name: Harden runner
-        uses: step-security/harden-runner@5ef0c079ce82195b2a36a210272d6b661572d83e # v2.14.2
+        uses: step-security/harden-runner@a90bcbc6539c36a85cdfeb73f7e2f433735f215b # v2.15.0
         with:
           disable-sudo: true
           egress-policy: block
@@ -266,7 +266,7 @@ jobs:
 
     steps:
       - name: Harden runner
-        uses: step-security/harden-runner@5ef0c079ce82195b2a36a210272d6b661572d83e # v2.14.2
+        uses: step-security/harden-runner@a90bcbc6539c36a85cdfeb73f7e2f433735f215b # v2.15.0
         with:
           disable-sudo: true
           egress-policy: block
