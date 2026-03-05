@@ -73,6 +73,7 @@ jobs:
             registry.npmjs.org:443
             rekor.sigstore.dev:443
             release-assets.githubusercontent.com:443
+            releases.astral.sh:443
             storage.googleapis.com:443
             uploader.codecov.io:443
             uploads.github.com:443
