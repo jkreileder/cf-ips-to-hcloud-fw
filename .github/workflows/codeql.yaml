@@ -47,6 +47,7 @@ jobs:
             objects.githubusercontent.com:443
             pypi.org:443
             release-assets.githubusercontent.com:443
+            releases.astral.sh:443
             uploads.github.com:443
 
       - name: Checkout repository
