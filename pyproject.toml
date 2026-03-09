@@ -59,7 +59,7 @@ dev = [
     "pyright>=1.1.408",
     "pytest-cov>=7.0.0",
     "ruff>=0.15.5",
-    "ty>=0.0.20",
+    "ty>=0.0.21",
 ]
 
 [tool.pytest]
