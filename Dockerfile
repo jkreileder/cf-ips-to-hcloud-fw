@@ -1,8 +1,8 @@
 # syntax=docker/dockerfile:1.20.0@sha256:91d8edf78868ed98df4d6aad9581e63696d72b1c05a821959e5824a0432c5120
 # check=experimental=all;error=true
 
-FROM --platform=$BUILDPLATFORM ghcr.io/astral-sh/uv:0.11.2-python3.14-trixie@sha256:edb32ffc82d6dd7c6efa16e11a8ed5e1d2fd67600f5a966a08a3831f2a7ef9cc AS uv-tools-trixie
-FROM ghcr.io/astral-sh/uv:0.11.2-python3.14-alpine3.23@sha256:f661eb5c4ea5aae705674c4bc5052a4a0b5148db95452395dbececa1e9e7a1ec AS uv-tools-alpine
+FROM --platform=$BUILDPLATFORM ghcr.io/astral-sh/uv:0.11.3-python3.14-trixie@sha256:fb7ad2658490211ace81b6f5ed4f264797da88968ce6f7741155e8e10ac765f9 AS uv-tools-trixie
+FROM ghcr.io/astral-sh/uv:0.11.3-python3.14-alpine3.23@sha256:a916e5739761a75717dc70de0398fb37b105ef96c4d81d7535cdb75d6a2d87e9 AS uv-tools-alpine
 
 FROM --platform=$BUILDPLATFORM public.ecr.aws/docker/library/python:3.14.3-trixie@sha256:10c5cd782d36c531ce712844b404bb2b943cf7562ce5d2a9eede3c5363c0f45d AS builder
 
