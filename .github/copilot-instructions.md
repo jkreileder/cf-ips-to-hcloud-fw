@@ -27,9 +27,9 @@
 - First bootstrap: `make venv` (calls `uv sync`, creates `.venv/`, installs
   default + dev groups from `uv.lock`). Later targets refresh the environment when
   the lock or `pyproject.toml` changes.
-- Default loop: `make lint` (ruff + pyright) → `make test` (pytest, coverage≥80,
-  writes `coverage.xml` + `htmlcov/`) → `make build` (`uv build`). `make` runs
-  all three.
+- Default loop: `make lint` (ruff + ty + pyright) → `make test` (pytest,
+  coverage≥80, writes `coverage.xml` + `htmlcov/`) → `make build` (`uv build`).
+  `make` runs all three.
 - `make clean` wraps `git clean -xdf`; it nukes `.venv/` and every untracked
   artifact if you need a hard reset.
 - Run the CLI via `.venv/bin/cf-ips-to-hcloud-fw -c config.yaml`; `-d` enables
@@ -47,8 +47,9 @@
 
 ## CI & Quality Gates
 
-- `python-package.yaml` runs the uv sync/lint/test/build steps directly on
-  CPython 3.10–3.14, uploads coverage, SBOM, and attestations.
+- `python-package.yaml` runs the uv sync / lint (ruff, ty, pyright) / test /
+  build steps directly on CPython 3.10–3.14, uploads coverage, SBOM, and
+  attestations.
 - `docker.yaml` performs multi-arch builds, security scans (Docker Scout + Grype),
   signing, and SLSA provenance.
 - Additional workflows cover CodeQL, dependency review, scorecard, and pytest
@@ -62,8 +63,9 @@
   `LICENSE`, `pyproject.toml`, `README.md`, and `uv.lock`). See `.dockerignore`
   if you get container build surprises.
 - `pre-commit` — a `.pre-commit-config.yaml` file is present and configured to
-  run utilities like `ruff` and `gitleaks`. New contributors should install hooks
-  with `pre-commit install` or `prek install`.
+  run utilities like `ruff`, `gitleaks`, and `markdownlint-cli2`. New
+  contributors should install hooks with `pre-commit install` or
+  `prek install`.
 - Commit sign-offs — PRs require developer sign-off using `git commit -s`;
   you can see the PR checklist in `.github/pull_request_template.md`. This is
   the project DCO requirement. GitHub also enforces cryptographically-signed
