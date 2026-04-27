@@ -16,7 +16,7 @@ repos:
       - id: pretty-format-json
         args: [--autofix, --indent=4]
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: d1b833175a5d08a925900115526febd8fe71c98e  # frozen: v0.15.11
+    rev: 6fec9b7edb08fd9989088709d864a7826dc74e80  # frozen: v0.15.12
     hooks:
       - id: ruff-check
         args: [--fix, --exit-non-zero-on-fix]
@@ -26,6 +26,6 @@ repos:
     hooks:
       - id: gitleaks
   - repo: https://github.com/DavidAnson/markdownlint-cli2
-    rev: 3766ad839ad3a74558031510b3bc9872bb1d9980  # frozen: v0.22.0
+    rev: 996abf60411a8d954288ac9856aae7602b80cbda  # frozen: v0.22.1
     hooks:
       - id: markdownlint-cli2
