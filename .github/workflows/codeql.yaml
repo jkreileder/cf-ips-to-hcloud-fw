@@ -65,7 +65,7 @@ jobs:
         run: uv sync --group dev --frozen
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@9e0d7b8d25671d64c341c19c0152d693099fb5ba # v3.29.5
+        uses: github/codeql-action/init@7211b7c8077ea37d8641b6271f6a365a22a5fbfa # v3.29.5
         with:
           languages: ${{ matrix.language }}
           queries: security-and-quality
@@ -76,7 +76,7 @@ jobs:
           uv build
 
       - name: Perform CodeQL analysis
-        uses: github/codeql-action/analyze@9e0d7b8d25671d64c341c19c0152d693099fb5ba # v3.29.5
+        uses: github/codeql-action/analyze@7211b7c8077ea37d8641b6271f6a365a22a5fbfa # v3.29.5
         with:
           category: "/language:${{ matrix.language }}"
 
@@ -107,12 +107,12 @@ jobs:
           persist-credentials: false
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@9e0d7b8d25671d64c341c19c0152d693099fb5ba # v3.29.5
+        uses: github/codeql-action/init@7211b7c8077ea37d8641b6271f6a365a22a5fbfa # v3.29.5
         with:
           languages: actions
           queries: security-and-quality
 
       - name: Perform CodeQL analysis
-        uses: github/codeql-action/analyze@9e0d7b8d25671d64c341c19c0152d693099fb5ba # v3.29.5
+        uses: github/codeql-action/analyze@7211b7c8077ea37d8641b6271f6a365a22a5fbfa # v3.29.5
         with:
           category: "/language:actions"
