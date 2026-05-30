@@ -16,7 +16,7 @@ license-files = ["LICENSE"]
 requires-python = ">=3.10"
 version = "1.2.1.dev1"
 dependencies = [
-    "cloudflare>=5.1.0",
+    "cloudflare>=5.2.0",
     "hcloud>=2.20.0",
     "pydantic>=2.13.4",
     "pyyaml>=6.0.3",
@@ -58,8 +58,8 @@ PyPI = "https://pypi.org/project/cf-ips-to-hcloud-fw/"
 dev = [
     "pyright>=1.1.409",
     "pytest-cov>=7.1.0",
-    "ruff>=0.15.13",
-    "ty>=0.0.38",
+    "ruff>=0.15.15",
+    "ty>=0.0.40",
 ]
 
 [tool.pytest]
