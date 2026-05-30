@@ -2,6 +2,10 @@
 
 <!-- markdownlint-disable MD024 -->
 
+## [v1.2.2] – Unreleased
+
+- Start new development cycle
+
 ## [v1.2.1] – 2026-05-30
 
 Maintenance release with dependency and CI updates.
