@@ -2,16 +2,21 @@
 
 <!-- markdownlint-disable MD024 -->
 
-## [v1.2.1] – Unreleased
+## [v1.2.1] – 2026-05-30
 
 Maintenance release with dependency and CI updates.
 
-- Added SLSA attestation verification instructions for Python wheels, source
-  distributions, and container images in the README
-- Clarified container image references for Docker Hub, Quay.io, and GHCR
-- Simplified the Docker release workflow by removing Cosign signing and separate SBOM
-  attestation steps (SBOMs are still embedded in images via Docker Scout),
-  while retaining build provenance attestations
+- Added SLSA attestation verification guidance for Python wheels/source
+  distributions and container images, and added the SLSA badge to the README
+  (#1026, #1028)
+- Simplified Docker release attestations while keeping build provenance and image
+  SBOM usage (#1028)
+- Added artifact attestations for Python source tarballs (#1027)
+- Clarified Docker image references for Docker Hub, Quay.io, and GHCR in the
+  README (#1028)
+- Refreshed runtime and development dependencies, plus GitHub Actions and
+  pre-commit tooling updates across the release cycle (for example #1025,
+  #1217, #1231)
 
 ## [v1.2.0] – 2025-12-07
 
