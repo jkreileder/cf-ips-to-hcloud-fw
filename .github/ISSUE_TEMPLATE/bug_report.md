@@ -26,7 +26,7 @@ debug logs).
 
 **Environment**<!-- markdownlint-disable-line MD036 -->
 
-- cf-ips-to-hcloud-fw version: [e.g. 1.2.0]
+- cf-ips-to-hcloud-fw version: [e.g. 1.2.1]
 - Deployment method: [e.g. Docker, Python module]
 - If Python module, Python version: [e.g. 3.14]
 - If Python module, OS: [e.g. macOS 15.1]

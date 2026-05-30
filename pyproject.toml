@@ -14,7 +14,7 @@ readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE"]
 requires-python = ">=3.10"
-version = "1.2.1.dev1"
+version = "1.2.1"
 dependencies = [
     "cloudflare>=5.2.0",
     "hcloud>=2.20.0",
