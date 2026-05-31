@@ -68,6 +68,31 @@ def test_read_config_permissive_read_permissions_warn(
     )
 
 
+@patch("cf_ips_to_hcloud_fw.config.os.name", "nt")
+@patch("cf_ips_to_hcloud_fw.config.os.path.exists", return_value=True)
+@patch("cf_ips_to_hcloud_fw.config.os.stat")
+@patch(
+    "builtins.open",
+    mock_open(
+        read_data="""
+- token: token
+  firewalls:
+    - fw-1
+""",
+    ),
+)
+def test_read_config_permission_check_skipped_on_non_posix(
+    mock_stat: MagicMock,
+    mock_exists: MagicMock,
+) -> None:
+    """Skip POSIX-only permission checks on non-POSIX systems."""
+    projects = read_config("config.yaml")
+
+    assert projects == [Project(token=SecretStr("token"), firewalls=["fw-1"])]
+    mock_exists.assert_not_called()
+    mock_stat.assert_not_called()
+
+
 @patch("cf_ips_to_hcloud_fw.config.os.name", "posix")
 @patch("cf_ips_to_hcloud_fw.config.os.path.exists", return_value=True)
 @patch("cf_ips_to_hcloud_fw.config.os.stat")
@@ -295,3 +320,28 @@ def test_read_config_missing_firewalls_rejected(mock_logging: MagicMock) -> None
     assert "Config file 'config.yaml' is broken:" in error_msg
     assert "firewalls" in error_msg.lower()
     assert "required" in error_msg.lower() or "missing" in error_msg.lower()
+
+
+@patch("cf_ips_to_hcloud_fw.config.os.name", "nt")
+@patch(
+    "builtins.open",
+    mock_open(
+        read_data="""
+- token: SUPER_SECRET_TOKEN_VALUE
+  firewalls: []
+""",
+    ),
+)
+@patch("logging.error")
+def test_read_config_validation_error_redacts_secret_value(
+    mock_logging: MagicMock,
+) -> None:
+    """Validation error logs must not include raw token values."""
+    with pytest.raises(SystemExit) as e:
+        read_config("config.yaml")
+
+    assert e.value.code == 1
+    mock_logging.assert_called_once()
+    error_msg = mock_logging.call_args[0][0]
+    assert "Config file 'config.yaml' is broken:" in error_msg
+    assert "SUPER_SECRET_TOKEN_VALUE" not in error_msg

@@ -67,7 +67,12 @@ def read_config(config_file: str) -> list[Project]:
     try:
         projects = TypeAdapter(list[Project]).validate_python(config)
     except ValidationError as e:
-        log_error_and_exit(f"Config file {config_file!r} is broken: {e}")
+        sanitized_errors = e.errors(
+            include_url=False,
+            include_context=False,
+            include_input=False,
+        )
+        log_error_and_exit(f"Config file {config_file!r} is broken: {sanitized_errors}")
 
     if not projects:
         logging.warning(f"Config file {config_file!r} contains no projects - exiting")
