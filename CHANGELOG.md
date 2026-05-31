@@ -4,6 +4,7 @@
 
 ## [v1.2.2] – Unreleased
 
+- Upgraded Docker build provenance attestations to use the stable SLSA v1 schema
 - Start new development cycle
 
 ## [v1.2.1] – 2026-05-30
