@@ -35,6 +35,7 @@ def test_read_config_permission_stat_error(
     )
 
 
+@patch("cf_ips_to_hcloud_fw.config.os.name", "posix")
 @patch("cf_ips_to_hcloud_fw.config.os.path.exists", return_value=True)
 @patch("cf_ips_to_hcloud_fw.config.os.stat")
 @patch("logging.warning")
@@ -67,6 +68,7 @@ def test_read_config_permissive_read_permissions_warn(
     )
 
 
+@patch("cf_ips_to_hcloud_fw.config.os.name", "posix")
 @patch("cf_ips_to_hcloud_fw.config.os.path.exists", return_value=True)
 @patch("cf_ips_to_hcloud_fw.config.os.stat")
 @patch(
@@ -93,6 +95,7 @@ def test_read_config_secure_permissions(
     mock_stat.assert_called_once_with("config.yaml")
 
 
+@patch("cf_ips_to_hcloud_fw.config.os.name", "posix")
 @patch("cf_ips_to_hcloud_fw.config.os.path.exists", return_value=True)
 @patch("cf_ips_to_hcloud_fw.config.os.stat")
 @patch("logging.error")
