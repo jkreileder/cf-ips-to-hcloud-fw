@@ -253,6 +253,16 @@ your API tokens and the names of the firewalls you want to update:
     - default
 ```
 
+On POSIX systems, the tool checks config file permissions before loading the
+file:
+
+- Config files writable by group or others are rejected.
+- Group/other read access is allowed (common for mounted read-only
+  Docker/Kubernetes secrets), but a warning is logged.
+
+For local files, prefer owner-only access (for example `chmod 600 config.yaml`)
+where practical.
+
 ## Usage
 
 Run the tool with your configuration file:

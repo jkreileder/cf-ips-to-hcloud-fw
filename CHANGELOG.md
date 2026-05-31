@@ -2,9 +2,12 @@
 
 <!-- markdownlint-disable MD024 -->
 
-## [v1.2.2] – Unreleased
+## [v1.3.0] – Unreleased
 
 - Upgraded Docker build provenance attestations to use the stable SLSA v1 schema
+- **Breaking:** Added POSIX config-permission checks that reject group/other
+  writable config files while allowing common read-only Docker/Kubernetes
+  secret mounts with a warning
 - Start new development cycle
 
 ## [v1.2.1] – 2026-05-30
