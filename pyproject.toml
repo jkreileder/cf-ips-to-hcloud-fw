@@ -56,7 +56,6 @@ PyPI = "https://pypi.org/project/cf-ips-to-hcloud-fw/"
 
 [dependency-groups]
 dev = [
-    "pyright>=1.1.410",
     "pytest-cov>=7.1.0",
     "ruff>=0.15.16",
     "ty>=0.0.44",
@@ -76,14 +75,7 @@ addopts = [
 ]
 
 [tool.coverage.run]
-core = "ctrace" # test_config.py doesn't work with sysmon and python 3.14 yet
-
-[tool.pyright]
-include = ["src", "tests"]
-strict = ["src", "tests"]
-reportMissingImports = true
-reportMissingTypeStubs = true
-venv = ".venv"
+core = "ctrace" # test_config.py does not work with sysmon and python 3.14 yet
 
 [tool.ruff]
 src = ["src"]
