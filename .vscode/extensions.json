@@ -1,11 +1,11 @@
 {
     "recommendations": [
-        "davidanson.vscode-markdownlint",
-        "yzhang.markdown-all-in-one",
-        "ms-python.vscode-pylance",
-        "ms-python.python",
-        "github.vscode-github-actions",
+        "astral-sh.ty",
         "charliermarsh.ruff",
-        "tamasfe.even-better-toml"
+        "davidanson.vscode-markdownlint",
+        "github.vscode-github-actions",
+        "ms-python.python",
+        "tamasfe.even-better-toml",
+        "yzhang.markdown-all-in-one"
     ]
 }
