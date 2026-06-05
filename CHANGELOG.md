@@ -8,6 +8,8 @@
 - **Breaking:** Added POSIX config-permission checks that reject group/other
   writable config files while allowing common read-only Docker/Kubernetes
   secret mounts with a warning
+- Replaced `pyright` with `ty` for type checking in the lint pipeline and
+  removed the `ms-python.vscode-pylance` VS Code extension recommendation
 - Start new development cycle
 
 ## [v1.2.1] – 2026-05-30

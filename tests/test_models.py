@@ -32,6 +32,6 @@ def test_project_extra_field_rejected() -> None:
         Project(
             token=SecretStr("my-token"),
             firewalls=["fw-1"],
-            unknown_field="value",  # pyright: ignore[reportCallIssue] # ty: ignore[unknown-argument]
+            unknown_field="value",  # ty: ignore[unknown-argument]
         )
     assert "Extra inputs are not permitted" in str(e.value)

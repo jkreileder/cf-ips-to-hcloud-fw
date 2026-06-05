@@ -97,9 +97,6 @@ jobs:
       - name: Type check (ty)
         run: uv run --no-sync ty check
 
-      - name: Type check (pyright)
-        run: uv run --no-sync pyright
-
       - name: Test
         run: uv run --no-sync pytest
 

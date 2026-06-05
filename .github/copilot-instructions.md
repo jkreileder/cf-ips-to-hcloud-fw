@@ -27,7 +27,7 @@
 - First bootstrap: `make venv` (calls `uv sync`, creates `.venv/`, installs
   default + dev groups from `uv.lock`). Later targets refresh the environment when
   the lock or `pyproject.toml` changes.
-- Default loop: `make lint` (ruff + ty + pyright) → `make test` (pytest,
+- Default loop: `make lint` (ruff + ty) → `make test` (pytest,
   coverage≥80, writes `coverage.xml` + `htmlcov/`) → `make build` (`uv build`).
   `make` runs all three.
 - `make clean` wraps `git clean -xdf`; it nukes `.venv/` and every untracked
@@ -47,7 +47,7 @@
 
 ## CI & Quality Gates
 
-- `python-package.yaml` runs the uv sync / lint (ruff, ty, pyright) / test /
+- `python-package.yaml` runs the uv sync / lint (ruff, ty) / test /
   build steps directly on CPython 3.10–3.14, uploads coverage, SBOM, and
   attestations.
 - `docker.yaml` performs multi-arch builds, security scans (Docker Scout + Grype),
