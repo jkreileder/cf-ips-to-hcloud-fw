@@ -22,12 +22,6 @@
         "editor.defaultFormatter": "redhat.vscode-yaml",
         "editor.formatOnSave": true
     },
-    "python.analysis.autoFormatStrings": true,
-    "python.analysis.autoImportCompletions": true,
-    "python.analysis.inlayHints.callArgumentNames": "partial",
-    "python.analysis.inlayHints.functionReturnTypes": true,
-    "python.analysis.inlayHints.pytestParameters": true,
-    "python.analysis.inlayHints.variableTypes": true,
     "python.missingPackage.severity": "Error",
     "python.testing.pytestArgs": [
         "--no-cov"
