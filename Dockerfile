@@ -13,11 +13,8 @@ RUN --mount=type=bind,from=uv-tools-trixie,source=/usr/local/bin/uv,target=/usr/
     --mount=target=pyproject.toml,source=/pyproject.toml \
     --mount=target=uv.lock,source=/uv.lock \
     --mount=type=cache,id=uv-cache,target=/root/.cache/uv \
-    --mount=type=cache,id=npm,target=/root/.npm <<EOF
-    set -eux
+    --mount=type=cache,id=npm,target=/root/.npm \
     uv sync --link-mode copy --group dev --frozen --no-install-project
-    uv run --no-project pyright --version
-EOF
 
 # Lint, test and build using the synced environment
 RUN --mount=type=bind,from=uv-tools-trixie,source=/usr/local/bin/uv,target=/usr/local/bin/uv \
@@ -33,7 +30,6 @@ RUN --mount=type=bind,from=uv-tools-trixie,source=/usr/local/bin/uv,target=/usr/
     uv sync --link-mode copy --group dev --frozen
     uv run --no-sync ruff check --output-format=github
     uv run --no-sync ty check
-    uv run --no-sync pyright
     uv run --no-sync pytest
     uv build
 EOF
