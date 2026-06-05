@@ -56,10 +56,10 @@ PyPI = "https://pypi.org/project/cf-ips-to-hcloud-fw/"
 
 [dependency-groups]
 dev = [
-    "pyright>=1.1.409",
+    "pyright>=1.1.410",
     "pytest-cov>=7.1.0",
-    "ruff>=0.15.15",
-    "ty>=0.0.40",
+    "ruff>=0.15.16",
+    "ty>=0.0.44",
 ]
 
 [tool.pytest]
