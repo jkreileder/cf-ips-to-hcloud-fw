@@ -70,7 +70,6 @@ jobs:
             objects.githubusercontent.com:443
             pypi.org:443
             raw.githubusercontent.com:443
-            registry.npmjs.org:443
             rekor.sigstore.dev:443
             release-assets.githubusercontent.com:443
             releases.astral.sh:443
