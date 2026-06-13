@@ -79,8 +79,11 @@ Find every occurrence of the old release version to be thorough (the `:latest`
 and `:main` tags stay as-is — only the pinned numeric tag changes):
 
 ```bash
-git --no-pager grep -n "<old-version>" -- README.md .github/ISSUE_TEMPLATE/bug_report.md
+git --no-pager grep -nF "<old-version>" -- README.md .github/ISSUE_TEMPLATE/bug_report.md
 ```
+
+`-F` matches the version literally — without it the dots in `1.2.3` are regex
+wildcards and can overmatch.
 
 If you renamed/added/removed a README section, also update the manually
 maintained table of contents.
@@ -110,14 +113,16 @@ get the PR merged, then continue.
 
 ### 7. Tag the merged release commit
 
-After the PR is merged, update `main` and tag the merge result. The tagged
-commit must be the one carrying the release version in `pyproject.toml`.
+After the PR is merged, tag **the exact merge commit** — don't just tag whatever
+`main` points at, since another PR could land in the meantime and advance `main`
+past the release. Capture the release PR's merge SHA and tag that commit.
 
 ```bash
-git switch main && git pull --ff-only
-grep '^version = ' pyproject.toml      # confirm it shows X.Y.Z
-git tag -s vX.Y.Z -m "vX.Y.Z"
-git --no-pager tag -v vX.Y.Z           # verify signature
+release_sha="$(gh pr view <release-pr-number> --json mergeCommit --jq .mergeCommit.oid)"
+git fetch origin
+git show "$release_sha:pyproject.toml" | grep '^version = '   # confirm X.Y.Z
+git tag -s vX.Y.Z "$release_sha" -m "vX.Y.Z"
+git --no-pager tag -v vX.Y.Z                                  # verify signature
 ```
 
 ### 8. Push the tag

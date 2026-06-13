@@ -125,9 +125,11 @@ Fill the repo's PR template, but keep it lean and honest:
 
 - Write the prose sections (Description, Motivation, Changes Made) accurately.
 - **Don't pre-tick the template's checkboxes.** Those are the *author's*
-  self-certification, and GitHub already verifies the DCO sign-off, signature,
-  and Conventional Commits title — so leave the boxes unchecked for the human to
-  confirm rather than asserting them on their behalf.
+  self-certification. The DCO sign-off and the commit signature are already
+  enforced (DCO app + branch protection); the Conventional Commits title is a
+  repo convention you should follow but nothing verifies it automatically.
+  Either way, leave the boxes unchecked for the human to confirm rather than
+  asserting them on their behalf.
 - Report what you actually ran in prose under Testing (e.g. "`make check` —
   56 passed, 100% coverage") instead of ticking boxes.
 - Drop sections that don't apply rather than padding them.
