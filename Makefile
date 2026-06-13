@@ -49,4 +49,4 @@ upgrade-deps:
 
 .PHONY: clean
 clean:
-	git clean -xdf -e /config.yaml   # hard reset, but keep local config.yaml (holds API tokens)
+	git clean -xdf -e /config.yaml -e /.claude/settings.local.json   # hard reset; keep local config.yaml (API tokens) and Claude settings
