@@ -1,5 +1,7 @@
 {
     "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+    "automergeStrategy": "squash",
+    "configMigration": true,
     "customManagers": [
         {
             "customType": "regex",
@@ -117,6 +119,7 @@
         }
     ],
     "semanticCommits": "enabled",
+    "timezone": "Europe/Berlin",
     "vulnerabilityAlerts": {
         "labels": [
             "security"
