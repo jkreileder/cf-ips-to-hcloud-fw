@@ -1,7 +1,6 @@
 {
     "$schema": "https://docs.renovatebot.com/renovate-schema.json",
     "automergeStrategy": "squash",
-    "configMigration": true,
     "customManagers": [
         {
             "customType": "regex",
@@ -16,30 +15,21 @@
         }
     ],
     "extends": [
-        "config:recommended",
+        "config:best-practices",
         ":gitSignOff",
-        ":dependencyDashboard",
-        "helpers:pinGitHubActionDigests",
-        "schedule:earlyMondays"
+        "schedule:earlyMondays",
+        "schedule:automergeDaily"
     ],
     "internalChecksFilter": "strict",
     "labels": [
         "dependencies"
     ],
     "lockFileMaintenance": {
-        "automerge": true,
-        "enabled": true
+        "automerge": true
     },
     "minimumReleaseAge": "3 days",
     "osvVulnerabilityAlerts": true,
     "packageRules": [
-        {
-            "description": "Pin every Docker-datasource image by digest (FROM lines, the # syntax directive, the scout SBOM image).",
-            "matchDatasources": [
-                "docker"
-            ],
-            "pinDigests": true
-        },
         {
             "description": "SLSA generators run as reusable workflows verified by tag ref - never pin to a digest.",
             "matchDepNames": [
