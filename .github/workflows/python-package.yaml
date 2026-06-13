@@ -13,10 +13,16 @@ on:
 permissions:
   contents: read
 
+# Cancel superseded PR/branch runs, but never cancel tag runs (they publish).
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
+
 jobs:
   upload-event-file:
     name: Upload event file
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - name: Harden runner
         uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
@@ -33,6 +39,7 @@ jobs:
   build:
     name: Build
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     permissions:
       contents: read
       id-token: write
@@ -185,6 +192,7 @@ jobs:
     needs:
       - provenance-and-draft-release
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     environment:
       name: test-pypi
       url: https://test.pypi.org/p/cf-ips-to-hcloud-fw
@@ -223,6 +231,7 @@ jobs:
       - provenance-and-draft-release
       - publish-to-test-pypi
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     environment:
       name: pypi
       url: https://pypi.org/p/cf-ips-to-hcloud-fw
@@ -258,6 +267,7 @@ jobs:
     needs:
       - publish-to-pypi
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       contents: write
 
