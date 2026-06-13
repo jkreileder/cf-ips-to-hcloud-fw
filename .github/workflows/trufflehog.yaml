@@ -13,10 +13,15 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   trufflehog:
     name: Secret scan
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     steps:
       - name: Harden runner

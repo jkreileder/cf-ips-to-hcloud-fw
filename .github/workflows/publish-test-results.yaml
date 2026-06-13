@@ -10,10 +10,18 @@ on:
 permissions:
   contents: read
 
+# workflow_run runs on the default-branch ref, so group by the *triggering*
+# run's branch — otherwise unrelated builds finishing together would cancel
+# each other's result publish.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.workflow_run.head_branch }}
+  cancel-in-progress: true
+
 jobs:
   publish-test-results:
     name: Publish test results
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     if: ${{ github.event.workflow_run.conclusion != 'skipped' }}
 
     permissions:
