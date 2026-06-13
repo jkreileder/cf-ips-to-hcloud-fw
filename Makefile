@@ -7,10 +7,10 @@ SHELL := bash
 
 UV := uv
 VENV := .venv
-BIN := $(VENV)/bin
 SYNC_STAMP := $(VENV)/.uv-synced
 
 UV_SYNC_FLAGS := --group dev --frozen
+UV_RUN_FLAGS := --no-sync   # env is already synced via $(SYNC_STAMP); don't re-check
 
 .PHONY: all
 all: lint test build
@@ -27,12 +27,12 @@ sync: $(SYNC_STAMP)
 
 .PHONY: lint
 lint: $(SYNC_STAMP)
-	$(UV) run $(UV_SYNC_FLAGS) ruff check
-	$(UV) run $(UV_SYNC_FLAGS) ty check
+	$(UV) run $(UV_RUN_FLAGS) ruff check
+	$(UV) run $(UV_RUN_FLAGS) ty check
 
 .PHONY: test
 test: $(SYNC_STAMP)
-	$(UV) run $(UV_SYNC_FLAGS) pytest
+	$(UV) run $(UV_RUN_FLAGS) pytest
 
 .PHONY: check
 check: lint test
@@ -49,4 +49,4 @@ upgrade-deps:
 
 .PHONY: clean
 clean:
-	git clean -xdf
+	git clean -xdf -e /config.yaml   # hard reset, but keep local config.yaml (holds API tokens)
