@@ -1,0 +1,125 @@
+{
+    "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+    "customManagers": [
+        {
+            "customType": "regex",
+            "datasourceTemplate": "docker",
+            "description": "Keep docker/scout-sbom-indexer current - it is passed as the sbom generator input to docker/build-push-action, so no standard manager sees it.",
+            "managerFilePatterns": [
+                ".github/workflows/docker.yaml"
+            ],
+            "matchStrings": [
+                "generator=(?<depName>docker/scout-sbom-indexer):(?<currentValue>[^@'\\s]+)@(?<currentDigest>sha256:[a-f0-9]+)"
+            ]
+        }
+    ],
+    "extends": [
+        "config:recommended",
+        ":gitSignOff",
+        ":dependencyDashboard",
+        "helpers:pinGitHubActionDigests",
+        "schedule:earlyMondays"
+    ],
+    "internalChecksFilter": "strict",
+    "labels": [
+        "dependencies"
+    ],
+    "lockFileMaintenance": {
+        "automerge": true,
+        "enabled": true
+    },
+    "minimumReleaseAge": "3 days",
+    "osvVulnerabilityAlerts": true,
+    "packageRules": [
+        {
+            "description": "Pin every Docker-datasource image by digest (FROM lines, the # syntax directive, the scout SBOM image).",
+            "matchDatasources": [
+                "docker"
+            ],
+            "pinDigests": true
+        },
+        {
+            "description": "SLSA generators run as reusable workflows verified by tag ref - never pin to a digest.",
+            "matchDepNames": [
+                "slsa-framework/slsa-github-generator"
+            ],
+            "pinDigests": false
+        },
+        {
+            "description": "Group GitHub Actions minor/patch into one PR; majors get their own PR.",
+            "groupName": "github-actions",
+            "matchManagers": [
+                "github-actions"
+            ],
+            "matchUpdateTypes": [
+                "minor",
+                "patch"
+            ]
+        },
+        {
+            "description": "Group container/image minor/patch into one PR; majors get their own PR.",
+            "groupName": "docker",
+            "matchManagers": [
+                "dockerfile",
+                "custom.regex"
+            ],
+            "matchUpdateTypes": [
+                "minor",
+                "patch"
+            ]
+        },
+        {
+            "automerge": true,
+            "description": "Default for pep621: treat as dev tooling - group minor/patch and automerge.",
+            "groupName": "uv (dev)",
+            "matchManagers": [
+                "pep621"
+            ],
+            "matchUpdateTypes": [
+                "minor",
+                "patch"
+            ]
+        },
+        {
+            "automerge": false,
+            "description": "Runtime application dependencies: grouped, manual review.",
+            "groupName": "uv (runtime)",
+            "matchDepTypes": [
+                "project.dependencies"
+            ],
+            "matchManagers": [
+                "pep621"
+            ],
+            "matchUpdateTypes": [
+                "minor",
+                "patch"
+            ]
+        },
+        {
+            "automerge": false,
+            "description": "Build backend (uv_build): its own PR, manual - build-system changes can affect packaging.",
+            "groupName": "uv (build-system)",
+            "matchDepTypes": [
+                "build-system.requires"
+            ],
+            "matchManagers": [
+                "pep621"
+            ]
+        },
+        {
+            "automerge": true,
+            "description": "Automerge digest-only refreshes and initial digest pins (actions + images).",
+            "groupName": "digests",
+            "matchUpdateTypes": [
+                "digest",
+                "pin"
+            ]
+        }
+    ],
+    "semanticCommits": "enabled",
+    "vulnerabilityAlerts": {
+        "labels": [
+            "security"
+        ]
+    }
+}
