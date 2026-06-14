@@ -102,7 +102,7 @@ jobs:
         run: uv run --no-sync ruff check --output-format=github
 
       - name: Type check (ty)
-        run: uv run --no-sync ty check
+        run: uv run --no-sync ty check --output-format=github
 
       - name: Test
         run: uv run --no-sync pytest
