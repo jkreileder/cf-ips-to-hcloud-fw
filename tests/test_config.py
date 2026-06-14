@@ -7,9 +7,9 @@ import pytest
 from pydantic import SecretStr
 
 from cf_ips_to_hcloud_fw.config import (
+    _read_config,
+    _read_config_from_env,
     load_projects,
-    read_config,
-    read_config_from_env,
 )
 from cf_ips_to_hcloud_fw.models import Project
 
@@ -27,7 +27,7 @@ def test_read_config_permission_stat_error(
     mock_stat.side_effect = OSError("boom")
 
     with pytest.raises(SystemExit) as e:
-        read_config("config.yaml")
+        _read_config("config.yaml")
 
     assert e.value.code == 1
     mock_exists.assert_called_once_with("config.yaml")
@@ -61,7 +61,7 @@ def test_read_config_permissive_read_permissions_warn(
 """,
         ),
     ):
-        projects = read_config("config.yaml")
+        projects = _read_config("config.yaml")
 
     assert projects == [Project(token=SecretStr("token"), firewalls=["fw-1"])]
     mock_exists.assert_called_once_with("config.yaml")
@@ -90,7 +90,7 @@ def test_read_config_permission_check_skipped_on_non_posix(
     mock_exists: MagicMock,
 ) -> None:
     """Skip POSIX-only permission checks on non-POSIX systems."""
-    projects = read_config("config.yaml")
+    projects = _read_config("config.yaml")
 
     assert projects == [Project(token=SecretStr("token"), firewalls=["fw-1"])]
     mock_exists.assert_not_called()
@@ -117,7 +117,7 @@ def test_read_config_secure_permissions(
     """Allow owner-only config files to be parsed normally."""
     mock_stat.return_value = MagicMock(st_mode=stat.S_IFREG | 0o600)
 
-    projects = read_config("config.yaml")
+    projects = _read_config("config.yaml")
 
     assert projects == [Project(token=SecretStr("token"), firewalls=["fw-1"])]
     mock_exists.assert_called_once_with("config.yaml")
@@ -137,7 +137,7 @@ def test_read_config_group_or_world_writable_permissions_rejected(
     mock_stat.return_value = MagicMock(st_mode=stat.S_IFREG | 0o666)
 
     with pytest.raises(SystemExit) as e:
-        read_config("config.yaml")
+        _read_config("config.yaml")
 
     assert e.value.code == 1
     mock_exists.assert_called_once_with("config.yaml")
@@ -153,9 +153,9 @@ def test_read_config_group_or_world_writable_permissions_rejected(
 def test_read_config_file_not_found(
     mock_logging: MagicMock, mock_open: MagicMock
 ) -> None:
-    """Ensure read_config exits cleanly when the config path is missing."""
+    """Ensure _read_config exits cleanly when the config path is missing."""
     with pytest.raises(SystemExit) as e:
-        read_config("config.yaml")
+        _read_config("config.yaml")
     assert e.value.code == 1
     mock_open.assert_called_once_with("config.yaml", encoding="utf-8")
     mock_logging.assert_called_once_with("Config file 'config.yaml' not found.")
@@ -168,7 +168,7 @@ def test_read_config_file_is_a_directory(
 ) -> None:
     """Detect directories passed as config files and exit."""
     with pytest.raises(SystemExit) as e:
-        read_config("config.yaml")
+        _read_config("config.yaml")
     assert e.value.code == 1
     mock_open.assert_called_once_with("config.yaml", encoding="utf-8")
     mock_logging.assert_called_once_with("Config file 'config.yaml' is a directory.")
@@ -181,7 +181,7 @@ def test_read_config_file_is_unreadable(
 ) -> None:
     """Verify unreadable files trigger an error log and exit."""
     with pytest.raises(SystemExit) as e:
-        read_config("config.yaml")
+        _read_config("config.yaml")
     assert e.value.code == 1
     mock_open.assert_called_once_with("config.yaml", encoding="utf-8")
     mock_logging.assert_called_once_with("Config file 'config.yaml' is unreadable.")
@@ -192,7 +192,7 @@ def test_read_config_file_is_unreadable(
 def test_read_config_empty(mock_logging: MagicMock) -> None:
     """Empty files fail validation and abort execution."""
     with pytest.raises(SystemExit) as e:
-        read_config("config.yaml")
+        _read_config("config.yaml")
     assert e.value.code == 1
     mock_logging.assert_called_once()
     assert "Config file 'config.yaml' is broken: " in mock_logging.call_args[0][0]
@@ -203,7 +203,7 @@ def test_read_config_empty(mock_logging: MagicMock) -> None:
 def test_read_config_empty_list(mock_logging: MagicMock) -> None:
     """Empty project lists exit with code 0 after warning the operator."""
     with pytest.raises(SystemExit) as e:
-        read_config("config.yaml")
+        _read_config("config.yaml")
     assert e.value.code == 0
     mock_logging.assert_called_once_with(
         "Config file 'config.yaml' contains no projects - exiting",
@@ -215,7 +215,7 @@ def test_read_config_empty_list(mock_logging: MagicMock) -> None:
 def test_read_config_broken_yaml(mock_logging: MagicMock) -> None:
     """Malformed YAML surfaces as an error message and exit."""
     with pytest.raises(SystemExit) as e:
-        read_config("config.yaml")
+        _read_config("config.yaml")
     assert e.value.code == 1
     mock_logging.assert_called_once()
     assert "Error reading config file 'config.yaml': " in mock_logging.call_args[0][0]
@@ -233,7 +233,7 @@ def test_read_config_broken_yaml(mock_logging: MagicMock) -> None:
 )
 def test_read_config() -> None:
     """Happy-path parsing returns validated Project instances."""
-    projects = read_config("config.yaml")
+    projects = _read_config("config.yaml")
     assert projects == [Project(token=SecretStr("token"), firewalls=["fw-1"])]
 
 
@@ -251,7 +251,7 @@ def test_read_config() -> None:
 def test_read_config_extra_field_rejected(mock_logging: MagicMock) -> None:
     """Config with misspelled or extra fields is rejected due to extra='forbid'."""
     with pytest.raises(SystemExit) as e:
-        read_config("config.yaml")
+        _read_config("config.yaml")
     assert e.value.code == 1
     mock_logging.assert_called_once()
     error_msg = mock_logging.call_args[0][0]
@@ -275,7 +275,7 @@ def test_read_config_extra_field_rejected(mock_logging: MagicMock) -> None:
 def test_read_config_unknown_key_rejected(mock_logging: MagicMock) -> None:
     """Config with unknown keys alongside valid ones is rejected."""
     with pytest.raises(SystemExit) as e:
-        read_config("config.yaml")
+        _read_config("config.yaml")
     assert e.value.code == 1
     mock_logging.assert_called_once()
     error_msg = mock_logging.call_args[0][0]
@@ -297,7 +297,7 @@ def test_read_config_unknown_key_rejected(mock_logging: MagicMock) -> None:
 def test_read_config_empty_firewalls_rejected(mock_logging: MagicMock) -> None:
     """Config with empty firewalls list is rejected due to min_length=1."""
     with pytest.raises(SystemExit) as e:
-        read_config("config.yaml")
+        _read_config("config.yaml")
     assert e.value.code == 1
     mock_logging.assert_called_once()
     error_msg = mock_logging.call_args[0][0]
@@ -317,7 +317,7 @@ def test_read_config_empty_firewalls_rejected(mock_logging: MagicMock) -> None:
 def test_read_config_missing_firewalls_rejected(mock_logging: MagicMock) -> None:
     """Config missing required firewalls field is rejected."""
     with pytest.raises(SystemExit) as e:
-        read_config("config.yaml")
+        _read_config("config.yaml")
     assert e.value.code == 1
     mock_logging.assert_called_once()
     error_msg = mock_logging.call_args[0][0]
@@ -342,7 +342,7 @@ def test_read_config_validation_error_redacts_secret_value(
 ) -> None:
     """Validation error logs must not include raw token values."""
     with pytest.raises(SystemExit) as e:
-        read_config("config.yaml")
+        _read_config("config.yaml")
 
     assert e.value.code == 1
     mock_logging.assert_called_once()
@@ -358,7 +358,7 @@ def test_read_config_validation_error_redacts_secret_value(
 )
 def test_read_config_from_env() -> None:
     """A token and comma-separated firewall list build a single project."""
-    projects = read_config_from_env()
+    projects = _read_config_from_env()
     assert projects == [
         Project(token=SecretStr("env-token"), firewalls=["fw-1", "fw-2"])
     ]
@@ -371,7 +371,7 @@ def test_read_config_from_env() -> None:
 )
 def test_read_config_from_env_trims_and_filters_firewalls() -> None:
     """Whitespace is trimmed and empty entries dropped from the firewall list."""
-    projects = read_config_from_env()
+    projects = _read_config_from_env()
     assert projects == [
         Project(token=SecretStr("env-token"), firewalls=["fw-1", "fw-2"])
     ]
@@ -382,7 +382,7 @@ def test_read_config_from_env_trims_and_filters_firewalls() -> None:
 def test_read_config_from_env_missing_token(mock_logging: MagicMock) -> None:
     """A missing HCLOUD_TOKEN exits with a helpful error."""
     with pytest.raises(SystemExit) as e:
-        read_config_from_env()
+        _read_config_from_env()
     assert e.value.code == 1
     mock_logging.assert_called_once()
     error_msg = mock_logging.call_args[0][0]
@@ -394,7 +394,7 @@ def test_read_config_from_env_missing_token(mock_logging: MagicMock) -> None:
 def test_read_config_from_env_missing_firewalls(mock_logging: MagicMock) -> None:
     """A token without any firewalls exits with a helpful error."""
     with pytest.raises(SystemExit) as e:
-        read_config_from_env()
+        _read_config_from_env()
     assert e.value.code == 1
     mock_logging.assert_called_once()
     error_msg = mock_logging.call_args[0][0]
@@ -412,15 +412,15 @@ def test_read_config_from_env_blank_firewalls_redacts_token(
 ) -> None:
     """The firewalls error must not leak the token value."""
     with pytest.raises(SystemExit) as e:
-        read_config_from_env()
+        _read_config_from_env()
     assert e.value.code == 1
     mock_logging.assert_called_once()
     assert "SUPER_SECRET_TOKEN_VALUE" not in mock_logging.call_args[0][0]
 
 
-@patch("cf_ips_to_hcloud_fw.config.read_config_from_env")
+@patch("cf_ips_to_hcloud_fw.config._read_config_from_env")
 @patch("cf_ips_to_hcloud_fw.config.os.path.exists")
-@patch("cf_ips_to_hcloud_fw.config.read_config")
+@patch("cf_ips_to_hcloud_fw.config._read_config")
 def test_load_projects_explicit_config_wins(
     mock_read_config: MagicMock,
     mock_exists: MagicMock,
@@ -435,9 +435,9 @@ def test_load_projects_explicit_config_wins(
     mock_read_env.assert_not_called()
 
 
-@patch("cf_ips_to_hcloud_fw.config.read_config_from_env")
+@patch("cf_ips_to_hcloud_fw.config._read_config_from_env")
 @patch("cf_ips_to_hcloud_fw.config.os.path.exists", return_value=True)
-@patch("cf_ips_to_hcloud_fw.config.read_config")
+@patch("cf_ips_to_hcloud_fw.config._read_config")
 def test_load_projects_default_file_used(
     mock_read_config: MagicMock,
     mock_exists: MagicMock,
@@ -458,8 +458,8 @@ def test_load_projects_default_file_used(
     clear=True,
 )
 @patch("cf_ips_to_hcloud_fw.config.os.path.exists", return_value=True)
-@patch("cf_ips_to_hcloud_fw.config.read_config_from_env")
-@patch("cf_ips_to_hcloud_fw.config.read_config")
+@patch("cf_ips_to_hcloud_fw.config._read_config_from_env")
+@patch("cf_ips_to_hcloud_fw.config._read_config")
 def test_load_projects_file_beats_env(
     mock_read_config: MagicMock,
     mock_read_env: MagicMock,
@@ -473,9 +473,9 @@ def test_load_projects_file_beats_env(
     mock_read_env.assert_not_called()
 
 
-@patch("cf_ips_to_hcloud_fw.config.read_config")
+@patch("cf_ips_to_hcloud_fw.config._read_config")
 @patch("cf_ips_to_hcloud_fw.config.os.path.exists", return_value=False)
-@patch("cf_ips_to_hcloud_fw.config.read_config_from_env")
+@patch("cf_ips_to_hcloud_fw.config._read_config_from_env")
 def test_load_projects_env_fallback(
     mock_read_env: MagicMock,
     mock_exists: MagicMock,

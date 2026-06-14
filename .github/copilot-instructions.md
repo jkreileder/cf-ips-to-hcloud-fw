@@ -18,7 +18,7 @@
   and the run continues, exiting non-zero at the end (see `ProjectOutcome`).
 - `config.py` resolves `Project` models via `load_projects`: explicit `-c` file,
   else a default `config.yaml`, else `HCLOUD_TOKEN` + `HCLOUD_FIREWALLS` env vars
-  (`read_config` / `read_config_from_env`); empty/invalid configs exit early.
+  (`_read_config` / `_read_config_from_env`); empty/invalid configs exit early.
 - `models.py` defines Pydantic structures (`CloudflareCIDRs`, `Project`) used for
   validation and config.
 - `custom_logging.py` handles logging setup and the error helpers: `log_error`
