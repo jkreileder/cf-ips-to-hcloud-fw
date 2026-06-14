@@ -153,9 +153,11 @@ gh release edit vX.Y.Z --draft=false   # after verifying notes & assets
 ### 10. Start the next dev cycle (via a second PR)
 
 Once the release is published, open another PR (again, not a direct push to
-`main`): bump `pyproject.toml` to the next dev version (e.g. `1.4.0.dev1`) and
-add a fresh `## [vNEXT] – Unreleased` heading at the top of `CHANGELOG.md` with
-a `- Start new development cycle` bullet.
+`main`): bump `pyproject.toml` to the next dev version — **default to the next
+patch** (e.g. after releasing `1.3.0`, use `1.3.1.dev1`; escalate to a
+minor/major dev version later only if the work warrants it) — and add a fresh
+`## [vNEXT] – Unreleased` heading at the top of `CHANGELOG.md` with a
+`- Start new development cycle` bullet.
 
 ```bash
 git switch -c chore/start-vNEXT-dev-cycle
