@@ -45,7 +45,7 @@ def _validate_config_permissions(config_file: str) -> None:
         )
 
 
-def read_config(config_file: str) -> list[Project]:
+def _read_config(config_file: str) -> list[Project]:
     """Load and validate project definitions from a YAML file.
 
     Args:
@@ -85,7 +85,7 @@ def read_config(config_file: str) -> list[Project]:
     return projects
 
 
-def read_config_from_env() -> list[Project]:
+def _read_config_from_env() -> list[Project]:
     """Build a single-project config from environment variables.
 
     Used when no config file is given. Reads the API token from ``HCLOUD_TOKEN``
@@ -134,7 +134,7 @@ def load_projects(config_file: str | None) -> list[Project]:
         list[Project]: Ordered list of validated project definitions.
     """
     if config_file is not None:
-        return read_config(config_file)
+        return _read_config(config_file)
     if os.path.exists(DEFAULT_CONFIG_FILE):
-        return read_config(DEFAULT_CONFIG_FILE)
-    return read_config_from_env()
+        return _read_config(DEFAULT_CONFIG_FILE)
+    return _read_config_from_env()
