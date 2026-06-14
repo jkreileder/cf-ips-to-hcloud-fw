@@ -24,11 +24,23 @@ def setup_logging(args: argparse.Namespace) -> None:
     )
 
 
+def log_error(msg: str) -> None:
+    """Emit an error without terminating the process.
+
+    Use for recoverable failures that should be recorded but allow the run to
+    continue (for example, one firewall failing while others still sync).
+
+    Args:
+        msg: Pre-formatted error message to log.
+    """
+    logging.error(msg)
+
+
 def log_error_and_exit(msg: str) -> NoReturn:
     """Emit an error and terminate the process with exit code 1.
 
     Args:
         msg: Pre-formatted error message to log before exiting.
     """
-    logging.error(msg)
+    log_error(msg)
     sys.exit(1)

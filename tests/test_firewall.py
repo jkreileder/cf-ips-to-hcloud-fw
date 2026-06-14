@@ -271,21 +271,19 @@ def test_fw_set_rules(mock_client: MagicMock, *, rules: list[FirewallRule]) -> N
     """fw_set_rules forwards the current rule list to the SDK verbatim."""
     expected = rules or []
     fw = Firewall(name="fw-1", rules=rules)
-    fw_set_rules(mock_client, fw, 1)
+    assert fw_set_rules(mock_client, fw, 1) is True
     mock_client.firewalls.set_rules.assert_called_once_with(fw, expected)
 
 
 @patch("cf_ips_to_hcloud_fw.firewall.Client")
 @patch("logging.error")
 def test_fw_set_rules_fail(mock_logging: MagicMock, mock_client: MagicMock) -> None:
-    """fw_set_rules surfaces API exceptions via log_error_and_exit."""
+    """fw_set_rules logs API exceptions and reports failure without exiting."""
     fw = Firewall(name="fw-1", rules=[])
     mock_client.firewalls.set_rules.side_effect = APIException(
         "Test exception", "Message", "Details"
     )
-    with pytest.raises(SystemExit) as e:
-        fw_set_rules(mock_client, fw, 1)
-    assert e.value.code == 1
+    assert fw_set_rules(mock_client, fw, 1) is False
     mock_client.firewalls.set_rules.assert_called_once_with(fw, [])
     mock_logging.assert_called_once_with(
         "hcloud/firewall.set_rules failed for 'fw-1' in project 1: "
@@ -319,8 +317,8 @@ def test_update_project_found(
     cf_ips = CloudflareCIDRs(ipv4_cidrs=["127.1/32"], ipv6_cidrs=["::1/64"])
     mock_client.return_value.firewalls.get_by_name.return_value = fw
     project = Project(token=SecretStr("token-1"), firewalls=["fw-1"])
-    skipped = update_project(project=project, cf_cidrs=cf_ips, project_index=1)
-    assert skipped == []
+    outcome = update_project(project=project, cf_cidrs=cf_ips, project_index=1)
+    assert outcome == ([], [])
     mock_client.return_value.firewalls.get_by_name.assert_called_once_with("fw-1")
     mock_update_firewall.assert_called_once_with(
         mock_client.return_value, fw, cf_ips, project_index=1
@@ -336,12 +334,12 @@ def test_update_project_not_found(
     """Missing firewall names must log debug and continue processing."""
     mock_client.return_value.firewalls.get_by_name.return_value = None
     project = Project(token=SecretStr("token-1"), firewalls=["fw-1"])
-    skipped = update_project(
+    outcome = update_project(
         project=project,
         cf_cidrs=CloudflareCIDRs(ipv4_cidrs=["127.1/32"], ipv6_cidrs=["::1/64"]),
         project_index=1,
     )
-    assert skipped == ["project 1:'fw-1'"]
+    assert outcome == (["project 1:'fw-1'"], [])
     mock_client.return_value.firewalls.get_by_name.assert_called_once_with("fw-1")
     mock_update_firewall.assert_not_called()
     mock_logging.assert_called_once_with(
@@ -359,7 +357,7 @@ def test_update_project_not_found_with_special_name(
     mock_client.return_value.firewalls.get_by_name.return_value = None
     name = "fw-1's"
     project = Project(token=SecretStr("token-1"), firewalls=[name])
-    skipped = update_project(
+    outcome = update_project(
         project=project,
         cf_cidrs=CloudflareCIDRs(ipv4_cidrs=["127.1/32"], ipv6_cidrs=["::1/64"]),
         project_index=1,
@@ -367,7 +365,7 @@ def test_update_project_not_found_with_special_name(
 
     # Expect the repr() of the name to be used in the skipped entry and log
     expected = f"project 1:{name!r}"
-    assert skipped == [expected]
+    assert outcome == ([expected], [])
     mock_client.return_value.firewalls.get_by_name.assert_called_once_with(name)
     mock_update_firewall.assert_not_called()
     mock_logging.assert_called_once_with(
@@ -376,22 +374,54 @@ def test_update_project_not_found_with_special_name(
 
 
 @patch("cf_ips_to_hcloud_fw.firewall.Client")
+@patch("cf_ips_to_hcloud_fw.firewall.update_firewall", return_value=True)
 @patch("logging.error")
-def test_update_project_fail(mock_logging: MagicMock, mock_client: MagicMock) -> None:
-    """Exceptions from get_by_name bubble up via log_error_and_exit."""
-    mock_client.return_value.firewalls.get_by_name.side_effect = APIException(
-        "Test exception", "Message", "Details"
-    )
+def test_update_project_fail_continues(
+    mock_logging: MagicMock,
+    mock_update_firewall: MagicMock,
+    mock_client: MagicMock,
+) -> None:
+    """A get_by_name failure is recorded but the next firewall is still synced."""
+    fw2 = Firewall(2, "fw-2")
+    # fw-1 errors against the API; fw-2 must still be inspected afterwards.
+    mock_client.return_value.firewalls.get_by_name.side_effect = [
+        APIException("Test exception", "Message", "Details"),
+        fw2,
+    ]
     project = Project(token=SecretStr("token-1"), firewalls=["fw-1", "fw-2"])
-    with pytest.raises(SystemExit) as e:
-        update_project(
-            project=project,
-            cf_cidrs=CloudflareCIDRs(ipv4_cidrs=["127.1/32"], ipv6_cidrs=["::1/64"]),
-            project_index=1,
-        )
-    assert e.value.code == 1
-    mock_client.return_value.firewalls.get_by_name.assert_called_once_with("fw-1")
+    cf_ips = CloudflareCIDRs(ipv4_cidrs=["127.1/32"], ipv6_cidrs=["::1/64"])
+
+    outcome = update_project(project=project, cf_cidrs=cf_ips, project_index=1)
+
+    assert outcome == ([], ["project 1:'fw-1'"])
+    # Both firewalls were attempted despite fw-1 failing.
+    mock_client.return_value.firewalls.get_by_name.assert_has_calls([
+        call("fw-1"),
+        call("fw-2"),
+    ])
+    mock_update_firewall.assert_called_once_with(
+        mock_client.return_value, fw2, cf_ips, project_index=1
+    )
     mock_logging.assert_called_once_with(
         "hcloud/firewalls.get_by_name failed for 'fw-1' in project 1: "
         "Message (Test exception)"
+    )
+
+
+@patch("cf_ips_to_hcloud_fw.firewall.Client")
+@patch("cf_ips_to_hcloud_fw.firewall.update_firewall", return_value=False)
+def test_update_project_set_rules_fail_recorded(
+    mock_update_firewall: MagicMock, mock_client: MagicMock
+) -> None:
+    """A firewall whose rule push fails is recorded under failed, not skipped."""
+    fw = Firewall(1, "fw-1")
+    mock_client.return_value.firewalls.get_by_name.return_value = fw
+    project = Project(token=SecretStr("token-1"), firewalls=["fw-1"])
+    cf_ips = CloudflareCIDRs(ipv4_cidrs=["127.1/32"], ipv6_cidrs=["::1/64"])
+
+    outcome = update_project(project=project, cf_cidrs=cf_ips, project_index=1)
+
+    assert outcome == ([], ["project 1:'fw-1'"])
+    mock_update_firewall.assert_called_once_with(
+        mock_client.return_value, fw, cf_ips, project_index=1
     )

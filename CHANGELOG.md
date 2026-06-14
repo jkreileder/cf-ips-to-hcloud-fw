@@ -4,6 +4,12 @@
 
 ## [v1.3.0] – Unreleased
 
+- Made firewall syncing resilient to per-firewall failures: a Hetzner API error
+  on one firewall (for example an expired token or a transient error) is now
+  logged and recorded instead of aborting the run, so the remaining firewalls
+  and projects are still processed. The CLI still exits with code 1 when any
+  firewall failed or was skipped, now reporting both groups in a single message
+  (`Some firewalls were not updated (failed: …; not found: …)`)
 - Upgraded Docker build provenance attestations to use the stable SLSA v1 schema
 - **Breaking:** Added POSIX config-permission checks that reject group/other
   writable config files while allowing common read-only Docker/Kubernetes
