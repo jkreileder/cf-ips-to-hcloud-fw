@@ -4,10 +4,21 @@ import logging
 
 import cloudflare
 import cloudflare.types.ips
+from cloudflare import Omit
 from pydantic import TypeAdapter, ValidationError
 
 from cf_ips_to_hcloud_fw.custom_logging import log_error_and_exit
 from cf_ips_to_hcloud_fw.models import CloudflareCIDRs, CloudflareIPNetworks
+
+# `ips.list` is a public endpoint that needs no credentials. The SDK otherwise
+# refuses to send a request without an auth method, so explicitly omit the auth
+# headers — this sends no credential at all, instead of a placeholder key.
+_NO_AUTH_HEADERS = {
+    "Authorization": Omit(),
+    "X-Auth-Email": Omit(),
+    "X-Auth-Key": Omit(),
+    "X-Auth-User-Service-Key": Omit(),
+}
 
 
 def cf_ips_list() -> cloudflare.types.ips.IPListResponse | None:
@@ -17,9 +28,9 @@ def cf_ips_list() -> cloudflare.types.ips.IPListResponse | None:
         cloudflare.types.ips.IPListResponse | None: Raw API response, or None
         when the SDK returns no payload.
     """
-    cf = cloudflare.Cloudflare(api_key="dummy")  # required to pass credential check
+    cf = cloudflare.Cloudflare()
     try:
-        return cf.ips.list()
+        return cf.ips.list(extra_headers=_NO_AUTH_HEADERS)
     except (cloudflare.APIConnectionError, cloudflare.APIStatusError) as e:
         log_error_and_exit(f"Error getting CloudFlare IPs: {e}")
 

@@ -15,6 +15,28 @@ from cf_ips_to_hcloud_fw.models import CloudflareCIDRs
 
 
 @patch("cloudflare.Cloudflare")
+def test_cf_ips_list_sends_no_credentials(mock_cloudflare: MagicMock) -> None:
+    """ips.list is public: build the client with no key and omit auth headers."""
+    sentinel = object()
+    mock_cloudflare.return_value.ips.list.return_value = sentinel
+
+    result = cf_ips_list()
+
+    assert result is sentinel
+    # No api_key/api_token/etc. is passed to the client constructor.
+    mock_cloudflare.assert_called_once_with()
+    _, kwargs = mock_cloudflare.return_value.ips.list.call_args
+    headers = kwargs["extra_headers"]
+    assert set(headers) == {
+        "Authorization",
+        "X-Auth-Email",
+        "X-Auth-Key",
+        "X-Auth-User-Service-Key",
+    }
+    assert all(isinstance(value, cloudflare.Omit) for value in headers.values())
+
+
+@patch("cloudflare.Cloudflare")
 @patch("logging.error")
 def test_cf_ips_list_api_connection_error(
     mock_logging: MagicMock, mock_cloudflare: MagicMock
