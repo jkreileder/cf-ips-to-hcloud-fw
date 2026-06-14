@@ -54,4 +54,6 @@ RUN --mount=type=bind,from=uv-tools-alpine,source=/usr/local/bin/uv,target=/usr/
 
 USER 65534
 
-CMD [".venv/bin/cf-ips-to-hcloud-fw", "-c", "config.yaml"]
+# No -c: the tool auto-detects ./config.yaml (mount it at /usr/src/app/config.yaml)
+# and otherwise falls back to the HCLOUD_TOKEN / HCLOUD_FIREWALLS env vars.
+CMD [".venv/bin/cf-ips-to-hcloud-fw"]

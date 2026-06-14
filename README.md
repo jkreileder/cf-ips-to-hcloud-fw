@@ -26,6 +26,7 @@ rules up-to-date with the current Cloudflare IP ranges.
 - [Configuration](#configuration)
   - [Preparing the Hetzner Cloud Firewall](#preparing-the-hetzner-cloud-firewall)
   - [Configuring the Application](#configuring-the-application)
+  - [Using Environment Variables (Single Project)](#using-environment-variables-single-project)
 - [Usage](#usage)
   - [Command-line Options](#command-line-options)
 - [Verifying SLSA Attestations](#verifying-slsa-attestations)
@@ -144,6 +145,19 @@ docker run --rm \
 
 (Add `--pull=always` if you use a rolling image tag.)
 
+Alternatively, for a single project you can skip the mounted file and pass the
+token and firewalls as environment variables (see [Using Environment
+Variables](#using-environment-variables-single-project)). The image auto-detects
+a mounted `config.yaml` and otherwise falls back to these variables, so no
+command override is needed:
+
+```shell
+docker run --rm \
+  -e HCLOUD_TOKEN=your-api-token \
+  -e HCLOUD_FIREWALLS=firewall-1,firewall-2 \
+  jkreileder/cf-ips-to-hcloud-fw:1.2.1
+```
+
 Docker images for `cf-ips-to-hcloud-fw` are available for both `linux/amd64` and
 `linux/arm64` architectures.  The Docker images support the following tags:
 
@@ -220,6 +234,25 @@ spec:
           restartPolicy: OnFailure
 ```
 
+For a single project, you can drop the Secret, volume, and `volumeMounts` above
+and instead supply the token and firewalls via `env` (for example from a
+Secret). No command override is needed — with no `config.yaml` mounted, the tool
+falls back to these variables:
+
+```yaml
+containers:
+  - name: cf-ips-to-hcloud-fw
+    image: jkreileder/cf-ips-to-hcloud-fw:1.2.1
+    env:
+      - name: HCLOUD_TOKEN
+        valueFrom:
+          secretKeyRef:
+            name: cf-ips-to-hcloud-fw-token
+            key: token
+      - name: HCLOUD_FIREWALLS
+        value: firewall-1,firewall-2
+```
+
 ## Configuration
 
 ### Preparing the Hetzner Cloud Firewall
@@ -263,6 +296,32 @@ file:
 For local files, prefer owner-only access (for example `chmod 600 config.yaml`)
 where practical.
 
+### Using Environment Variables (Single Project)
+
+For the common single-project case — typical in Docker and Kubernetes — you can
+skip the config file entirely and provide the token and firewalls through
+environment variables instead. When `-c/--config` is omitted, the tool builds a
+single project from:
+
+- `HCLOUD_TOKEN`: API token with read-write permissions for the Hetzner Cloud
+  project.
+- `HCLOUD_FIREWALLS`: comma-separated list of firewall names to update (for
+  example `fw-1,fw-2`).
+
+```shell
+export HCLOUD_TOKEN=your-api-token
+export HCLOUD_FIREWALLS=firewall-1,firewall-2
+cf-ips-to-hcloud-fw
+```
+
+This keeps the token out of any on-disk file and lets you pass it as a native
+Docker/Kubernetes secret.
+
+Configuration is resolved in this order: an explicit `-c/--config` file is the
+sole source; otherwise a `config.yaml` in the working directory is used if
+present; otherwise the environment variables above are used. A present config
+file therefore takes precedence over the environment variables.
+
 ## Usage
 
 Run the tool with your configuration file:
@@ -273,7 +332,10 @@ cf-ips-to-hcloud-fw -c config.yaml
 
 ### Command-line Options
 
-- `-c, --config FILE`: Path to the configuration file (required)
+- `-c, --config FILE`: Path to the configuration file. If omitted, a
+  `config.yaml` in the working directory is used when present, otherwise a single
+  project is built from the `HCLOUD_TOKEN` and `HCLOUD_FIREWALLS` environment
+  variables (see [Using Environment Variables](#using-environment-variables-single-project))
 - `-d, --debug`: Enable debug logging for troubleshooting
 - `-v, --version`: Display the installed version
 

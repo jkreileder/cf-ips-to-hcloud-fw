@@ -29,6 +29,10 @@ def test_create_parser() -> None:
     args = parser.parse_args(["-c", "config2.yaml"])
     assert args.config == "config2.yaml"
     assert args.debug is False
+    # -c is optional: without it the env-var fallback kicks in downstream.
+    args = parser.parse_args([])
+    assert args.config is None
+    assert args.debug is False
 
 
 def test_parser_version(capfd: pytest.CaptureFixture[str]) -> None:
@@ -58,7 +62,7 @@ def test_parser_version_no_metadata(monkeypatch: pytest.MonkeyPatch) -> None:
 
 @patch("cf_ips_to_hcloud_fw.__main__.create_parser", MagicMock())
 @patch(
-    "cf_ips_to_hcloud_fw.__main__.read_config",
+    "cf_ips_to_hcloud_fw.__main__.load_projects",
     return_value=[
         Project(token=SecretStr("token-1"), firewalls=["fw-1", "fw-2"]),
         Project(token=SecretStr("token-2"), firewalls=["fw-1", "fw-2"]),
@@ -81,7 +85,7 @@ def test_main(mock_update_project: MagicMock, mock_projects: MagicMock) -> None:
 
 @patch("cf_ips_to_hcloud_fw.__main__.create_parser", MagicMock())
 @patch(
-    "cf_ips_to_hcloud_fw.__main__.read_config",
+    "cf_ips_to_hcloud_fw.__main__.load_projects",
     return_value=[
         Project(token=SecretStr("token-1"), firewalls=["fw-1", "fw-2"]),
     ],
@@ -109,7 +113,7 @@ def test_main_with_skipped_firewalls(
 
 @patch("cf_ips_to_hcloud_fw.__main__.create_parser", MagicMock())
 @patch(
-    "cf_ips_to_hcloud_fw.__main__.read_config",
+    "cf_ips_to_hcloud_fw.__main__.load_projects",
     return_value=[
         Project(token=SecretStr("token-1"), firewalls=["fw-2"]),
         Project(token=SecretStr("token-3"), firewalls=["fw-4"]),
@@ -140,7 +144,7 @@ def test_main_with_skipped_firewalls_multiple_projects(
 
 @patch("cf_ips_to_hcloud_fw.__main__.create_parser", MagicMock())
 @patch(
-    "cf_ips_to_hcloud_fw.__main__.read_config",
+    "cf_ips_to_hcloud_fw.__main__.load_projects",
     return_value=[
         Project(token=SecretStr("token-1"), firewalls=["fw-1"]),
         Project(token=SecretStr("token-2"), firewalls=["fw-2"]),
@@ -171,7 +175,7 @@ def test_main_failed_project_does_not_abort_remaining(
 
 @patch("cf_ips_to_hcloud_fw.__main__.create_parser", MagicMock())
 @patch(
-    "cf_ips_to_hcloud_fw.__main__.read_config",
+    "cf_ips_to_hcloud_fw.__main__.load_projects",
     return_value=[Project(token=SecretStr("token-1"), firewalls=["fw-1", "fw-2"])],
 )
 @patch("cf_ips_to_hcloud_fw.__main__.get_cloudflare_cidrs", MagicMock())

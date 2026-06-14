@@ -4,7 +4,7 @@ import argparse
 
 from cf_ips_to_hcloud_fw import __version__
 from cf_ips_to_hcloud_fw.cloudflare import get_cloudflare_cidrs
-from cf_ips_to_hcloud_fw.config import read_config
+from cf_ips_to_hcloud_fw.config import load_projects
 from cf_ips_to_hcloud_fw.custom_logging import log_error_and_exit, setup_logging
 from cf_ips_to_hcloud_fw.firewall import update_project
 
@@ -19,7 +19,14 @@ def create_parser() -> argparse.ArgumentParser:
         description="Update Hetzner Cloud firewall rules with Cloudflare IP ranges"
     )
     parser.add_argument(
-        "-c", "--config", help="config file", metavar="CONFIGFILE", required=True
+        "-c",
+        "--config",
+        help=(
+            "config file; if omitted, a 'config.yaml' in the working directory "
+            "is used when present, otherwise a single project is built from the "
+            "HCLOUD_TOKEN and HCLOUD_FIREWALLS environment variables"
+        ),
+        metavar="CONFIGFILE",
     )
     parser.add_argument("-v", "--version", action="version", version=__version__)
     parser.add_argument("-d", "--debug", action="store_true")
@@ -32,7 +39,7 @@ def main() -> None:
     args = parser.parse_args()
     setup_logging(args)
 
-    projects = read_config(args.config)
+    projects = load_projects(args.config)
     cf_cidrs = get_cloudflare_cidrs()
     all_skipped: list[str] = []
     all_failed: list[str] = []
