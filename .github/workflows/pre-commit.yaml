@@ -26,10 +26,20 @@ jobs:
         uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
         with:
           disable-sudo: true
-          # prek installs hook environments from several registries (PyPI, npm,
-          # GitHub release assets); audit first, then tighten to block using the
-          # endpoints surfaced in the run summary.
-          egress-policy: audit
+          egress-policy: block
+          # prek pulls hook environments: PyPI (python hooks + uv, pinned via
+          # PREK_UV_SOURCE below), npm + nodejs (markdownlint), Go proxy + sumdb
+          # storage (gitleaks), and GitHub.
+          allowed-endpoints: >
+            files.pythonhosted.org:443
+            github.com:443
+            nodejs.org:443
+            proxy.golang.org:443
+            pypi.org:443
+            raw.githubusercontent.com:443
+            registry.npmjs.org:443
+            release-assets.githubusercontent.com:443
+            storage.googleapis.com:443
 
       - name: Checkout repository
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
@@ -41,4 +51,7 @@ jobs:
         env:
           # ruff/ty run via `make lint`; uv-lock needs uv and is covered by
           # Renovate lockfile maintenance plus the local hook.
+          # Pin prek's internal uv source to PyPI (already allowlisted) so it
+          # doesn't auto-probe mirrors — keeps egress deterministic under block.
+          PREK_UV_SOURCE: pypi
           SKIP: ruff-check,ruff-format,ty,uv-lock
