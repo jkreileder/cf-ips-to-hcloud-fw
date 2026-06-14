@@ -154,7 +154,7 @@ command override is needed:
 ```shell
 docker run --rm \
   -e HCLOUD_TOKEN=your-api-token \
-  -e HCLOUD_FIREWALLS=firewall-1,firewall-2 \
+  -e HCLOUD_FIREWALLS=$'firewall-1\nfirewall-2' \
   jkreileder/cf-ips-to-hcloud-fw:1.2.1
 ```
 
@@ -250,7 +250,9 @@ containers:
             name: cf-ips-to-hcloud-fw-token
             key: token
       - name: HCLOUD_FIREWALLS
-        value: firewall-1,firewall-2
+        value: |
+          firewall-1
+          firewall-2
 ```
 
 ## Configuration
@@ -305,12 +307,13 @@ single project from:
 
 - `HCLOUD_TOKEN`: API token with read-write permissions for the Hetzner Cloud
   project.
-- `HCLOUD_FIREWALLS`: comma-separated list of firewall names to update (for
-  example `fw-1,fw-2`).
+- `HCLOUD_FIREWALLS`: newline-separated list of firewall names to update, one
+  name per line. Newlines are used as the separator so names may contain commas
+  and spaces (for example `ICMP, SSH 222 IPv6, Cloudflare`).
 
 ```shell
 export HCLOUD_TOKEN=your-api-token
-export HCLOUD_FIREWALLS=firewall-1,firewall-2
+export HCLOUD_FIREWALLS=$'firewall-1\nfirewall-2'
 cf-ips-to-hcloud-fw
 ```
 

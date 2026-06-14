@@ -7,7 +7,8 @@
 - Added an environment-variable configuration mode for the common single-project
   case: when `-c/--config` is omitted, the tool uses a `config.yaml` in the
   working directory if present, otherwise builds one project from `HCLOUD_TOKEN`
-  and a comma-separated `HCLOUD_FIREWALLS` list. Docker and Kubernetes users can
+  and a newline-separated `HCLOUD_FIREWALLS` list (one firewall name per line, so
+  names may contain commas and spaces). Docker and Kubernetes users can
   now pass the token as a native secret without mounting a config file, and the
   container image's default command works for both file-mounted and env-var
   setups. Passing `-c` keeps that file as the sole source

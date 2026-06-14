@@ -89,8 +89,10 @@ def _read_config_from_env() -> list[Project]:
     """Build a single-project config from environment variables.
 
     Used when no config file is given. Reads the API token from ``HCLOUD_TOKEN``
-    and a comma-separated firewall list from ``HCLOUD_FIREWALLS``, so the common
-    single-project Docker/Kubernetes case needs no config file on disk.
+    and a newline-separated firewall list from ``HCLOUD_FIREWALLS``, so the common
+    single-project Docker/Kubernetes case needs no config file on disk. Newlines
+    are used as the separator because firewall names may contain commas and
+    spaces but never newlines.
 
     Returns:
         list[Project]: A single-element list with the env-derived project.
@@ -100,16 +102,18 @@ def _read_config_from_env() -> list[Project]:
         log_error_and_exit(
             f"No configuration found and {ENV_TOKEN} is not set; provide -c "
             f"CONFIGFILE or a {DEFAULT_CONFIG_FILE!r} file, or set {ENV_TOKEN} "
-            f"and {ENV_FIREWALLS}."
+            f"and {ENV_FIREWALLS} (one firewall name per line)."
         )
 
     firewalls = [
-        fw.strip() for fw in os.environ.get(ENV_FIREWALLS, "").split(",") if fw.strip()
+        fw.strip()
+        for fw in os.environ.get(ENV_FIREWALLS, "").splitlines()
+        if fw.strip()
     ]
     if not firewalls:
         log_error_and_exit(
-            f"{ENV_FIREWALLS} is empty; set it to a comma-separated list of "
-            "firewall names (for example 'fw-1,fw-2')."
+            f"{ENV_FIREWALLS} is empty; set it to a newline-separated list of "
+            "firewall names (one name per line)."
         )
 
     return [Project(token=SecretStr(token), firewalls=firewalls)]
