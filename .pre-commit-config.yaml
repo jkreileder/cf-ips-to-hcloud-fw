@@ -1,8 +1,3 @@
-ci:
-  autofix_prs: false
-  autoupdate_commit_msg: "chore(deps): update pre-commit repo revisions"
-  skip: [ruff-check, ruff-format, ty]  # need uv/venv; CI runs `make lint` (ruff + ty) instead
-
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: 3e8a8703264a2f4a69428a0aa4dcb512790b2c8c  # frozen: v6.0.0
@@ -54,3 +49,8 @@ repos:
     rev: 996abf60411a8d954288ac9856aae7602b80cbda  # frozen: v0.22.1
     hooks:
       - id: markdownlint-cli2
+  - repo: https://github.com/renovatebot/pre-commit-hooks
+    rev: 9eba499c2181157fcf652119ad0927c299fbe324  # frozen: 43.220.0
+    hooks:
+      - id: renovate-config-validator
+        args: [--strict]

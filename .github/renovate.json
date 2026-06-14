@@ -18,7 +18,8 @@
         "config:best-practices",
         ":gitSignOff",
         "schedule:earlyMondays",
-        "schedule:automergeDaily"
+        "schedule:automergeDaily",
+        ":enablePreCommit"
     ],
     "internalChecksFilter": "strict",
     "labels": [
@@ -54,6 +55,17 @@
             "matchManagers": [
                 "dockerfile",
                 "custom.regex"
+            ],
+            "matchUpdateTypes": [
+                "minor",
+                "patch"
+            ]
+        },
+        {
+            "description": "Group pre-commit hook minor/patch into one PR; majors get their own PR.",
+            "groupName": "pre-commit",
+            "matchManagers": [
+                "pre-commit"
             ],
             "matchUpdateTypes": [
                 "minor",
@@ -99,10 +111,11 @@
             ]
         },
         {
-            "description": "Keep uv together in one PR (the setup-uv action input and the Docker uv image).",
+            "description": "Keep uv together in one PR (the setup-uv input, the Docker uv image, and the uv-pre-commit hook).",
             "groupName": "uv",
             "matchPackageNames": [
                 "astral-sh/uv",
+                "astral-sh/uv-pre-commit",
                 "ghcr.io/astral-sh/uv"
             ]
         },
