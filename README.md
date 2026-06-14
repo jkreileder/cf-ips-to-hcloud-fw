@@ -40,7 +40,7 @@ rules up-to-date with the current Cloudflare IP ranges.
 `cf-ips-to-hcloud-fw` fetches the current [Cloudflare IP
 ranges](https://www.cloudflare.com/ips/) and updates your Hetzner Cloud firewall
 rules using the [hcloud
-API](https://docs.hetzner.cloud/#firewall-actions-set-rules).
+API](https://docs.hetzner.cloud/reference/cloud#tag/firewall-actions/set_firewall_rules).
 
 The tool specifically targets **incoming** firewall rules and **replaces** the
 networks with Cloudflare networks if their description contains
@@ -406,10 +406,12 @@ docker scout attest get $IMAGE $DIGEST --predicate-type https://spdx.dev/Documen
 
 ## Contributing
 
-Contributions are welcome! Please see [CONTRIBUTING.md](.github/CONTRIBUTING.md) for
-guidelines on how to contribute to this project.
+Contributions are welcome! Please see
+[CONTRIBUTING.md](https://github.com/jkreileder/cf-ips-to-hcloud-fw?tab=contributing-ov-file#contributing-guidelines)
+for guidelines on how to contribute to this project.
 
 ## Security
 
-If you discover a security vulnerability, please see [SECURITY.md](SECURITY.md) for
-responsible disclosure instructions.
+If you discover a security vulnerability, please see
+[SECURITY.md](https://github.com/jkreileder/cf-ips-to-hcloud-fw?tab=security-ov-file#reporting-security-issues)
+for responsible disclosure instructions.
