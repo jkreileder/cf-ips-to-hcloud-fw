@@ -2,7 +2,7 @@
 
 <!-- markdownlint-disable MD024 -->
 
-## [v1.3.0] – Unreleased
+## [v1.3.0] – 2026-06-14
 
 - Added an environment-variable configuration mode for the common single-project
   case: when `-c/--config` is omitted, the tool uses a `config.yaml` in the
@@ -29,6 +29,7 @@
   digest pinning)
 - Pinned the remaining build-tooling images (binfmt, BuildKit, uv) by digest so
   the signed multi-arch build is fully reproducible
+- Bumped the final container image base to Alpine 3.24
 - Streamlined CI and contributor tooling: prek-based pre-commit runner,
   concurrency limits and job timeouts, and fewer Docker Hub pulls / duplicate
   PR builds
