@@ -10,7 +10,14 @@
   secret mounts with a warning
 - Replaced `pyright` with `ty` for type checking in the lint pipeline and
   removed the `ms-python.vscode-pylance` VS Code extension recommendation
-- Start new development cycle
+- Migrated dependency automation from Dependabot to Renovate
+  (`config:best-practices`, grouped updates, automerge for low-risk bumps, and
+  digest pinning)
+- Pinned the remaining build-tooling images (binfmt, BuildKit, uv) by digest so
+  the signed multi-arch build is fully reproducible
+- Streamlined CI and contributor tooling: prek-based pre-commit runner,
+  concurrency limits and job timeouts, and fewer Docker Hub pulls / duplicate
+  PR builds
 
 ## [v1.2.1] – 2026-05-30
 
