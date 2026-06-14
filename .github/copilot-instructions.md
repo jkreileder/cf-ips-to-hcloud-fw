@@ -16,7 +16,9 @@
 - `firewall.py` edits Hetzner rules selected by `__CLOUDFLARE_IPS_*__` markers,
   then calls `client.firewalls.set_rules`; per-firewall API errors are recorded
   and the run continues, exiting non-zero at the end (see `ProjectOutcome`).
-- `config.py` loads YAML into `Project` models; empty/invalid configs exit early.
+- `config.py` resolves `Project` models via `load_projects`: explicit `-c` file,
+  else a default `config.yaml`, else `HCLOUD_TOKEN` + `HCLOUD_FIREWALLS` env vars
+  (`read_config` / `read_config_from_env`); empty/invalid configs exit early.
 - `models.py` defines Pydantic structures (`CloudflareCIDRs`, `Project`) used for
   validation and config.
 - `custom_logging.py` handles logging setup and the error helpers: `log_error`

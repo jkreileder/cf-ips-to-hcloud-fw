@@ -6,7 +6,11 @@ from unittest.mock import MagicMock, mock_open, patch
 import pytest
 from pydantic import SecretStr
 
-from cf_ips_to_hcloud_fw.config import read_config
+from cf_ips_to_hcloud_fw.config import (
+    load_projects,
+    read_config,
+    read_config_from_env,
+)
 from cf_ips_to_hcloud_fw.models import Project
 
 
@@ -345,3 +349,142 @@ def test_read_config_validation_error_redacts_secret_value(
     error_msg = mock_logging.call_args[0][0]
     assert "Config file 'config.yaml' is broken:" in error_msg
     assert "SUPER_SECRET_TOKEN_VALUE" not in error_msg
+
+
+@patch.dict(
+    "os.environ",
+    {"HCLOUD_TOKEN": "env-token", "HCLOUD_FIREWALLS": "fw-1,fw-2"},
+    clear=True,
+)
+def test_read_config_from_env() -> None:
+    """A token and comma-separated firewall list build a single project."""
+    projects = read_config_from_env()
+    assert projects == [
+        Project(token=SecretStr("env-token"), firewalls=["fw-1", "fw-2"])
+    ]
+
+
+@patch.dict(
+    "os.environ",
+    {"HCLOUD_TOKEN": "env-token", "HCLOUD_FIREWALLS": " fw-1 , ,fw-2 ,"},
+    clear=True,
+)
+def test_read_config_from_env_trims_and_filters_firewalls() -> None:
+    """Whitespace is trimmed and empty entries dropped from the firewall list."""
+    projects = read_config_from_env()
+    assert projects == [
+        Project(token=SecretStr("env-token"), firewalls=["fw-1", "fw-2"])
+    ]
+
+
+@patch.dict("os.environ", {"HCLOUD_FIREWALLS": "fw-1"}, clear=True)
+@patch("logging.error")
+def test_read_config_from_env_missing_token(mock_logging: MagicMock) -> None:
+    """A missing HCLOUD_TOKEN exits with a helpful error."""
+    with pytest.raises(SystemExit) as e:
+        read_config_from_env()
+    assert e.value.code == 1
+    mock_logging.assert_called_once()
+    error_msg = mock_logging.call_args[0][0]
+    assert "HCLOUD_TOKEN is not set" in error_msg
+
+
+@patch.dict("os.environ", {"HCLOUD_TOKEN": "env-token"}, clear=True)
+@patch("logging.error")
+def test_read_config_from_env_missing_firewalls(mock_logging: MagicMock) -> None:
+    """A token without any firewalls exits with a helpful error."""
+    with pytest.raises(SystemExit) as e:
+        read_config_from_env()
+    assert e.value.code == 1
+    mock_logging.assert_called_once()
+    error_msg = mock_logging.call_args[0][0]
+    assert "HCLOUD_FIREWALLS is empty" in error_msg
+
+
+@patch.dict(
+    "os.environ",
+    {"HCLOUD_TOKEN": "SUPER_SECRET_TOKEN_VALUE", "HCLOUD_FIREWALLS": " , "},
+    clear=True,
+)
+@patch("logging.error")
+def test_read_config_from_env_blank_firewalls_redacts_token(
+    mock_logging: MagicMock,
+) -> None:
+    """The firewalls error must not leak the token value."""
+    with pytest.raises(SystemExit) as e:
+        read_config_from_env()
+    assert e.value.code == 1
+    mock_logging.assert_called_once()
+    assert "SUPER_SECRET_TOKEN_VALUE" not in mock_logging.call_args[0][0]
+
+
+@patch("cf_ips_to_hcloud_fw.config.read_config_from_env")
+@patch("cf_ips_to_hcloud_fw.config.os.path.exists")
+@patch("cf_ips_to_hcloud_fw.config.read_config")
+def test_load_projects_explicit_config_wins(
+    mock_read_config: MagicMock,
+    mock_exists: MagicMock,
+    mock_read_env: MagicMock,
+) -> None:
+    """An explicit -c path is the sole source; no default-file or env lookup."""
+    mock_read_config.return_value = [Project(token=SecretStr("t"), firewalls=["fw"])]
+    result = load_projects("custom.yaml")
+    assert result is mock_read_config.return_value
+    mock_read_config.assert_called_once_with("custom.yaml")
+    mock_exists.assert_not_called()
+    mock_read_env.assert_not_called()
+
+
+@patch("cf_ips_to_hcloud_fw.config.read_config_from_env")
+@patch("cf_ips_to_hcloud_fw.config.os.path.exists", return_value=True)
+@patch("cf_ips_to_hcloud_fw.config.read_config")
+def test_load_projects_default_file_used(
+    mock_read_config: MagicMock,
+    mock_exists: MagicMock,
+    mock_read_env: MagicMock,
+) -> None:
+    """With no -c, a present config.yaml is used before the env fallback."""
+    mock_read_config.return_value = [Project(token=SecretStr("t"), firewalls=["fw"])]
+    result = load_projects(None)
+    assert result is mock_read_config.return_value
+    mock_exists.assert_called_once_with("config.yaml")
+    mock_read_config.assert_called_once_with("config.yaml")
+    mock_read_env.assert_not_called()
+
+
+@patch.dict(
+    "os.environ",
+    {"HCLOUD_TOKEN": "env-token", "HCLOUD_FIREWALLS": "fw-1"},
+    clear=True,
+)
+@patch("cf_ips_to_hcloud_fw.config.os.path.exists", return_value=True)
+@patch("cf_ips_to_hcloud_fw.config.read_config_from_env")
+@patch("cf_ips_to_hcloud_fw.config.read_config")
+def test_load_projects_file_beats_env(
+    mock_read_config: MagicMock,
+    mock_read_env: MagicMock,
+    mock_exists: MagicMock,
+) -> None:
+    """A present config.yaml takes precedence over set environment variables."""
+    mock_read_config.return_value = [Project(token=SecretStr("t"), firewalls=["fw"])]
+    load_projects(None)
+    mock_exists.assert_called_once_with("config.yaml")
+    mock_read_config.assert_called_once_with("config.yaml")
+    mock_read_env.assert_not_called()
+
+
+@patch("cf_ips_to_hcloud_fw.config.read_config")
+@patch("cf_ips_to_hcloud_fw.config.os.path.exists", return_value=False)
+@patch("cf_ips_to_hcloud_fw.config.read_config_from_env")
+def test_load_projects_env_fallback(
+    mock_read_env: MagicMock,
+    mock_exists: MagicMock,
+    mock_read_config: MagicMock,
+) -> None:
+    """With no -c and no config.yaml, the env-var path is used."""
+    mock_read_env.return_value = [Project(token=SecretStr("t"), firewalls=["fw"])]
+    result = load_projects(None)
+    assert result is mock_read_env.return_value
+    mock_exists.assert_called_once_with("config.yaml")
+    mock_read_config.assert_not_called()
+    mock_read_env.assert_called_once_with()
