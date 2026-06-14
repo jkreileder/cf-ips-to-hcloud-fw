@@ -99,6 +99,14 @@
             ]
         },
         {
+            "description": "Keep uv together in one PR (the setup-uv action input and the Docker uv image).",
+            "groupName": "uv",
+            "matchPackageNames": [
+                "astral-sh/uv",
+                "ghcr.io/astral-sh/uv"
+            ]
+        },
+        {
             "automerge": true,
             "description": "Automerge digest-only refreshes and initial digest pins (actions + images).",
             "groupName": "digests",
