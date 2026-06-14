@@ -3,7 +3,7 @@ name: pre-commit hooks
 on:
   push:
     branches:
-      - "**"
+      - "main"
   pull_request:
     branches:
       - "main"
