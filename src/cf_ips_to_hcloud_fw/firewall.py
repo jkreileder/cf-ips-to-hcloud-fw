@@ -77,7 +77,10 @@ def update_source_ips(
     Returns:
         bool: True when the rule was modified.
     """
-    needs_update = rule.source_ips != cidrs
+    # Compare order-independently: Hetzner may return source_ips in a different
+    # order than we wrote them, and re-pushing an identically-membered list only
+    # causes needless API writes and firewall churn.
+    needs_update = set(rule.source_ips or []) != set(cidrs)
     if needs_update:
         rule.source_ips = cidrs
         logging.debug(

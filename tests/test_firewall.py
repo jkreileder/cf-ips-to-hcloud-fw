@@ -41,6 +41,20 @@ def test_update_source_ips(*, ips: list[str], cidrs: list[str], expected: bool) 
     assert fw.rules[0].source_ips == cidrs
 
 
+def test_update_source_ips_reordered_is_noop() -> None:
+    """Equal CIDR membership in a different order must not count as a change."""
+    existing = ["127.2/32", "127.1/32"]
+    rule = FirewallRule(FirewallRule.DIRECTION_IN, FirewallRule.PROTOCOL_TCP, existing)
+    fw = Firewall(rules=[rule])
+    needs_update = update_source_ips(
+        fw, rule, ["127.1/32", "127.2/32"], "", project_index=1
+    )
+    assert needs_update is False
+    assert fw.rules
+    # The rule is left untouched when only the order differs.
+    assert fw.rules[0].source_ips == existing
+
+
 @pytest.mark.parametrize(
     ("ipv4", "ipv6", "kind"),
     [
