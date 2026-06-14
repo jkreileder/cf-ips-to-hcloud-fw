@@ -2,23 +2,13 @@ name: Update Docker Hub description
 
 # Syncs README.md to the Docker Hub repository's full description.
 #
-# TESTING PHASE: runs on PRs so we can confirm the Docker Hub token has the
-# right scope and the description actually updates. Note that there is no
-# staging copy and no dry-run -- every run overwrites the LIVE Docker Hub
-# description with that branch's README (last run wins until the next push).
-#
-# Once verified, switch the `pull_request` trigger to publish on release only:
-#
-#   on:
-#     workflow_dispatch:
-#     push:
-#       tags:
-#         - "v*"
+# Publishes on release (v* tags) so the live description tracks the released
+# README. Use workflow_dispatch to push the current branch's README manually.
 on:
   workflow_dispatch:
-  pull_request:
-    branches:
-      - "main"
+  push:
+    tags:
+      - "v*"
 
 permissions:
   contents: read
@@ -32,8 +22,6 @@ jobs:
     name: Update Docker Hub description
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    # Forked PRs have no access to secrets; skip bot PRs too.
-    if: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.head.repo.fork) && github.actor != 'dependabot[bot]' && github.actor != 'renovate[bot]' }}
     permissions:
       contents: read
 
