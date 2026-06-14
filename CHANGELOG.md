@@ -2,6 +2,10 @@
 
 <!-- markdownlint-disable MD024 -->
 
+## [v1.3.1] – Unreleased
+
+- Start new development cycle
+
 ## [v1.3.0] – 2026-06-14
 
 - Added an environment-variable configuration mode for the common single-project
