@@ -353,11 +353,11 @@ def test_read_config_validation_error_redacts_secret_value(
 
 @patch.dict(
     "os.environ",
-    {"HCLOUD_TOKEN": "env-token", "HCLOUD_FIREWALLS": "fw-1,fw-2"},
+    {"HCLOUD_TOKEN": "env-token", "HCLOUD_FIREWALLS": "fw-1\nfw-2"},
     clear=True,
 )
 def test_read_config_from_env() -> None:
-    """A token and comma-separated firewall list build a single project."""
+    """A token and newline-separated firewall list build a single project."""
     projects = _read_config_from_env()
     assert projects == [
         Project(token=SecretStr("env-token"), firewalls=["fw-1", "fw-2"])
@@ -366,14 +366,33 @@ def test_read_config_from_env() -> None:
 
 @patch.dict(
     "os.environ",
-    {"HCLOUD_TOKEN": "env-token", "HCLOUD_FIREWALLS": " fw-1 , ,fw-2 ,"},
+    {"HCLOUD_TOKEN": "env-token", "HCLOUD_FIREWALLS": " fw-1 \n \nfw-2 \n"},
     clear=True,
 )
 def test_read_config_from_env_trims_and_filters_firewalls() -> None:
-    """Whitespace is trimmed and empty entries dropped from the firewall list."""
+    """Whitespace is trimmed and blank lines dropped from the firewall list."""
     projects = _read_config_from_env()
     assert projects == [
         Project(token=SecretStr("env-token"), firewalls=["fw-1", "fw-2"])
+    ]
+
+
+@patch.dict(
+    "os.environ",
+    {
+        "HCLOUD_TOKEN": "env-token",
+        "HCLOUD_FIREWALLS": "ICMP, SSH 222 IPv6, Cloudflare\nfw-2",
+    },
+    clear=True,
+)
+def test_read_config_from_env_keeps_commas_and_spaces_in_names() -> None:
+    """Firewall names may contain commas and spaces; newlines separate entries."""
+    projects = _read_config_from_env()
+    assert projects == [
+        Project(
+            token=SecretStr("env-token"),
+            firewalls=["ICMP, SSH 222 IPv6, Cloudflare", "fw-2"],
+        )
     ]
 
 
@@ -403,7 +422,7 @@ def test_read_config_from_env_missing_firewalls(mock_logging: MagicMock) -> None
 
 @patch.dict(
     "os.environ",
-    {"HCLOUD_TOKEN": "SUPER_SECRET_TOKEN_VALUE", "HCLOUD_FIREWALLS": " , "},
+    {"HCLOUD_TOKEN": "SUPER_SECRET_TOKEN_VALUE", "HCLOUD_FIREWALLS": " \n \n "},
     clear=True,
 )
 @patch("logging.error")
