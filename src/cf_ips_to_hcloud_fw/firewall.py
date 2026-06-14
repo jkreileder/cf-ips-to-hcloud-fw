@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, NamedTuple
 from hcloud import APIException, Client
 from hcloud.firewalls.domain import Firewall, FirewallRule
 
-from cf_ips_to_hcloud_fw.custom_logging import log_error_and_exit
+from cf_ips_to_hcloud_fw.custom_logging import log_error
 
 if TYPE_CHECKING:  # pragma: no cover
     from cf_ips_to_hcloud_fw.models import CloudflareCIDRs, Project  # pragma: no cover
@@ -26,10 +26,27 @@ class IPVersionTargets(NamedTuple):
     ipv6: bool
 
 
+class ProjectOutcome(NamedTuple):
+    """Per-project result split into benign skips and hard failures.
+
+    Attributes:
+        skipped: Labels of firewalls that were not found (benign).
+        failed: Labels of firewalls whose sync errored against the API.
+    """
+
+    skipped: list[str]
+    failed: list[str]
+
+
 def update_project(
     *, project: Project, cf_cidrs: CloudflareCIDRs, project_index: int
-) -> list[str]:
+) -> ProjectOutcome:
     """Synchronize every firewall listed in a project with the latest CIDRs.
+
+    A failure on one firewall is logged and recorded, then the remaining
+    firewalls are still processed, so one bad token or transient API error
+    does not abort the whole run. The caller exits non-zero once every
+    firewall has been attempted.
 
     Args:
         project: Project definition that holds the API token and firewall names.
@@ -37,29 +54,34 @@ def update_project(
         project_index: 1-based index of the project being processed, used for logging.
 
     Returns:
-        list[str]: Labels of firewalls not found, prefixed with the project index.
+        ProjectOutcome: Labels of skipped and failed firewalls, project-prefixed.
     """
     client = Client(token=project.token.get_secret_value())
     skipped: list[str] = []
+    failed: list[str] = []
     for name in project.firewalls:
+        label = f"project {project_index}:{name!r}"
         try:
             fw = client.firewalls.get_by_name(name)
         except APIException as e:
-            log_error_and_exit(
+            log_error(
                 "hcloud/firewalls.get_by_name failed for "
                 f"{name!r} in project {project_index}: {e}"
             )
+            failed.append(label)
+            continue
         if fw:
             logging.info(
                 f"Inspecting hcloud firewall {name!r} in project {project_index}"
             )
-            update_firewall(client, fw, cf_cidrs, project_index=project_index)
+            if not update_firewall(client, fw, cf_cidrs, project_index=project_index):
+                failed.append(label)
         else:
             logging.debug(
                 f"hcloud firewall {name!r} not found in project {project_index}"
             )
-            skipped.append(f"project {project_index}:{name!r}")
-    return skipped
+            skipped.append(label)
+    return ProjectOutcome(skipped=skipped, failed=failed)
 
 
 def update_source_ips(
@@ -127,13 +149,16 @@ def update_firewall_rule(
     return update_source_ips(fw, rule, ip_cidrs, ip_type, project_index=project_index)
 
 
-def fw_set_rules(client: Client, fw: Firewall, project_index: int) -> None:
-    """Persist rule updates to Hetzner via the SDK, aborting on API errors.
+def fw_set_rules(client: Client, fw: Firewall, project_index: int) -> bool:
+    """Persist rule updates to Hetzner via the SDK.
 
     Args:
         client: Authenticated Hetzner Cloud client.
         fw: Firewall whose rules were modified earlier in the flow.
         project_index: 1-based index of the project being processed, used for logging.
+
+    Returns:
+        bool: True on success, False when the API call failed.
     """
     logging.info(
         f"Updating rules for hcloud firewall {fw.name!r} in project {project_index}"
@@ -142,15 +167,17 @@ def fw_set_rules(client: Client, fw: Firewall, project_index: int) -> None:
         rules = fw.rules or []
         client.firewalls.set_rules(fw, rules)
     except APIException as e:
-        log_error_and_exit(
+        log_error(
             f"hcloud/firewall.set_rules failed for {fw.name!r} in project "
             f"{project_index}: {e}"
         )
+        return False
+    return True
 
 
 def update_firewall(
     client: Client, fw: Firewall, cf_cidrs: CloudflareCIDRs, *, project_index: int
-) -> None:
+) -> bool:
     """Refresh all Cloudflare-tagged rules on a firewall and push changes.
 
     Args:
@@ -158,6 +185,9 @@ def update_firewall(
         fw: Firewall retrieved from the API.
         cf_cidrs: Cloudflare CIDR model downloaded at runtime.
         project_index: 1-based index of the project being processed, used for logging.
+
+    Returns:
+        bool: True on success (including no-op), False when pushing rules failed.
     """
     if fw.rules:
         needs_update = False
@@ -175,14 +205,13 @@ def update_firewall(
                     project_index=project_index,
                 )
         if needs_update:
-            fw_set_rules(client, fw, project_index=project_index)
-        else:
-            logging.info(
-                f"hcloud firewall {fw.name!r} in project {project_index} "
-                "already up-to-date"
-            )
+            return fw_set_rules(client, fw, project_index=project_index)
+        logging.info(
+            f"hcloud firewall {fw.name!r} in project {project_index} already up-to-date"
+        )
     else:
         logging.warning(
             f"hcloud firewall {fw.name!r} in project {project_index} "
             "has no rules - ignoring it"
         )
+    return True

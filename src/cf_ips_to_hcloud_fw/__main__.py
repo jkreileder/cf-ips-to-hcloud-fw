@@ -35,13 +35,19 @@ def main() -> None:
     projects = read_config(args.config)
     cf_cidrs = get_cloudflare_cidrs()
     all_skipped: list[str] = []
+    all_failed: list[str] = []
     for idx, project in enumerate(projects, start=1):
-        skipped = update_project(project=project, cf_cidrs=cf_cidrs, project_index=idx)
-        all_skipped.extend(skipped)
+        outcome = update_project(project=project, cf_cidrs=cf_cidrs, project_index=idx)
+        all_skipped.extend(outcome.skipped)
+        all_failed.extend(outcome.failed)
 
-    if all_skipped:
-        msg = f"Some firewalls have been skipped: {', '.join(all_skipped)}"
-        log_error_and_exit(msg)
+    if all_failed or all_skipped:
+        parts: list[str] = []
+        if all_failed:
+            parts.append(f"failed: {', '.join(all_failed)}")
+        if all_skipped:
+            parts.append(f"not found: {', '.join(all_skipped)}")
+        log_error_and_exit(f"Some firewalls were not updated ({'; '.join(parts)})")
 
 
 if __name__ == "__main__":  # pragma: no cover
