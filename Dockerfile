@@ -27,7 +27,7 @@ RUN --mount=type=bind,from=uv-tools-trixie,source=/usr/local/bin/uv,target=/usr/
     set -eux
     uv sync --link-mode copy --group dev --frozen
     uv run --no-sync ruff check --output-format=github
-    uv run --no-sync ty check
+    uv run --no-sync ty check --output-format=github
     uv run --no-sync pytest
     uv build
 EOF
