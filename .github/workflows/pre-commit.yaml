@@ -29,10 +29,15 @@ jobs:
           egress-policy: block
           # prek pulls hook environments: PyPI (python hooks + uv, pinned via
           # PREK_UV_SOURCE below), npm + nodejs (markdownlint), Go proxy + sumdb
-          # storage (gitleaks), and GitHub.
+          # storage (gitleaks, actionlint), GitHub, and the Go toolchain itself
+          # (go.dev redirect -> dl.google.com tarball) — actionlint's go.mod
+          # needs Go >= 1.25, newer than the runner's preinstalled Go, so prek
+          # downloads a toolchain to build it from source.
           allowed-endpoints: >
+            dl.google.com:443
             files.pythonhosted.org:443
             github.com:443
+            go.dev:443
             nodejs.org:443
             proxy.golang.org:443
             pypi.org:443
