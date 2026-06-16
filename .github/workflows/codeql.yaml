@@ -20,7 +20,7 @@ concurrency:
 jobs:
   analyze-python:
     name: Analyze Python code with CodeQL
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:
       actions: read
@@ -88,7 +88,7 @@ jobs:
 
   analyze-actions:
     name: Analyze GitHub actions code with CodeQL
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     permissions:
       actions: read
