@@ -35,6 +35,7 @@ jobs:
         with:
           name: event-file
           path: ${{ github.event_path }}
+          retention-days: 5
 
   build:
     name: Build
@@ -116,6 +117,7 @@ jobs:
         with:
           name: test-results-${{ matrix.python-version }}
           path: test-results.xml
+          retention-days: 14
 
       - name: Upload test results to Codecov
         if: always()
@@ -177,6 +179,7 @@ jobs:
         with:
           name: python-package-distributions
           path: dist/
+          retention-days: 14
 
   provenance-and-draft-release:
     name: Generate provenance and create draft release
