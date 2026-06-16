@@ -101,6 +101,9 @@ jobs:
       - name: Lint (ruff)
         run: uv run --no-sync ruff check --output-format=github
 
+      - name: Format check (ruff)
+        run: uv run --no-sync ruff format --check
+
       - name: Type check (ty)
         run: uv run --no-sync ty check --output-format=github
 

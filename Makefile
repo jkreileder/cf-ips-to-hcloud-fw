@@ -28,6 +28,7 @@ sync: $(SYNC_STAMP)
 .PHONY: lint
 lint: $(SYNC_STAMP)
 	$(UV) run $(UV_RUN_FLAGS) ruff check
+	$(UV) run $(UV_RUN_FLAGS) ruff format --check
 	$(UV) run $(UV_RUN_FLAGS) ty check
 
 .PHONY: test
