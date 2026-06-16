@@ -55,6 +55,10 @@ RUN --mount=type=bind,from=uv-tools-alpine,source=/usr/local/bin/uv,target=/usr/
 
 USER 65534
 
+# Smoke test: confirm the installed entry point runs in the final image before
+# it is pushed, signed, and scanned. Runs per-arch during the buildx build.
+RUN [".venv/bin/cf-ips-to-hcloud-fw", "--version"]
+
 # No -c: the tool auto-detects ./config.yaml (mount it at /usr/src/app/config.yaml)
 # and otherwise falls back to the HCLOUD_TOKEN / HCLOUD_FIREWALLS env vars.
 CMD [".venv/bin/cf-ips-to-hcloud-fw"]

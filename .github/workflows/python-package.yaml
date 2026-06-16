@@ -138,6 +138,11 @@ jobs:
           rm -rf dist
           uv build
 
+      - name: Smoke test built wheel
+        run: |
+          uv run --isolated --no-project --with dist/*.whl \
+            cf-ips-to-hcloud-fw --version
+
       - name: Generate SBOM
         if: ${{ matrix.python-version == '3.11' }}
         uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
