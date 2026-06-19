@@ -12,7 +12,7 @@ repos:
       - id: pretty-format-json
         args: [--autofix, --indent=4]
   - repo: https://github.com/astral-sh/uv-pre-commit
-    rev: fe063293315003e95dff96d43c4928f8799a5c62  # frozen: 0.11.21
+    rev: 6745231e78ec1a8495af44560a6dba91f05bf56e  # frozen: 0.11.22
     hooks:
       - id: uv-lock
         args: [--check]
