@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-import stat
+import os
+from pathlib import Path
 from unittest.mock import MagicMock, mock_open, patch
 
 import pytest
@@ -16,7 +17,7 @@ from cf_ips_to_hcloud_fw.models import Project
 
 @patch("cf_ips_to_hcloud_fw.config.os.name", "posix")
 @patch("cf_ips_to_hcloud_fw.config.os.path.exists", return_value=True)
-@patch("cf_ips_to_hcloud_fw.config.os.stat")
+@patch("cf_ips_to_hcloud_fw.config._os_stat")
 @patch("logging.error")
 def test_read_config_permission_stat_error(
     mock_logging: MagicMock,
@@ -39,112 +40,100 @@ def test_read_config_permission_stat_error(
     )
 
 
-@patch("cf_ips_to_hcloud_fw.config.os.name", "posix")
-@patch("cf_ips_to_hcloud_fw.config.os.path.exists", return_value=True)
-@patch("cf_ips_to_hcloud_fw.config.os.stat")
+@pytest.mark.skipif(os.name != "posix", reason="POSIX-only permission semantics")
 @patch("logging.warning")
 def test_read_config_permissive_read_permissions_warn(
     mock_warning: MagicMock,
-    mock_stat: MagicMock,
-    mock_exists: MagicMock,
+    tmp_path: Path,
 ) -> None:
     """Allow read-only group access (common for mounted secrets) but warn."""
-    mock_stat.return_value = MagicMock(st_mode=stat.S_IFREG | 0o640)
-
-    with patch(
-        "builtins.open",
-        mock_open(
-            read_data="""
+    config = tmp_path / "config.yaml"
+    config.write_text(
+        """
 - token: token
   firewalls:
     - fw-1
 """,
-        ),
-    ):
-        projects = _read_config("config.yaml")
+        encoding="utf-8",
+    )
+    config.chmod(0o640)
+    config_path = str(config)
+
+    projects = _read_config(config_path)
 
     assert projects == [Project(token=SecretStr("token"), firewalls=["fw-1"])]
-    mock_exists.assert_called_once_with("config.yaml")
-    mock_stat.assert_called_once_with("config.yaml")
     mock_warning.assert_called_once_with(
-        "Config file 'config.yaml' permissions are permissive (640); "
+        f"Config file {config_path!r} permissions are permissive (640); "
         "consider owner-only access (for example 600) when possible."
     )
 
 
 @patch("cf_ips_to_hcloud_fw.config.os.name", "nt")
-@patch("cf_ips_to_hcloud_fw.config.os.path.exists", return_value=True)
-@patch("cf_ips_to_hcloud_fw.config.os.stat")
-@patch(
-    "builtins.open",
-    mock_open(
-        read_data="""
-- token: token
-  firewalls:
-    - fw-1
-""",
-    ),
-)
-def test_read_config_permission_check_skipped_on_non_posix(
-    mock_stat: MagicMock,
-    mock_exists: MagicMock,
-) -> None:
+def test_read_config_permission_check_skipped_on_non_posix(tmp_path: Path) -> None:
     """Skip POSIX-only permission checks on non-POSIX systems."""
-    projects = _read_config("config.yaml")
-
-    assert projects == [Project(token=SecretStr("token"), firewalls=["fw-1"])]
-    mock_exists.assert_not_called()
-    mock_stat.assert_not_called()
-
-
-@patch("cf_ips_to_hcloud_fw.config.os.name", "posix")
-@patch("cf_ips_to_hcloud_fw.config.os.path.exists", return_value=True)
-@patch("cf_ips_to_hcloud_fw.config.os.stat")
-@patch(
-    "builtins.open",
-    mock_open(
-        read_data="""
+    config = tmp_path / "config.yaml"
+    config.write_text(
+        """
 - token: token
   firewalls:
     - fw-1
 """,
-    ),
-)
-def test_read_config_secure_permissions(
-    mock_stat: MagicMock,
-    mock_exists: MagicMock,
-) -> None:
-    """Allow owner-only config files to be parsed normally."""
-    mock_stat.return_value = MagicMock(st_mode=stat.S_IFREG | 0o600)
+        encoding="utf-8",
+    )
+    # World/group-writable would be rejected on POSIX; with os.name forced to a
+    # non-POSIX value the check is skipped and the file parses normally.
+    config.chmod(0o666)
 
-    projects = _read_config("config.yaml")
+    projects = _read_config(str(config))
 
     assert projects == [Project(token=SecretStr("token"), firewalls=["fw-1"])]
-    mock_exists.assert_called_once_with("config.yaml")
-    mock_stat.assert_called_once_with("config.yaml")
 
 
-@patch("cf_ips_to_hcloud_fw.config.os.name", "posix")
-@patch("cf_ips_to_hcloud_fw.config.os.path.exists", return_value=True)
-@patch("cf_ips_to_hcloud_fw.config.os.stat")
+@pytest.mark.skipif(os.name != "posix", reason="POSIX-only permission semantics")
+def test_read_config_secure_permissions(tmp_path: Path) -> None:
+    """Allow owner-only config files to be parsed normally."""
+    config = tmp_path / "config.yaml"
+    config.write_text(
+        """
+- token: token
+  firewalls:
+    - fw-1
+""",
+        encoding="utf-8",
+    )
+    config.chmod(0o600)
+
+    projects = _read_config(str(config))
+
+    assert projects == [Project(token=SecretStr("token"), firewalls=["fw-1"])]
+
+
+@pytest.mark.skipif(os.name != "posix", reason="POSIX-only permission semantics")
 @patch("logging.error")
 def test_read_config_group_or_world_writable_permissions_rejected(
     mock_logging: MagicMock,
-    mock_stat: MagicMock,
-    mock_exists: MagicMock,
+    tmp_path: Path,
 ) -> None:
     """Reject config files writable by group/others."""
-    mock_stat.return_value = MagicMock(st_mode=stat.S_IFREG | 0o666)
+    config = tmp_path / "config.yaml"
+    config.write_text(
+        """
+- token: token
+  firewalls:
+    - fw-1
+""",
+        encoding="utf-8",
+    )
+    config.chmod(0o666)
+    config_path = str(config)
 
     with pytest.raises(SystemExit) as e:
-        _read_config("config.yaml")
+        _read_config(config_path)
 
     assert e.value.code == 1
-    mock_exists.assert_called_once_with("config.yaml")
-    mock_stat.assert_called_once_with("config.yaml")
     mock_logging.assert_called_once_with(
-        "Config file 'config.yaml' has insecure permissions (666); "
-        "group/other write bits are not allowed."
+        f"Config file {config_path!r} has insecure permissions "
+        "(666); group/other write bits are not allowed."
     )
 
 
