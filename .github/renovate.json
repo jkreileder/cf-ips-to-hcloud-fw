@@ -28,12 +28,12 @@
         {
             "customType": "regex",
             "datasourceTemplate": "docker",
-            "description": "Pin moby/buildkit (setup-buildx-action driver image) digest; keep the curated buildx-stable-1 tag.",
+            "description": "Pin moby/buildkit (setup-buildx-action driver image) by version + digest.",
             "managerFilePatterns": [
                 ".github/workflows/docker.yaml"
             ],
             "matchStrings": [
-                "image=(?<depName>moby/buildkit):(?<currentValue>buildx-stable-1)@(?<currentDigest>sha256:[a-f0-9]+)"
+                "image=(?<depName>moby/buildkit):(?<currentValue>v[^@\\s]+)@(?<currentDigest>sha256:[a-f0-9]+)"
             ]
         }
     ],
