@@ -5,6 +5,11 @@ import os
 import stat
 import sys
 
+# coverage.py's sys.monitoring tracer (Python 3.14) calls os.stat while tracing;
+# binding stat under a private name lets tests patch config's own lookup without
+# intercepting those tracer calls. See test_read_config_permission_stat_error.
+from os import stat as _os_stat
+
 import yaml
 from pydantic import SecretStr, TypeAdapter, ValidationError
 
@@ -26,7 +31,7 @@ def _validate_config_permissions(config_file: str) -> None:
         return
 
     try:
-        mode = stat.S_IMODE(os.stat(config_file).st_mode)
+        mode = stat.S_IMODE(_os_stat(config_file).st_mode)
     except OSError as e:
         log_error_and_exit(
             f"Couldn't check permissions of config file {config_file!r}: {e}"

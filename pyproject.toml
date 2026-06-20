@@ -74,9 +74,6 @@ addopts = [
     "--cov-fail-under=80",
 ]
 
-[tool.coverage.run]
-core = "ctrace" # test_config.py does not work with sysmon and python 3.14 yet
-
 [tool.ruff]
 src = ["src"]
 preview = true
