@@ -84,7 +84,6 @@
 
 ## Gotchas
 
-- Python 3.14 emits a benign Pydantic V1 warning; CI accepts it.
 - Make recipes run under `bash -eu -o pipefail`; avoid zshisms.
 
 - Missing wheels or odd installs? Remove `.venv/` (or `make clean`) then
