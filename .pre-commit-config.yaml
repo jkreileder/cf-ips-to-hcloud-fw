@@ -57,7 +57,7 @@ repos:
       # YAML/expression checks otherwise.
       - id: actionlint
   - repo: https://github.com/renovatebot/pre-commit-hooks
-    rev: fdcc0dbc2b0f11c69603e2c433f143591fd9309e  # frozen: 43.227.0
+    rev: 75445dad1c58e61d66d57b4adf82951704812025  # frozen: 43.234.0
     hooks:
       - id: renovate-config-validator
         args: [--strict]
