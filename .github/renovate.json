@@ -62,6 +62,7 @@
             "pinDigests": false
         },
         {
+            "automerge": true,
             "description": "Group GitHub Actions minor/patch into one PR; majors get their own PR.",
             "groupName": "github-actions",
             "matchManagers": [
@@ -73,6 +74,7 @@
             ]
         },
         {
+            "automerge": true,
             "description": "Group container/image minor/patch into one PR; majors get their own PR.",
             "groupName": "docker",
             "matchManagers": [
@@ -85,14 +87,11 @@
             ]
         },
         {
-            "description": "Group pre-commit hook minor/patch into one PR; majors get their own PR.",
+            "automerge": true,
+            "description": "Group all pre-commit hook updates into one automerged PR - lint/validate-only tooling that never ships and is fully CI-gated (ruff/ty are local hooks managed via uv.lock, not here; uv-pre-commit rides with the uv group).",
             "groupName": "pre-commit",
             "matchManagers": [
                 "pre-commit"
-            ],
-            "matchUpdateTypes": [
-                "minor",
-                "patch"
             ]
         },
         {
@@ -134,12 +133,25 @@
             ]
         },
         {
+            "automerge": true,
             "description": "Keep uv together in one PR (the setup-uv input, the Docker uv image, and the uv-pre-commit hook).",
             "groupName": "uv",
             "matchPackageNames": [
                 "astral-sh/uv",
                 "astral-sh/uv-pre-commit",
                 "ghcr.io/astral-sh/uv"
+            ]
+        },
+        {
+            "automerge": false,
+            "description": "uv majors (across managers) get their own manual PR; the uv group otherwise has no update-type filter.",
+            "matchPackageNames": [
+                "astral-sh/uv",
+                "astral-sh/uv-pre-commit",
+                "ghcr.io/astral-sh/uv"
+            ],
+            "matchUpdateTypes": [
+                "major"
             ]
         },
         {
