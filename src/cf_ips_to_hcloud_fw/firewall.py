@@ -1,3 +1,5 @@
+"""Update Hetzner firewall rules tagged with Cloudflare IP markers."""
+
 from __future__ import annotations
 
 import logging
@@ -17,10 +19,7 @@ CF_ALL = "__CLOUDFLARE_IPS__"
 
 
 class IPVersionTargets(NamedTuple):
-    """
-    Structure holding boolean flags indicating which IP versions (IPv4/IPv6)
-    should be targeted for firewall rule updates.
-    """
+    """Flags for which IP versions (IPv4/IPv6) a firewall rule should target."""
 
     ipv4: bool
     ipv6: bool

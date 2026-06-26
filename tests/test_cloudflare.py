@@ -1,3 +1,5 @@
+"""Tests for the Cloudflare CIDR fetching and validation module."""
+
 from __future__ import annotations
 
 from unittest.mock import MagicMock, patch

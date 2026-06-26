@@ -1,3 +1,5 @@
+"""CLI entry point: parse args, fetch Cloudflare ranges, update firewalls."""
+
 from __future__ import annotations
 
 import argparse

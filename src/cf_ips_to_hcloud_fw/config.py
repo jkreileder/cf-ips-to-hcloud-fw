@@ -1,3 +1,5 @@
+"""Resolve project definitions from a config file or environment variables."""
+
 from __future__ import annotations
 
 import logging
