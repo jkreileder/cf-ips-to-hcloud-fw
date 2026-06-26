@@ -1,3 +1,5 @@
+"""Tests for logging setup and error helpers."""
+
 from __future__ import annotations
 
 import argparse

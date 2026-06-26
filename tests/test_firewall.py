@@ -1,3 +1,5 @@
+"""Tests for the Hetzner firewall rule update logic."""
+
 from __future__ import annotations
 
 from unittest.mock import MagicMock, call, patch

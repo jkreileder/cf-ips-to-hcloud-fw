@@ -1,3 +1,5 @@
+"""Logging setup and error helpers shared across the package."""
+
 from __future__ import annotations
 
 import logging

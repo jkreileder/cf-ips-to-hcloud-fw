@@ -88,6 +88,8 @@ extend-select = [
     "C4",
     "C90",
     "COM",
+    "D",
+    "DOC",
     "E",
     "EM",
     "ERA001",
@@ -107,6 +109,7 @@ extend-select = [
     "PGH",
     "PL",
     "PT",
+    "PTH",
     "PYI",
     "Q",
     "RET",
@@ -117,6 +120,7 @@ extend-select = [
     "SLF",
     "SLOT",
     "T20",
+    "TC",
     "TID",
     "TRY",
     "UP",
@@ -128,8 +132,11 @@ ignore = [
     "E111",
     "E114",
     "E117",
+    "D203",
     "D206",
+    "D213",
     "D300",
+    "D413",
     "LOG015",
     "Q000",
     "Q001",
@@ -144,6 +151,10 @@ ignore = [
 # Tests may exercise module-private helpers directly: assert (S101), access
 # private members (SLF001), and import private names (PLC2701).
 "tests/*" = ["S101", "SLF001", "PLC2701"]
+# config.py intentionally uses os-level file APIs (os.path.exists, os.stat via
+# _os_stat, builtins.open) so tests can patch them; the _os_stat indirection
+# also avoids intercepting the Python 3.14 coverage tracer's own os.stat calls.
+"src/cf_ips_to_hcloud_fw/config.py" = ["PTH110", "PTH116", "PTH123"]
 
 [tool.ruff.lint.flake8-type-checking]
 runtime-evaluated-base-classes = ["pydantic.BaseModel"]

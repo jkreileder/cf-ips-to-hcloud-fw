@@ -1,3 +1,5 @@
+"""Tests for the CLI entry point and argument parsing."""
+
 from __future__ import annotations
 
 import importlib
@@ -74,7 +76,7 @@ def test_parser_version_no_metadata(monkeypatch: pytest.MonkeyPatch) -> None:
     return_value=ProjectOutcome(skipped=[], failed=[]),
 )
 def test_main(mock_update_project: MagicMock, mock_projects: MagicMock) -> None:
-    """main should iterate every parsed project and call update_project."""
+    """Iterate every parsed project and call update_project."""
     main()
     assert mock_update_project.call_count == len(mock_projects.return_value)
     for i, project in enumerate(mock_projects.return_value):
@@ -101,7 +103,7 @@ def test_main(mock_update_project: MagicMock, mock_projects: MagicMock) -> None:
 def test_main_with_skipped_firewalls(
     mock_logging: MagicMock, mock_update_project: MagicMock, mock_projects: MagicMock
 ) -> None:
-    """main should exit with code 1 when firewalls are skipped."""
+    """Exit with code 1 when firewalls are skipped."""
     with pytest.raises(SystemExit) as e:
         main()
     assert e.value.code == 1

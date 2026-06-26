@@ -1,7 +1,9 @@
+"""Tests for config resolution from files and environment variables."""
+
 from __future__ import annotations
 
 import os
-from pathlib import Path
+from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, mock_open, patch
 
 import pytest
@@ -13,6 +15,9 @@ from cf_ips_to_hcloud_fw.config import (
     load_projects,
 )
 from cf_ips_to_hcloud_fw.models import Project
+
+if TYPE_CHECKING:  # pragma: no cover
+    from pathlib import Path  # pragma: no cover
 
 
 @patch("cf_ips_to_hcloud_fw.config.os.name", "posix")

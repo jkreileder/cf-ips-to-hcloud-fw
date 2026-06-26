@@ -1,3 +1,5 @@
+"""Fetch and validate Cloudflare's published IPv4/IPv6 CIDR ranges."""
+
 from __future__ import annotations
 
 import logging

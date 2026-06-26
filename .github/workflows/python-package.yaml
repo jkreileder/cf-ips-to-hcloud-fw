@@ -103,7 +103,7 @@ jobs:
         run: uv run --no-sync ruff check --output-format=github
 
       - name: Format check (ruff)
-        run: uv run --no-sync ruff format --check
+        run: uv run --no-sync ruff format --check --output-format=github
 
       - name: Type check (ty)
         run: uv run --no-sync ty check --output-format=github

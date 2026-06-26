@@ -1,3 +1,5 @@
+"""Sync Cloudflare IP ranges into Hetzner Cloud firewalls."""
+
 from __future__ import annotations
 
 from importlib import metadata
