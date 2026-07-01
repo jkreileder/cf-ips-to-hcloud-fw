@@ -95,20 +95,20 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
         env:
-          DOCKER_METADATA_ANNOTATIONS_LEVELS: manifest${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' && github.actor != 'renovate[bot]' && ',index' || '' }}
+          DOCKER_METADATA_ANNOTATIONS_LEVELS: manifest${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' && ',index' || '' }}
 
       # Log in before pulling the QEMU/buildx tooling images so those Docker Hub
       # pulls count against the authenticated limit, not the shared-runner
       # anonymous pool.
       - name: Login to DockerHub
-        if: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.head.repo.fork) && github.actor != 'dependabot[bot]' && github.actor != 'renovate[bot]' }}
+        if: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.head.repo.fork) && github.actor != 'dependabot[bot]' }}
         uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4.2.0
         with:
           username: ${{ vars.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Login to Quay
-        if: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' && github.actor != 'renovate[bot]' }}
+        if: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' }}
         uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4.2.0
         with:
           registry: quay.io
@@ -116,7 +116,7 @@ jobs:
           password: ${{ secrets.QUAY_TOKEN }}
 
       - name: Login to GitHub Container Registry
-        if: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' && github.actor != 'renovate[bot]' }}
+        if: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' }}
         uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4.2.0
         with:
           registry: ghcr.io
@@ -127,7 +127,7 @@ jobs:
       # Hub pull) unless we actually build multi-arch — PR/branch/bot builds are
       # single-arch amd64.
       - name: Set up QEMU
-        if: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' && github.actor != 'renovate[bot]' }}
+        if: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' }}
         uses: docker/setup-qemu-action@06116385d9baf250c9f4dcb4858b16962ea869c3 # v4.1.0
         with:
           image: tonistiigi/binfmt:qemu-v10.2.3-68@sha256:400a4873b838d1b89194d982c45e5fb3cda4593fbfd7e08a02e76b03b21166f0
@@ -143,11 +143,11 @@ jobs:
         uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf # v7.2.0
         with:
           context: .
-          platforms: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' && github.actor != 'renovate[bot]' && 'linux/amd64,linux/arm64' || '' }}
-          push: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' && github.actor != 'renovate[bot]' }}
-          load: ${{ github.event_name == 'pull_request' || github.actor == 'dependabot[bot]' || github.actor == 'renovate[bot]' }}
-          sbom: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' && github.actor != 'renovate[bot]' && 'generator=docker/scout-sbom-indexer:1.18.2@sha256:3579229a5ace351e4511903f3da976304990339da1c49a3cc0f00bcd7d793181' || '' }}
-          provenance: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' && github.actor != 'renovate[bot]' && 'mode=max,version=v1' || '' }}
+          platforms: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' && 'linux/amd64,linux/arm64' || '' }}
+          push: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' }}
+          load: ${{ github.event_name == 'pull_request' || github.actor == 'dependabot[bot]' }}
+          sbom: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' && 'generator=docker/scout-sbom-indexer:1.18.2@sha256:3579229a5ace351e4511903f3da976304990339da1c49a3cc0f00bcd7d793181' || '' }}
+          provenance: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' && 'mode=max,version=v1' || '' }}
           tags: ${{ steps.docker-meta.outputs.tags }}
           labels: ${{ steps.docker-meta.outputs.labels }}
           annotations: ${{ steps.docker-meta.outputs.annotations }}
@@ -155,7 +155,7 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Generate artifact attestation for DockerHub
-        if: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' && github.actor != 'renovate[bot]' }}
+        if: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' }}
         uses: actions/attest@59d89421af93a897026c735860bf21b6eb4f7b26 # v4.1.0
         with:
           subject-name: index.docker.io/${{ vars.DOCKERHUB_USERNAME }}/cf-ips-to-hcloud-fw
@@ -163,7 +163,7 @@ jobs:
           push-to-registry: true
 
       - name: Generate artifact attestation for Quay
-        if: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' && github.actor != 'renovate[bot]' }}
+        if: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' }}
         uses: actions/attest@59d89421af93a897026c735860bf21b6eb4f7b26 # v4.1.0
         with:
           subject-name: quay.io/${{ vars.QUAY_USERNAME }}/cf-ips-to-hcloud-fw
@@ -171,7 +171,7 @@ jobs:
           push-to-registry: true
 
       - name: Generate artifact attestation for GitHub Container Registry
-        if: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' && github.actor != 'renovate[bot]' }}
+        if: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' }}
         uses: actions/attest@59d89421af93a897026c735860bf21b6eb4f7b26 # v4.1.0
         with:
           subject-name: ghcr.io/${{ github.repository_owner }}/cf-ips-to-hcloud-fw
@@ -179,7 +179,7 @@ jobs:
           push-to-registry: true
 
       - name: Analyze for critical and high CVEs with Docker Scout
-        if: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.head.repo.fork) && github.actor != 'dependabot[bot]' && github.actor != 'renovate[bot]' }}
+        if: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.head.repo.fork) && github.actor != 'dependabot[bot]' }}
         id: docker-scout-cves
         continue-on-error: true
         uses: docker/scout-action@7520205ff60037fdc436b40b6a1d1e55a839ec2d # v1.22.0
@@ -191,7 +191,7 @@ jobs:
           to: registry://${{ vars.DOCKERHUB_USERNAME }}/cf-ips-to-hcloud-fw:1
 
       - name: Upload Docker Scout scan result to GitHub Security tab
-        if: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.head.repo.fork) && github.actor != 'dependabot[bot]' && github.actor != 'renovate[bot]' }}
+        if: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.head.repo.fork) && github.actor != 'dependabot[bot]' }}
         continue-on-error: true
         uses: github/codeql-action/upload-sarif@8aad20d150bbac5944a9f9d289da16a4b0d87c1e # v4.36.2
         with:
@@ -214,7 +214,7 @@ jobs:
 
   provenance-docker:
     name: Generate SLSA Provenance for DockerHub
-    if: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' && github.actor != 'renovate[bot]' }}
+    if: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' }}
     needs:
       - docker
     permissions:
@@ -233,7 +233,7 @@ jobs:
 
   provenance-quay:
     name: Generate SLSA Provenance for Quay
-    if: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' && github.actor != 'renovate[bot]' }}
+    if: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' }}
     needs:
       - docker
     permissions:
@@ -252,7 +252,7 @@ jobs:
 
   provenance-ghcr:
     name: Generate SLSA Provenance for GitHub Container Registry
-    if: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' && github.actor != 'renovate[bot]' }}
+    if: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' }}
     needs:
       - docker
     permissions:
