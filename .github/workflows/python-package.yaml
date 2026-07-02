@@ -87,6 +87,9 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           version: "0.11.24"
+          # Keep release builds hermetic: don't restore caches when building
+          # the artifacts that get published (tag pushes).
+          enable-cache: ${{ !startsWith(github.ref, 'refs/tags/') }}
 
       - name: Sync dependencies
         run: uv sync --group dev --frozen
@@ -255,8 +258,9 @@ jobs:
       actions: read
       id-token: write
       contents: write
-    # Can't pin with hash due to how this workflow works.
-    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.1.0
+    # Can't pin with hash: SLSA verification requires calling the generator
+    # by tag, and GitHub evaluates the ref for nested actions inside it too.
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.1.0 # zizmor: ignore[unpinned-uses]
     with:
       base64-subjects: ${{ needs.build.outputs.hashes }}
       upload-assets: true
@@ -366,7 +370,8 @@ jobs:
       - name: Upload distribution packages to GitHub Release
         env:
           GITHUB_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
         run: >-
           gh release upload
-          '${{ github.ref_name }}' dist/**
+          "$TAG" dist/**
           --repo '${{ github.repository }}'

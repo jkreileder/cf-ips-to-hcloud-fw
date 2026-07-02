@@ -1,6 +1,10 @@
 name: Publish test results
 
-on:
+# workflow_run is used deliberately (the EnricoMi-documented pattern): fork-PR
+# artifacts are processed here, in a job whose token is limited to
+# checks/pull-requests write and whose egress is locked to api.github.com,
+# instead of granting write permissions to the untrusted PR run itself.
+on: # zizmor: ignore[dangerous-triggers]
   workflow_run:
     workflows:
       - Build, sign, and publish Python package
