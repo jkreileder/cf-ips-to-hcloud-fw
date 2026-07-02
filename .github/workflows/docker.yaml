@@ -137,8 +137,12 @@ jobs:
         with:
           image: tonistiigi/binfmt:qemu-v10.2.3-68@sha256:400a4873b838d1b89194d982c45e5fb3cda4593fbfd7e08a02e76b03b21166f0
 
+      # GHA cache scopes are branch-isolated: only code already running on
+      # main can write the cache a tag build restores — and a compromised
+      # main build publishes images directly anyway, so the cache adds no new
+      # trust boundary. Disabling it would cost full QEMU rebuilds per release.
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@d7f5e7f509e45cec5c76c4d5afdd7de93d0b3df5 # v4.1.0
+        uses: docker/setup-buildx-action@d7f5e7f509e45cec5c76c4d5afdd7de93d0b3df5 # v4.1.0 # zizmor: ignore[cache-poisoning]
         with:
           driver-opts: image=moby/buildkit:v0.31.1@sha256:6b59b7df63a8cb9902736f9ddf7fcff8261613d3e7449b8ea8b7537fc399c03a
           version: v0.35.0
@@ -226,8 +230,9 @@ jobs:
       actions: read
       id-token: write
       packages: write
-    # Can't pin with hash due to how this workflow works.
-    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v2.1.0
+    # Can't pin with hash: SLSA verification requires calling the generator
+    # by tag, and GitHub evaluates the ref for nested actions inside it too.
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v2.1.0 # zizmor: ignore[unpinned-uses]
     with:
       image: ${{ vars.DOCKERHUB_USERNAME }}/cf-ips-to-hcloud-fw
       digest: ${{ needs.docker.outputs.digest }}
@@ -245,8 +250,9 @@ jobs:
       actions: read
       id-token: write
       packages: write
-    # Can't pin with hash due to how this workflow works.
-    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v2.1.0
+    # Can't pin with hash: SLSA verification requires calling the generator
+    # by tag, and GitHub evaluates the ref for nested actions inside it too.
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v2.1.0 # zizmor: ignore[unpinned-uses]
     with:
       image: quay.io/${{ vars.QUAY_USERNAME }}/cf-ips-to-hcloud-fw
       digest: ${{ needs.docker.outputs.digest }}
@@ -264,8 +270,9 @@ jobs:
       actions: read
       id-token: write
       packages: write
-    # Can't pin with hash due to how this workflow works.
-    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v2.1.0
+    # Can't pin with hash: SLSA verification requires calling the generator
+    # by tag, and GitHub evaluates the ref for nested actions inside it too.
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v2.1.0 # zizmor: ignore[unpinned-uses]
     with:
       image: ghcr.io/${{ github.repository_owner }}/cf-ips-to-hcloud-fw
       digest: ${{ needs.docker.outputs.digest }}

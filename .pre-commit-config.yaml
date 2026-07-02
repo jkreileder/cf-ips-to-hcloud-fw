@@ -56,6 +56,13 @@ repos:
       # shellcheck is on PATH (CI's ubuntu runner ships it). Degrades to
       # YAML/expression checks otherwise.
       - id: actionlint
+  - repo: https://github.com/zizmorcore/zizmor-pre-commit
+    rev: e3eebf65325ccc992422292cb7a4baee967cf815  # frozen: v1.26.1
+    hooks:
+      # Security audit of GitHub Actions workflows (template injection,
+      # credential persistence, cache poisoning, ...); complements actionlint,
+      # which checks correctness.
+      - id: zizmor
   - repo: https://github.com/renovatebot/pre-commit-hooks
     rev: ea931ccc70c472cfeb2f822acba7f0e12b7842ce  # frozen: 43.243.1
     hooks:
