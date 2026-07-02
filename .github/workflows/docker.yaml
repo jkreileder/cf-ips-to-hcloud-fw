@@ -40,8 +40,11 @@ jobs:
         with:
           disable-sudo: true
           egress-policy: block
+          # The two d*.cloudfront.net hosts are Docker Scout's vulnerability-data
+          # CDN distributions. If Docker rotates them, only the scan steps
+          # (continue-on-error) lose access — update the names from the
+          # harden-runner insights of the failing run.
           allowed-endpoints: >
-            *.cloudfront.net:443
             api.dso.docker.com:443
             api.github.com:443
             api.scout.docker.com:443
@@ -49,6 +52,8 @@ jobs:
             cdn01.quay.io:443
             cdn02.quay.io:443
             cdn03.quay.io:443
+            d2glxqk2uabbnd.cloudfront.net:443
+            d5l0dvt14r5h8.cloudfront.net:443
             docker-images-prod.6aa30f8b08e16409b46e0173d6de2f56.r2.cloudflarestorage.com:443
             files.pythonhosted.org:443
             fulcio.sigstore.dev:443
