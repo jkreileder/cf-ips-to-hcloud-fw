@@ -4,7 +4,7 @@
 FROM --platform=$BUILDPLATFORM ghcr.io/astral-sh/uv:0.11.24-python3.14-trixie@sha256:f911704d62072c654178cdc5bb9b7508ad9dcb32a11b54bf2d2606fe7acc1ccb AS uv-tools-trixie
 FROM ghcr.io/astral-sh/uv:0.11.24-python3.14-alpine3.23@sha256:3af403fbda8a464ef47100ef57ab685cfa9cf776fb81dcbaeb48fcf2fb837dcc AS uv-tools-alpine
 
-FROM --platform=$BUILDPLATFORM public.ecr.aws/docker/library/python:3.14.6-trixie@sha256:9f81cc421b09c76f62ab84902bc935462f7d8004ca8a514b0918a5cdfec29c42 AS builder
+FROM --platform=$BUILDPLATFORM public.ecr.aws/docker/library/python:3.14.6-trixie@sha256:7a320a6d1216cd356eb4790261f2332e6e29e32f7e80646cb3e79f9e65b8e2c2 AS builder
 
 WORKDIR /usr/src/app
 
