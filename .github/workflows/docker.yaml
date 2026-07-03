@@ -44,6 +44,10 @@ jobs:
           # CDN distributions. If Docker rotates them, only the scan steps
           # (continue-on-error) lose access — update the names from the
           # harden-runner insights of the failing run.
+          # tmaproduction.blob.core.windows.net is GitHub's attestation-bundle
+          # storage that `gh attestation verify` fetches from in the base-image
+          # provenance check; if GitHub rotates the storage account, update it
+          # from the failing run's harden-runner insights.
           allowed-endpoints: >
             api.dso.docker.com:443
             api.github.com:443
@@ -77,6 +81,7 @@ jobs:
             rekor.sigstore.dev:443
             release-assets.githubusercontent.com:443
             timestamp.sigstore.dev:443
+            tmaproduction.blob.core.windows.net:443
             tuf-repo-cdn.sigstore.dev:443
             uploads.github.com:443
 
@@ -84,6 +89,34 @@ jobs:
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           persist-credentials: false
+
+      # Verify the uv base images carry astral-sh's signed SLSA build provenance
+      # before building on them — fail closed, so a PR that repins to an
+      # unattested or tampered digest stops the build. Runs before the QEMU/
+      # buildx/login setup to fail fast. Only the uv images are checkable here:
+      # the python base is a Docker Official Image whose inline provenance is
+      # unsigned (no verifiable signer). Refs are read from the Dockerfile so the
+      # pins stay single-sourced; the found guard trips if the pin format drifts
+      # and the grep silently matches nothing.
+      - name: Verify uv base image provenance
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          found=0
+          while IFS= read -r image; do
+            found=1
+            echo "::group::verify $image"
+            gh attestation verify "oci://$image" \
+              --owner astral-sh \
+              --predicate-type https://slsa.dev/provenance/v1
+            echo "::endgroup::"
+          done < <(grep -oE 'ghcr\.io/astral-sh/uv:[^ @]+@sha256:[0-9a-f]{64}' Dockerfile | sort -u)
+          if [ "$found" -eq 0 ]; then
+            echo "::error::No uv base images found in Dockerfile — verification would be a no-op"
+            exit 1
+          fi
 
       - name: Docker meta
         id: docker-meta
