@@ -18,7 +18,7 @@ Address the review feedback on the current pull request for this repository.
    patterns; keep edits scoped to what the comment asks — don't reflow unrelated
    code.
 3. Before committing, run the quality gates with `make check` (`make lint` then
-   `make test`, coverage ≥ 80%). Fix anything that fails.
+   `make test`, coverage ≥ 95%). Fix anything that fails.
 4. Commit the fixes with a Conventional Commits message that references the
    feedback, using **DCO sign-off and GPG signing** (repo policy requires both):
    `git commit -s -S -m "<type>(<scope>): address review feedback"`.

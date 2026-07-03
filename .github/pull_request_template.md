@@ -17,4 +17,4 @@ are computed or applied? Describe the impact, or write "None". -->
 ## Testing
 
 <!-- How you verified the change. CI already runs lint, type-check, and
-tests (≥80% coverage), so no need to attest to those. -->
+tests (≥95% coverage), so no need to attest to those. -->
