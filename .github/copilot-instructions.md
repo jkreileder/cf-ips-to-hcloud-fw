@@ -70,11 +70,12 @@
   contributors should install hooks with `pre-commit install` or
   `prek install`.
 - Commit sign-offs — PRs require developer sign-off using `git commit -s`;
-  you can see the PR checklist in `.github/pull_request_template.md`. This is
-  the project DCO requirement. GitHub also enforces cryptographically-signed
-  commits for this repository via branch protection — you must configure
-  GPG/SSH commit signing locally or use the `-S` flag to sign commits if
-  required. Note that package and image artifacts are also cryptographically
+  this is the project DCO requirement, also noted in `.github/CONTRIBUTING.md`
+  and the `.github/pull_request_template.md` header. GitHub also enforces
+  cryptographically-signed commits for this repository via branch protection
+  — you must configure GPG/SSH commit signing locally or use the `-S` flag
+  to sign commits if required. Note that package and image artifacts are also
+  cryptographically
   signed during CI.
 - Commit style — commit messages should follow Conventional Commits
   (`<type>[optional scope]: <description>`), e.g., `fix(auth): resolve login

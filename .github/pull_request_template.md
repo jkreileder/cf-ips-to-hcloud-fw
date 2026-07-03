@@ -1,52 +1,20 @@
 <!--
-Thank you for your contribution to cf-ips-to-hcloud-fw!
-
-This PR template helps us review changes consistently. Please fill out all sections
-and verify the checklist before submitting.
+Thanks for contributing to cf-ips-to-hcloud-fw!
+PR titles follow Conventional Commits: <type>[scope]: <description>
+Commits must be signed off (git commit -s) for DCO.
 -->
 <!-- markdownlint-disable MD041 -->
 
-## Description
+## Summary
 
-<!-- Provide a clear summary of the changes in this PR -->
-
-## Motivation
-
-<!-- Why are these changes needed? Link issues with "Fixes #<number>" if applicable -->
-
-## Changes Made
-
-<!-- List the key changes in this PR -->
-
--
--
--
+<!-- What changed and why. Link issues with "Fixes #<number>". -->
 
 ## Security
 
-<!-- Does this change how tokens/secrets are handled, or how firewall rules are
-computed or applied? Describe the impact, or write "None". -->
+<!-- Any change to how tokens/secrets are handled, or how firewall rules
+are computed or applied? Describe the impact, or write "None". -->
 
 ## Testing
 
-<!-- How did you test these changes? CI runs lint, type-check, and tests
-(≥80% coverage) on every PR, so no need to attest to those here. -->
-
-- [ ] Added or updated unit tests
-
-## Documentation
-
-<!-- Mark which documentation has been updated -->
-
-- [ ] README.md updated
-- [ ] Docstrings/comments added or updated
-- [ ] CHANGELOG.md entry added (if user-facing)
-- [ ] No documentation changes needed
-
-## Checklist
-
-- [ ] I have read the [contributing guidelines](.github/CONTRIBUTING.md)
-- [ ] PR title follows [Conventional Commits](https://www.conventionalcommits.org/):
-     `<type>[optional scope]: <description>`
-  - Example: `fix(firewall): resolve rule sync issue` or `chore(deps): bump ruff to v0.14.6`
-- [ ] Commits are signed off with `git commit -s` (required for DCO compliance)
+<!-- How you verified the change. CI already runs lint, type-check, and
+tests (≥80% coverage), so no need to attest to those. -->
