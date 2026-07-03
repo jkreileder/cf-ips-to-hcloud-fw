@@ -121,17 +121,19 @@ agreed).
 ### 8. Open the pull request
 
 Use a Conventional Commits **PR title** (same format as the commit subject).
-Fill the repo's PR template, but keep it lean and honest:
+Fill the repo's PR template (`Summary`, `Security`, `Testing`), keeping it lean
+and honest:
 
-- Write the prose sections (Description, Motivation, Changes Made) accurately.
-- **Don't pre-tick the template's checkboxes.** Those are the *author's*
-  self-certification. The DCO sign-off and the commit signature are already
-  enforced (DCO app + branch protection); the Conventional Commits title is a
-  repo convention you should follow but nothing verifies it automatically.
-  Either way, leave the boxes unchecked for the human to confirm rather than
-  asserting them on their behalf.
-- Report what you actually ran in prose under Testing (e.g. "`make check` —
-  56 passed, 100% coverage") instead of ticking boxes.
+- Write **Summary** to cover what changed and why; link issues with
+  `Fixes #<number>` when one applies.
+- Fill **Security** with the token/secret or firewall-rule impact, or `None`.
+- Report what you actually ran under **Testing** in prose (e.g. "`make check` —
+  56 passed, 100% coverage"). CI already runs lint, type-check, and tests, so
+  don't re-attest to those.
+- Don't self-certify on the author's behalf. The DCO sign-off and commit
+  signature are enforced (DCO app + branch protection) and the Conventional
+  Commits title is enforced by `pr-title.yaml`, so state facts you verified
+  rather than asserting conventions on the human's behalf.
 - Drop sections that don't apply rather than padding them.
 
 ```bash
@@ -139,12 +141,11 @@ gh pr create \
   --base main \
   --title "<type>(<scope>): <subject>" \
   --body "$(cat <<'EOF'
-## Description
-<summary>
+## Summary
+<what changed and why; Fixes #<number> if applicable>
 
-## Changes Made
-- <change 1>
-- <change 2>
+## Security
+<token/secret or firewall-rule impact, or None>
 
 ## Testing
 <what you ran and the result, e.g. `make check` — 56 passed, 100% coverage>
