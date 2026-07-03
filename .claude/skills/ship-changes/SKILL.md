@@ -71,12 +71,12 @@ git add <paths>   # or: git add -A
 Before committing, mirror what CI enforces so failures are caught locally:
 
 ```bash
-make check       # make lint (ruff + ty) then make test (pytest, coverage ≥ 80%)
+make check       # make lint (ruff + ty) then make test (pytest, coverage ≥ 95%)
 ```
 
 Fix anything that fails before continuing — for lint, prefer
 `uv run ruff check --fix` / `uv run ruff format`; for `ty` errors fix the
-annotations rather than suppressing; for coverage below 80%, add tests under
+annotations rather than suppressing; for coverage below 95%, add tests under
 `tests/`. (`pre-commit` also runs ruff/gitleaks/markdownlint on commit.)
 
 ### 5. Craft the commit message (Conventional Commits)

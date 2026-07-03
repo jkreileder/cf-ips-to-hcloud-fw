@@ -31,7 +31,7 @@
   default + dev groups from `uv.lock`). Later targets refresh the environment when
   the lock or `pyproject.toml` changes.
 - Default loop: `make lint` (ruff + ty) → `make test` (pytest,
-  coverage≥80, writes `coverage.xml` + `htmlcov/`) → `make build` (`uv build`).
+  coverage≥95, writes `coverage.xml` + `htmlcov/`) → `make build` (`uv build`).
   `make` runs all three.
 - `make clean` wraps `git clean -xdf`; it nukes `.venv/` and every untracked
   artifact if you need a hard reset.
