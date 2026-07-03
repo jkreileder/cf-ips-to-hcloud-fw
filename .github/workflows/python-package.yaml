@@ -86,7 +86,7 @@ jobs:
         uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
         with:
           python-version: ${{ matrix.python-version }}
-          version: "0.11.24"
+          version: "0.11.26"
           # Keep release builds hermetic: don't restore caches when building
           # the artifacts that get published (tag pushes).
           enable-cache: ${{ !startsWith(github.ref, 'refs/tags/') }}
