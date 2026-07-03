@@ -12,7 +12,7 @@ repos:
       - id: pretty-format-json
         args: [--autofix, --indent=4]
   - repo: https://github.com/astral-sh/uv-pre-commit
-    rev: 73c2d77a42a113aee9e4b748c24937f09557b82d  # frozen: 0.11.24
+    rev: 84ed656d5ada0b07830b74fb0fe18b3bc1029441  # frozen: 0.11.26
     hooks:
       - id: uv-lock
         args: [--check]
@@ -46,7 +46,7 @@ repos:
     hooks:
       - id: gitleaks
   - repo: https://github.com/DavidAnson/markdownlint-cli2
-    rev: 996abf60411a8d954288ac9856aae7602b80cbda  # frozen: v0.22.1
+    rev: 534166213006ec869b773b7ed8c6ebeaad1165d0  # frozen: v0.23.0
     hooks:
       - id: markdownlint-cli2
   - repo: https://github.com/rhysd/actionlint
@@ -64,7 +64,7 @@ repos:
       # which checks correctness.
       - id: zizmor
   - repo: https://github.com/renovatebot/pre-commit-hooks
-    rev: ea931ccc70c472cfeb2f822acba7f0e12b7842ce  # frozen: 43.243.1
+    rev: 9d4eedeef38d2ec466c87abd58aac963430839fc  # frozen: 43.251.3
     hooks:
       - id: renovate-config-validator
         args: [--strict]
