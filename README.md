@@ -29,6 +29,11 @@ rules up-to-date with the current Cloudflare IP ranges.
   - [Using Environment Variables (Single Project)](#using-environment-variables-single-project)
 - [Usage](#usage)
   - [Command-line Options](#command-line-options)
+- [Running on a Schedule](#running-on-a-schedule)
+  - [Host cron](#host-cron)
+  - [systemd timer](#systemd-timer)
+  - [Docker Compose](#docker-compose)
+  - [Kubernetes](#kubernetes)
 - [Verifying SLSA Attestations](#verifying-slsa-attestations)
   - [Verifying Python Wheels and Source Code](#verifying-python-wheels-and-source-code)
   - [Verifying Docker Images](#verifying-docker-images)
@@ -347,6 +352,113 @@ Example with debug logging:
 ```shell
 cf-ips-to-hcloud-fw -c config.yaml -d
 ```
+
+## Running on a Schedule
+
+`cf-ips-to-hcloud-fw` is a one-shot task, not a long-running daemon.
+It fetches the current Cloudflare ranges, updates your firewalls, and exits.
+Cloudflare's IP ranges change infrequently, so running it hourly or daily is
+plenty — schedule it with your platform's usual mechanism.
+
+Do **not** wrap it in a restart loop such as Docker's `restart: unless-stopped`.
+The container exits cleanly after each run and would be restarted immediately,
+which looks like a crash loop in your logs even though every run succeeded.
+
+### Host cron
+
+Add a line to your crontab (`crontab -e`) to run every hour:
+
+```shell
+0 * * * * /path/to/cf-ips-to-hcloud-fw -c /path/to/config.yaml
+```
+
+### systemd timer
+
+Create a service unit at `/etc/systemd/system/cf-ips-to-hcloud-fw.service`:
+
+```ini
+[Unit]
+Description=Sync Cloudflare IP ranges into Hetzner Cloud firewalls
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/path/to/cf-ips-to-hcloud-fw -c /etc/cf-ips-to-hcloud-fw/config.yaml
+```
+
+Create a matching timer at `/etc/systemd/system/cf-ips-to-hcloud-fw.timer`:
+
+```ini
+[Unit]
+Description=Run cf-ips-to-hcloud-fw hourly
+
+[Timer]
+OnCalendar=hourly
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+```
+
+Reload systemd so it picks up the new units, then enable and start the timer:
+
+```shell
+systemctl daemon-reload
+systemctl enable --now cf-ips-to-hcloud-fw.timer
+```
+
+### Docker Compose
+
+Pick **one** of the two approaches below — don't combine them.
+
+**Approach 1 — host-scheduled one-off runs (recommended).** Define a plain
+service that uses the image's default one-shot entrypoint:
+
+```yaml
+services:
+  cf-ips-to-hcloud-fw:
+    image: jkreileder/cf-ips-to-hcloud-fw:1.3.0
+    volumes:
+      - ./config.yaml:/usr/src/app/config.yaml
+```
+
+Then trigger it from the host (for example from cron) instead of keeping the
+container running:
+
+```shell
+0 * * * * cd /path/to/compose && docker compose run --rm cf-ips-to-hcloud-fw
+```
+
+**Approach 2 — a single long-lived container.** If you can't use a host
+scheduler, override the entrypoint to loop internally instead of relying on
+`restart:`. Use this service definition on its own — do not also drive it with
+the `docker compose run` line above, or the override makes the run never exit:
+
+```yaml
+services:
+  cf-ips-to-hcloud-fw:
+    image: jkreileder/cf-ips-to-hcloud-fw:1.3.0
+    volumes:
+      - ./config.yaml:/usr/src/app/config.yaml
+    # Re-run every 24h (86400s) inside one container instead of a scheduler.
+    # `sleep ... & wait` keeps the loop interruptible so `docker compose down`
+    # shuts down promptly instead of waiting for the stop grace period.
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        trap 'exit 0' INT TERM
+        while true; do
+          .venv/bin/cf-ips-to-hcloud-fw -c config.yaml
+          sleep 86400 &
+          wait "$!"
+        done
+```
+
+### Kubernetes
+
+For Kubernetes, use a `CronJob` — see the example in
+[Docker and Kubernetes](#docker-and-kubernetes).
 
 ## Verifying SLSA Attestations
 
