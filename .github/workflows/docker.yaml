@@ -169,6 +169,12 @@ jobs:
         uses: docker/setup-qemu-action@96fe6ef7f33517b61c61be40b68a1882f3264fb8 # v4.2.0
         with:
           image: tonistiigi/binfmt:qemu-v10.2.3-68@sha256:400a4873b838d1b89194d982c45e5fb3cda4593fbfd7e08a02e76b03b21166f0
+          # Pull the binfmt image fresh on tag builds: the gha image cache is
+          # keyed by repo+tag only and docker-loads the tarball without checking
+          # it against the digest pin above — only a real pull enforces the pin.
+          # Keep the cache for main builds (branch-isolated scope, same trust
+          # argument as the layer cache below).
+          cache-image: ${{ !startsWith(github.ref, 'refs/tags/') }}
 
       # Release (tag) builds run cache-free for a hermetic commit→image chain,
       # mirroring the Python workflow. main/PR builds keep the gha cache for
