@@ -5,6 +5,7 @@
         "davidanson.vscode-markdownlint",
         "github.vscode-github-actions",
         "ms-python.python",
+        "redhat.vscode-yaml",
         "tamasfe.even-better-toml",
         "yzhang.markdown-all-in-one"
     ]
