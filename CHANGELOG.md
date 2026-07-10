@@ -5,6 +5,12 @@
 ## [v1.3.1] – Unreleased
 
 - Start new development cycle
+- Hardened Hetzner firewall updates: the CLI now waits for each asynchronous
+  `set_rules` action to finish (surfacing action failures and timeouts instead of
+  reporting success at submission), applies a bounded connect/read timeout so a
+  hung API call can no longer stall the run indefinitely, and records transport
+  errors (connection/DNS/TLS failures) as per-firewall failures so the remaining
+  firewalls and projects are still processed
 
 ## [v1.3.0] – 2026-06-14
 

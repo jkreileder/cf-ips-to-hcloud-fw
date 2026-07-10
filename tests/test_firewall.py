@@ -6,8 +6,10 @@ from unittest.mock import MagicMock, call, patch
 
 import pytest
 from hcloud import APIException
+from hcloud.actions import ActionFailedException, ActionTimeoutException
 from hcloud.firewalls.domain import Firewall, FirewallRule
 from pydantic import SecretStr
+from requests.exceptions import ConnectionError as RequestsConnectionError
 
 from cf_ips_to_hcloud_fw.firewall import (
     CF_ALL,
@@ -270,11 +272,15 @@ def test_update_firewall_already_up_to_date(
 )
 @patch("cf_ips_to_hcloud_fw.firewall.Client")
 def test_fw_set_rules(mock_client: MagicMock, *, rules: list[FirewallRule]) -> None:
-    """fw_set_rules forwards the current rule list to the SDK verbatim."""
+    """fw_set_rules forwards the rules and waits for every returned action."""
     expected = rules or []
     fw = Firewall(name="fw-1", rules=rules)
+    action1, action2 = MagicMock(), MagicMock()
+    mock_client.firewalls.set_rules.return_value = [action1, action2]
     assert fw_set_rules(mock_client, fw, 1) is True
     mock_client.firewalls.set_rules.assert_called_once_with(fw, expected)
+    action1.wait_until_finished.assert_called_once_with()
+    action2.wait_until_finished.assert_called_once_with()
 
 
 @patch("cf_ips_to_hcloud_fw.firewall.Client")
@@ -290,6 +296,46 @@ def test_fw_set_rules_fail(mock_logging: MagicMock, mock_client: MagicMock) -> N
     mock_logging.assert_called_once_with(
         "hcloud/firewall.set_rules failed for 'fw-1' in project 1: "
         "Message (Test exception)"
+    )
+
+
+@pytest.mark.parametrize(
+    "exc_cls",
+    [ActionFailedException, ActionTimeoutException],
+)
+@patch("cf_ips_to_hcloud_fw.firewall.Client")
+@patch("logging.error")
+def test_fw_set_rules_action_fail(
+    mock_logging: MagicMock,
+    mock_client: MagicMock,
+    exc_cls: type[ActionFailedException | ActionTimeoutException],
+) -> None:
+    """An action that fails or times out while waiting reports failure."""
+    fw = Firewall(name="fw-1", rules=[])
+    failed_action = MagicMock(error=None, command="set_rules", id=42)
+    action = MagicMock()
+    action.wait_until_finished.side_effect = exc_cls(action=failed_action)
+    mock_client.firewalls.set_rules.return_value = [action]
+    assert fw_set_rules(mock_client, fw, 1) is False
+    action.wait_until_finished.assert_called_once_with()
+    mock_logging.assert_called_once()
+    assert mock_logging.call_args.args[0].startswith(
+        "hcloud/firewall.set_rules failed for 'fw-1' in project 1: "
+    )
+
+
+@patch("cf_ips_to_hcloud_fw.firewall.Client")
+@patch("logging.error")
+def test_fw_set_rules_transport_fail(
+    mock_logging: MagicMock, mock_client: MagicMock
+) -> None:
+    """A transport error (e.g. connection failure) reports failure, not a crash."""
+    fw = Firewall(name="fw-1", rules=[])
+    mock_client.firewalls.set_rules.side_effect = RequestsConnectionError("boom")
+    assert fw_set_rules(mock_client, fw, 1) is False
+    mock_client.firewalls.set_rules.assert_called_once_with(fw, [])
+    mock_logging.assert_called_once_with(
+        "hcloud/firewall.set_rules failed for 'fw-1' in project 1: boom"
     )
 
 
@@ -321,6 +367,9 @@ def test_update_project_found(
     project = Project(token=SecretStr("token-1"), firewalls=["fw-1"])
     outcome = update_project(project=project, cf_cidrs=cf_ips, project_index=1)
     assert outcome == ([], [])
+    # A bounded timeout is passed so a hung API call cannot stall the run.
+    _, kwargs = mock_client.call_args
+    assert kwargs["timeout"] == (5.0, 30.0)
     mock_client.return_value.firewalls.get_by_name.assert_called_once_with("fw-1")
     mock_update_firewall.assert_called_once_with(
         mock_client.return_value, fw, cf_ips, project_index=1
@@ -407,6 +456,39 @@ def test_update_project_fail_continues(
     mock_logging.assert_called_once_with(
         "hcloud/firewalls.get_by_name failed for 'fw-1' in project 1: "
         "Message (Test exception)"
+    )
+
+
+@patch("cf_ips_to_hcloud_fw.firewall.Client")
+@patch("cf_ips_to_hcloud_fw.firewall.update_firewall", return_value=True)
+@patch("logging.error")
+def test_update_project_transport_fail_continues(
+    mock_logging: MagicMock,
+    mock_update_firewall: MagicMock,
+    mock_client: MagicMock,
+) -> None:
+    """A transport error on get_by_name is recorded and the next firewall runs."""
+    fw2 = Firewall(2, "fw-2")
+    # fw-1 fails at the transport layer (no APIException); fw-2 must still sync.
+    mock_client.return_value.firewalls.get_by_name.side_effect = [
+        RequestsConnectionError("boom"),
+        fw2,
+    ]
+    project = Project(token=SecretStr("token-1"), firewalls=["fw-1", "fw-2"])
+    cf_ips = CloudflareCIDRs(ipv4_cidrs=["127.1/32"], ipv6_cidrs=["::1/64"])
+
+    outcome = update_project(project=project, cf_cidrs=cf_ips, project_index=1)
+
+    assert outcome == ([], ["project 1:'fw-1'"])
+    mock_client.return_value.firewalls.get_by_name.assert_has_calls([
+        call("fw-1"),
+        call("fw-2"),
+    ])
+    mock_update_firewall.assert_called_once_with(
+        mock_client.return_value, fw2, cf_ips, project_index=1
+    )
+    mock_logging.assert_called_once_with(
+        "hcloud/firewalls.get_by_name failed for 'fw-1' in project 1: boom"
     )
 
 
