@@ -29,8 +29,14 @@ jobs:
         with:
           disable-sudo: true
           egress-policy: block
+          # api.lob.com is TruffleHog's Lob-detector verification endpoint: a
+          # candidate in the scanned history trips that detector, and with
+          # verification enabled TruffleHog dials Lob to confirm it. Allow the
+          # host so verification actually runs (returns a definite verified/not
+          # result) instead of a blocked DNS lookup tripping harden-runner.
           allowed-endpoints: >
             api.github.com:443
+            api.lob.com:443
             ghcr.io:443
             github.com:443
             pkg-containers.githubusercontent.com:443
