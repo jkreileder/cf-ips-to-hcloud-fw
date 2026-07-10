@@ -90,6 +90,34 @@ jobs:
         with:
           persist-credentials: false
 
+      # Fail closed when a release tag doesn't match the project version, so a
+      # mistaken tag can't publish images whose semver tags (derived from the
+      # git tag) disagree with the packaged version, or ship a non-final
+      # (.dev/pre-release/local) version. Only meaningful on tag pushes; runs
+      # first so a bad tag stops the build before any registry work.
+      - name: Verify tag matches project version
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          TAG: ${{ github.ref_name }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="$(sed -nE 's/^version = "([^"]+)"$/\1/p' pyproject.toml)"
+          if [ -z "$version" ]; then
+            echo "::error::Could not read version from pyproject.toml"
+            exit 1
+          fi
+          expected="${TAG#v}"
+          if [ "$version" != "$expected" ]; then
+            echo "::error::Tag $TAG (version '$expected') does not match pyproject.toml version '$version'"
+            exit 1
+          fi
+          if ! printf '%s' "$version" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::error::Refusing to publish non-final version '$version' from tag $TAG"
+            exit 1
+          fi
+          echo "Release version '$version' matches tag $TAG"
+
       # Verify the uv base images carry astral-sh's signed SLSA build provenance
       # before building on them — fail closed, so a PR that repins to an
       # unattested or tampered digest stops the build. Runs before the QEMU/
