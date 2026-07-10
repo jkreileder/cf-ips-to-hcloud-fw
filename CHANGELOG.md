@@ -11,6 +11,11 @@
   hung API call can no longer stall the run indefinitely, and records transport
   errors (connection/DNS/TLS failures) as per-firewall failures so the remaining
   firewalls and projects are still processed
+- Guarded the release workflows against mistaken tags: a `v*` tag now fails the
+  Python and Docker publish pipelines unless the tag matches the `pyproject.toml`
+  version exactly and that version is a final `X.Y.Z` release (no `.dev`,
+  pre-release, or local component), preventing a wrong or non-final version from
+  reaching PyPI or producing mismatched Docker semver tags
 
 ## [v1.3.0] – 2026-06-14
 
