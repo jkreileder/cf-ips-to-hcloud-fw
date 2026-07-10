@@ -43,6 +43,7 @@ dependencies = [
     { name = "hcloud" },
     { name = "pydantic" },
     { name = "pyyaml" },
+    { name = "requests" },
 ]
 
 [package.dev-dependencies]
@@ -58,6 +59,7 @@ requires-dist = [
     { name = "hcloud", specifier = ">=2.22.0" },
     { name = "pydantic", specifier = ">=2.13.4" },
     { name = "pyyaml", specifier = ">=6.0.3" },
+    { name = "requests", specifier = ">=2.20" },
 ]
 
 [package.metadata.requires-dev]

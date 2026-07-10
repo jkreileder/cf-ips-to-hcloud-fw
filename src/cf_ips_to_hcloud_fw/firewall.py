@@ -6,7 +6,9 @@ import logging
 from typing import TYPE_CHECKING, NamedTuple
 
 from hcloud import APIException, Client
+from hcloud.actions import ActionException
 from hcloud.firewalls.domain import Firewall, FirewallRule
+from requests.exceptions import RequestException
 
 from cf_ips_to_hcloud_fw.custom_logging import log_error
 
@@ -16,6 +18,11 @@ if TYPE_CHECKING:  # pragma: no cover
 CF_IPV4 = "__CLOUDFLARE_IPS_V4__"
 CF_IPV6 = "__CLOUDFLARE_IPS_V6__"
 CF_ALL = "__CLOUDFLARE_IPS__"
+
+# Bounded (connect, read) timeout in seconds. The SDK passes this straight to
+# requests; without it a hung Hetzner API call would stall the whole run
+# indefinitely.
+HCLOUD_TIMEOUT = (5.0, 30.0)
 
 
 class IPVersionTargets(NamedTuple):
@@ -55,14 +62,14 @@ def update_project(
     Returns:
         ProjectOutcome: Labels of skipped and failed firewalls, project-prefixed.
     """
-    client = Client(token=project.token.get_secret_value())
+    client = Client(token=project.token.get_secret_value(), timeout=HCLOUD_TIMEOUT)
     skipped: list[str] = []
     failed: list[str] = []
     for name in project.firewalls:
         label = f"project {project_index}:{name!r}"
         try:
             fw = client.firewalls.get_by_name(name)
-        except APIException as e:
+        except (APIException, RequestException) as e:
             log_error(
                 "hcloud/firewalls.get_by_name failed for "
                 f"{name!r} in project {project_index}: {e}"
@@ -151,21 +158,27 @@ def update_firewall_rule(
 def fw_set_rules(client: Client, fw: Firewall, project_index: int) -> bool:
     """Persist rule updates to Hetzner via the SDK.
 
+    set_rules is asynchronous: the SDK returns one action per request and each
+    only reflects the final result once finished. We wait on every action so a
+    later failure or timeout is surfaced instead of being reported as success.
+
     Args:
         client: Authenticated Hetzner Cloud client.
         fw: Firewall whose rules were modified earlier in the flow.
         project_index: 1-based index of the project being processed, used for logging.
 
     Returns:
-        bool: True on success, False when the API call failed.
+        bool: True on success, False when the API call or an action failed.
     """
     logging.info(
         f"Updating rules for hcloud firewall {fw.name!r} in project {project_index}"
     )
     try:
         rules = fw.rules or []
-        client.firewalls.set_rules(fw, rules)
-    except APIException as e:
+        actions = client.firewalls.set_rules(fw, rules)
+        for action in actions:
+            action.wait_until_finished()
+    except (APIException, ActionException, RequestException) as e:
         log_error(
             f"hcloud/firewall.set_rules failed for {fw.name!r} in project "
             f"{project_index}: {e}"
