@@ -37,14 +37,12 @@ jobs:
           path: ${{ github.event_path }}
           retention-days: 5
 
-  build:
-    name: Build
+  test:
+    name: Test
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     permissions:
       contents: read
-      id-token: write
-      attestations: write
     strategy:
       fail-fast: false
       matrix:
@@ -54,8 +52,6 @@ jobs:
           - "3.12"
           - "3.13"
           - "3.14"
-    outputs:
-      hashes: ${{ steps.hash.outputs.hashes }}
 
     steps:
       - name: Harden runner
@@ -66,16 +62,12 @@ jobs:
           allowed-endpoints: >
             api.github.com:443
             files.pythonhosted.org:443
-            fulcio.sigstore.dev:443
-            get.anchore.io:443
             github.com:443
             objects.githubusercontent.com:443
             pypi.org:443
             raw.githubusercontent.com:443
-            rekor.sigstore.dev:443
             release-assets.githubusercontent.com:443
             releases.astral.sh:443
-            uploads.github.com:443
 
       - name: Checkout repository
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -87,8 +79,8 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           version: "0.11.26"
-          # Keep release builds hermetic: don't restore caches when building
-          # the artifacts that get published (tag pushes).
+          # No cache restore on tag runs so the release path can't be tainted
+          # by a poisoned cache (cache-poisoning audit).
           enable-cache: ${{ !startsWith(github.ref, 'refs/tags/') }}
 
       - name: Sync dependencies
@@ -125,6 +117,47 @@ jobs:
           path: coverage.xml
           retention-days: 14
 
+  package-check:
+    name: Package check
+    # PR-only build/smoke feedback. main and tag pushes build the publishable
+    # artifact once in build-dist, so this job stays read-only and never
+    # uploads anything a downstream job could publish.
+    if: ${{ github.event_name == 'pull_request' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with:
+          disable-sudo: true
+          egress-policy: block
+          allowed-endpoints: >
+            api.github.com:443
+            files.pythonhosted.org:443
+            github.com:443
+            objects.githubusercontent.com:443
+            pypi.org:443
+            raw.githubusercontent.com:443
+            release-assets.githubusercontent.com:443
+            releases.astral.sh:443
+
+      - name: Checkout repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Set up Python and install uv
+        uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
+        with:
+          python-version: "3.11"
+          version: "0.11.26"
+          # PR-only feedback build: caching disabled. It gains little for a
+          # single build and keeps this job off the cache-poisoning surface.
+          enable-cache: false
+
       - name: Build
         run: |
           rm -rf dist
@@ -135,53 +168,17 @@ jobs:
           uv run --isolated --no-project --with dist/*.whl \
             cf-ips-to-hcloud-fw --version
 
-      - name: Generate SBOM
-        if: ${{ matrix.python-version == '3.11' }}
-        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
-        with:
-          format: spdx-json
-          artifact-name: sbom-python.spdx.json
-          output-file: sbom-python.spdx.json
-
-      - name: Generate SBOM attestation
-        if: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' && matrix.python-version == '3.11' }}
-        uses: actions/attest@a1948c3f048ba23858d222213b7c278aabede763 # v4.1.1
-        with:
-          subject-path: dist/*.whl
-          sbom-path: sbom-python.spdx.json
-
-      - name: Generate artifact attestation
-        if: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' && matrix.python-version == '3.11' }}
-        uses: actions/attest@a1948c3f048ba23858d222213b7c278aabede763 # v4.1.1
-        with:
-          subject-path: |
-            dist/*.whl
-            dist/*.tar.gz
-
-      - name: Generate hashes
-        id: hash
-        if: ${{ github.event_name != 'pull_request' && startsWith(github.ref, 'refs/tags/') && matrix.python-version == '3.11' }}
-        run: cd dist && echo "hashes=$(sha256sum -- * | base64 -w0)" >> "$GITHUB_OUTPUT"
-
-      - name: Store the distribution packages
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        if: ${{ github.event_name != 'pull_request' && startsWith(github.ref, 'refs/tags/') && matrix.python-version == '3.11' }}
-        with:
-          name: python-package-distributions
-          path: dist/
-          retention-days: 14
-
   upload-to-codecov:
     name: Upload to Codecov
     # Codecov uploads run in their own job so the third-party uploader only
     # ever sees the coverage/test-result XML files — never the workspace of
-    # the job that builds and attests release artifacts — and its egress
+    # the jobs that build and attest release artifacts — and its egress
     # (including the shared storage.googleapis.com host) stays out of the
-    # build job's allowlist. Runs even when the build job failed so a red
+    # test job's allowlist. Runs even when the test job failed so a red
     # test run still reports its results.
     if: ${{ !cancelled() }}
     needs:
-      - build
+      - test
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     strategy:
@@ -250,11 +247,14 @@ jobs:
 
   check-release-version:
     name: Check release version
-    # Only tag pushes publish; guard them so a mistaken tag can't ship a version
-    # that disagrees with pyproject.toml or a non-final (.dev/pre-release/local)
-    # version. Gating the publish chain on this job (see needs below) fails the
-    # whole release before anything reaches PyPI, which is irreversible.
-    if: ${{ github.event_name != 'pull_request' && startsWith(github.ref, 'refs/tags/') }}
+    # Runs on every non-PR push. On a tag it verifies the tag matches
+    # pyproject.toml and refuses non-final (.dev/pre-release/local) versions; on
+    # main it is a deliberate no-op pass. It can't be tag-only: build-dist
+    # depends on it and must also run on main (to attest main builds), and a
+    # skipped tag-only check would skip build-dist on main too. Gating build-dist
+    # here fails a mistaken tag before anything is built or reaches PyPI
+    # (irreversible), while main still proceeds to build and attestation.
+    if: ${{ github.event_name != 'pull_request' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
@@ -281,6 +281,13 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          case "$GITHUB_REF" in
+            refs/tags/*) ;;
+            *)
+              echo "Not a tag push (ref: $GITHUB_REF); release-version check not applicable."
+              exit 0
+              ;;
+          esac
           version="$(sed -nE 's/^version = "([^"]+)"$/\1/p' pyproject.toml)"
           if [ -z "$version" ]; then
             echo "::error::Could not read version from pyproject.toml"
@@ -297,13 +304,162 @@ jobs:
           fi
           echo "Release version '$version' matches tag $TAG"
 
+  build-dist:
+    name: Build distribution
+    # Build the publishable sdist/wheel once per non-PR push (main and tags),
+    # read-only. Gated on the full test matrix so a tag with failing tests never
+    # builds or publishes, and on check-release-version so a mistaken tag fails
+    # before anything is built (on main that check is a no-op pass). The
+    # privileged attestation happens in attest-dist, which only downloads these
+    # artifacts.
+    if: ${{ github.event_name != 'pull_request' }}
+    needs:
+      - test
+      - check-release-version
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    outputs:
+      hashes: ${{ steps.hash.outputs.hashes }}
+
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with:
+          disable-sudo: true
+          egress-policy: block
+          allowed-endpoints: >
+            api.github.com:443
+            files.pythonhosted.org:443
+            get.anchore.io:443
+            github.com:443
+            objects.githubusercontent.com:443
+            pypi.org:443
+            raw.githubusercontent.com:443
+            release-assets.githubusercontent.com:443
+            releases.astral.sh:443
+
+      - name: Checkout repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Set up Python and install uv
+        uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
+        with:
+          python-version: "3.11"
+          version: "0.11.26"
+          # Keep the published artifacts hermetic: never restore caches here.
+          enable-cache: false
+
+      - name: Build
+        run: |
+          rm -rf dist
+          uv build
+
+      - name: Smoke test built wheel
+        run: |
+          uv run --isolated --no-project --with dist/*.whl \
+            cf-ips-to-hcloud-fw --version
+
+      # Write the SBOM to the repo root only; attest-dist re-uploads it under a
+      # name we control (below), so we upload once, explicitly, with the same
+      # pinned action as everything else instead of relying on sbom-action's
+      # internal artifact naming.
+      - name: Generate SBOM
+        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
+        with:
+          format: spdx-json
+          output-file: sbom-python.spdx.json
+          upload-artifact: false
+
+      - name: Store the SBOM
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: sbom-python.spdx.json
+          path: sbom-python.spdx.json
+          retention-days: 14
+
+      # Hash only the distributions. The SBOM is written to the repo root (not
+      # into dist/), so the SLSA subjects cover exactly the wheel and sdist.
+      - name: Generate hashes
+        id: hash
+        run: cd dist && echo "hashes=$(sha256sum -- * | base64 -w0)" >> "$GITHUB_OUTPUT"
+
+      - name: Store the distribution packages
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: python-package-distributions
+          path: dist/
+          retention-days: 14
+
+  attest-dist:
+    name: Attest distribution
+    # Minimal privileged job: it only downloads the already-built distribution
+    # and SBOM and attests them. It never checks out or runs repository code, so
+    # id-token/attestations write never touches a build step. The dependabot
+    # guard mirrors the original attestation steps and the repo's policy of not
+    # running privileged jobs as dependabot; these triggers (push to main / v*
+    # tags) don't fire for dependabot, so it is defensive only.
+    if: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' }}
+    needs:
+      - build-dist
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with:
+          disable-sudo: true
+          egress-policy: block
+          allowed-endpoints: >
+            api.github.com:443
+            fulcio.sigstore.dev:443
+            github.com:443
+            objects.githubusercontent.com:443
+            rekor.sigstore.dev:443
+            uploads.github.com:443
+
+      - name: Download the distribution packages
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: python-package-distributions
+          path: dist
+
+      - name: Download the SBOM
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: sbom-python.spdx.json
+          path: sbom
+
+      - name: Generate SBOM attestation
+        uses: actions/attest@a1948c3f048ba23858d222213b7c278aabede763 # v4.1.1
+        with:
+          subject-path: |
+            dist/*.whl
+            dist/*.tar.gz
+          sbom-path: sbom/sbom-python.spdx.json
+
+      - name: Generate artifact attestation
+        uses: actions/attest@a1948c3f048ba23858d222213b7c278aabede763 # v4.1.1
+        with:
+          subject-path: |
+            dist/*.whl
+            dist/*.tar.gz
+
   provenance-and-draft-release:
     name: Generate provenance and create draft release
     if: ${{ github.event_name != 'pull_request' && startsWith(github.ref, 'refs/tags/') }}
     needs:
-      - build
+      - build-dist
+      - attest-dist
       - upload-event-file
-      - check-release-version
     permissions:
       actions: read
       id-token: write
@@ -312,7 +468,7 @@ jobs:
     # by tag, and GitHub evaluates the ref for nested actions inside it too.
     uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.1.0 # zizmor: ignore[unpinned-uses]
     with:
-      base64-subjects: ${{ needs.build.outputs.hashes }}
+      base64-subjects: ${{ needs.build-dist.outputs.hashes }}
       upload-assets: true
       draft-release: true
 
