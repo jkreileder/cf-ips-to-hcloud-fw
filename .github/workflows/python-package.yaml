@@ -78,7 +78,7 @@ jobs:
         uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
         with:
           python-version: ${{ matrix.python-version }}
-          version: "0.11.26"
+          version: "0.11.28"
           # No cache restore on tag runs so the release path can't be tainted
           # by a poisoned cache (cache-poisoning audit).
           enable-cache: ${{ !startsWith(github.ref, 'refs/tags/') }}
@@ -153,7 +153,7 @@ jobs:
         uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
         with:
           python-version: "3.11"
-          version: "0.11.26"
+          version: "0.11.28"
           # PR-only feedback build: caching disabled. It gains little for a
           # single build and keeps this job off the cache-poisoning surface.
           enable-cache: false
@@ -349,7 +349,7 @@ jobs:
         uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
         with:
           python-version: "3.11"
-          version: "0.11.26"
+          version: "0.11.28"
           # Keep the published artifacts hermetic: never restore caches here.
           enable-cache: false
 
