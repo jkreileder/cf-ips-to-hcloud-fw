@@ -118,10 +118,22 @@ jobs:
           fi
           echo "Release version '$version' matches tag $TAG"
 
+      # Log in to Docker Hub before the provenance check and the QEMU/buildx
+      # tooling pulls so every Docker Hub request — including the uv base-image
+      # manifest fetches in the verify step below — counts against the
+      # authenticated limit, not the shared-runner anonymous pool. Skipped for
+      # fork PRs and Dependabot (no secret access); those fall back to anonymous.
+      - name: Login to DockerHub
+        if: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.head.repo.fork) && github.actor != 'dependabot[bot]' }}
+        uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
+        with:
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
       # Verify the uv base images carry astral-sh's signed SLSA build provenance
       # before building on them — fail closed, so a PR that repins to an
       # unattested or tampered digest stops the build. Runs before the QEMU/
-      # buildx/login setup to fail fast. Only the uv images are checkable here:
+      # buildx setup to fail fast. Only the uv images are checkable here:
       # the python base is a Docker Official Image whose inline provenance is
       # unsigned (no verifiable signer). Refs are read from the Dockerfile so the
       # pins stay single-sourced; the found guard trips if the pin format drifts
@@ -140,7 +152,7 @@ jobs:
               --owner astral-sh \
               --predicate-type https://slsa.dev/provenance/v1
             echo "::endgroup::"
-          done < <(grep -oE 'ghcr\.io/astral-sh/uv:[^ @]+@sha256:[0-9a-f]{64}' Dockerfile | sort -u)
+          done < <(grep -oE 'docker\.io/astral/uv:[^ @]+@sha256:[0-9a-f]{64}' Dockerfile | sort -u)
           if [ "$found" -eq 0 ]; then
             echo "::error::No uv base images found in Dockerfile — verification would be a no-op"
             exit 1
@@ -162,16 +174,6 @@ jobs:
             type=semver,pattern={{major}}
         env:
           DOCKER_METADATA_ANNOTATIONS_LEVELS: manifest${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' && ',index' || '' }}
-
-      # Log in before pulling the QEMU/buildx tooling images so those Docker Hub
-      # pulls count against the authenticated limit, not the shared-runner
-      # anonymous pool.
-      - name: Login to DockerHub
-        if: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.head.repo.fork) && github.actor != 'dependabot[bot]' }}
-        uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
-        with:
-          username: ${{ vars.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Login to Quay
         if: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' }}
