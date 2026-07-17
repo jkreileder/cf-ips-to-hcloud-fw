@@ -16,11 +16,11 @@ license-files = ["LICENSE"]
 requires-python = ">=3.10"
 version = "1.3.1.dev1"
 dependencies = [
-    "cloudflare>=5.4.0",
+    "cloudflare>=5.5.0",
     "hcloud>=2.22.0",
     "pydantic>=2.13.4",
     "pyyaml>=6.0.3",
-    "requests>=2.20",
+    "requests>=2.34.2",
 ]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
@@ -58,8 +58,8 @@ PyPI = "https://pypi.org/project/cf-ips-to-hcloud-fw/"
 [dependency-groups]
 dev = [
     "pytest-cov>=7.1.0",
-    "ruff>=0.15.18",
-    "ty>=0.0.51",
+    "ruff>=0.15.22",
+    "ty>=0.0.60",
 ]
 
 [tool.pytest]
@@ -93,7 +93,7 @@ extend-select = [
     "DOC",
     "E",
     "EM",
-    "ERA001",
+    "commented-out-code",
     "EXE",
     "F",
     "FA",
@@ -128,34 +128,21 @@ extend-select = [
     "W",
 ]
 ignore = [
-    "COM812",
-    "COM819",
-    "E111",
-    "E114",
-    "E117",
-    "D203",
-    "D206",
-    "D213",
-    "D300",
-    "D413",
-    "LOG015",
-    "Q000",
-    "Q001",
-    "Q002",
-    "Q003",
-    "ISC001",
-    "ISC002",
-    "W191",
+    "missing-trailing-comma",
+    "incorrect-blank-line-before-class",
+    "multi-line-summary-second-line",
+    "missing-blank-line-after-last-section",
+    "root-logger-call",
 ]
 
 [tool.ruff.lint.per-file-ignores]
 # Tests may exercise module-private helpers directly: assert (S101), access
 # private members (SLF001), and import private names (PLC2701).
-"tests/*" = ["S101", "SLF001", "PLC2701"]
+"tests/*" = ["assert", "private-member-access", "import-private-name"]
 # config.py intentionally uses os-level file APIs (os.path.exists, os.stat via
 # _os_stat, builtins.open) so tests can patch them; the _os_stat indirection
 # also avoids intercepting the Python 3.14 coverage tracer's own os.stat calls.
-"src/cf_ips_to_hcloud_fw/config.py" = ["PTH110", "PTH116", "PTH123"]
+"src/cf_ips_to_hcloud_fw/config.py" = ["os-path-exists", "os-stat", "builtin-open"]
 
 [tool.ruff.lint.flake8-type-checking]
 runtime-evaluated-base-classes = ["pydantic.BaseModel"]
