@@ -2,6 +2,7 @@
 name: ship-changes
 description: 'Ship the current working-tree changes as a pull request. Use when asked to commit and push, open a PR, ship/submit changes, create a feature branch and PR, or "make a PR for this". Creates a feature branch if on the default branch, crafts a Conventional Commits message, commits with DCO sign-off and GPG signing, pushes, and opens a GitHub PR with a Conventional Commits title.'
 argument-hint: 'Optional: PR type/scope, target branch, or extra context for the commit/PR'
+model: sonnet
 ---
 
 # Ship Changes as a Pull Request
