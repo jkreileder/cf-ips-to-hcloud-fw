@@ -4,7 +4,7 @@
 FROM --platform=$BUILDPLATFORM docker.io/astral/uv:0.11.29-python3.14-trixie@sha256:cd22b8ef1b9a27e285a0e8ee3416db1c955d7d14c33bb39ec2a41306c68a5500 AS uv-tools-trixie
 FROM docker.io/astral/uv:0.11.29-python3.14-alpine3.23@sha256:7a6d8c4ff34812917124c77a8559458488f09d5e52e7646c04599f007956966c AS uv-tools-alpine
 
-FROM --platform=$BUILDPLATFORM public.ecr.aws/docker/library/python:3.14.6-trixie@sha256:7a320a6d1216cd356eb4790261f2332e6e29e32f7e80646cb3e79f9e65b8e2c2 AS builder
+FROM --platform=$BUILDPLATFORM public.ecr.aws/docker/library/python:3.14.6-trixie@sha256:6ad91c3bc07ebbbcd2ee421e9364606c2ef4fb336e8a62b49b85507f4880c425 AS builder
 
 WORKDIR /usr/src/app
 
