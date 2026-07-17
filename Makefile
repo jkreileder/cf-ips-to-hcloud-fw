@@ -15,8 +15,11 @@ UV_RUN_FLAGS := --no-sync   # env is already synced via $(SYNC_STAMP); don't re-
 .PHONY: all
 all: lint test build
 
+# UV_MALWARE_CHECK scans the locked deps against OSV's malware advisories on
+# sync; override with UV_MALWARE_CHECK=0 to sync offline. Kept out of the
+# release path in CI (build-dist stays hermetic) — see python-package.yaml.
 $(SYNC_STAMP): pyproject.toml uv.lock
-	$(UV) sync $(UV_SYNC_FLAGS)
+	UV_MALWARE_CHECK=$${UV_MALWARE_CHECK:-1} $(UV) sync $(UV_SYNC_FLAGS) --preview-features malware-check
 	touch $(SYNC_STAMP)
 
 .PHONY: venv
@@ -34,6 +37,10 @@ lint: $(SYNC_STAMP)
 .PHONY: test
 test: $(SYNC_STAMP)
 	$(UV) run $(UV_RUN_FLAGS) pytest
+
+.PHONY: audit
+audit:
+	$(UV) audit --preview-features audit-command --frozen
 
 .PHONY: check
 check: lint test
