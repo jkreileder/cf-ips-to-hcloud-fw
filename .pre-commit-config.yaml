@@ -57,14 +57,14 @@ repos:
       # YAML/expression checks otherwise.
       - id: actionlint
   - repo: https://github.com/zizmorcore/zizmor-pre-commit
-    rev: e3eebf65325ccc992422292cb7a4baee967cf815  # frozen: v1.26.1
+    rev: 64a97fb7fa63188393d3215c6e312f5f9c6d0f78  # frozen: v1.27.0
     hooks:
       # Security audit of GitHub Actions workflows (template injection,
       # credential persistence, cache poisoning, ...); complements actionlint,
       # which checks correctness.
       - id: zizmor
   - repo: https://github.com/renovatebot/pre-commit-hooks
-    rev: 9d4eedeef38d2ec466c87abd58aac963430839fc  # frozen: 43.251.3
+    rev: f0e5cfc79a7433a9be485618342c18aa2d35e2bf  # frozen: 43.263.3
     hooks:
       - id: renovate-config-validator
         args: [--strict]
