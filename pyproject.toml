@@ -129,23 +129,10 @@ extend-select = [
 ]
 ignore = [
     "missing-trailing-comma",
-    "prohibited-trailing-comma",
-    "indentation-with-invalid-multiple",
-    "indentation-with-invalid-multiple-comment",
-    "over-indented",
     "incorrect-blank-line-before-class",
-    "docstring-tab-indentation",
     "multi-line-summary-second-line",
-    "triple-single-quotes",
     "missing-blank-line-after-last-section",
     "root-logger-call",
-    "bad-quotes-inline-string",
-    "bad-quotes-multiline-string",
-    "bad-quotes-docstring",
-    "avoidable-escaped-quote",
-    "single-line-implicit-string-concatenation",
-    "multi-line-implicit-string-concatenation",
-    "tab-indentation",
 ]
 
 [tool.ruff.lint.per-file-ignores]
