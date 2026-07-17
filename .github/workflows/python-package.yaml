@@ -61,6 +61,7 @@ jobs:
           egress-policy: block
           allowed-endpoints: >
             api.github.com:443
+            api.osv.dev:443
             files.pythonhosted.org:443
             github.com:443
             objects.githubusercontent.com:443
@@ -83,8 +84,13 @@ jobs:
           # by a poisoned cache (cache-poisoning audit).
           enable-cache: ${{ !startsWith(github.ref, 'refs/tags/') }}
 
+      # Scan the locked deps against OSV's malware advisories on every PR/push
+      # sync. Kept off the hermetic release path (build-dist) on purpose so a
+      # publish never depends on OSV availability.
       - name: Sync dependencies
-        run: uv sync --group dev --frozen
+        env:
+          UV_MALWARE_CHECK: "1"
+        run: uv sync --group dev --frozen --preview-features malware-check
 
       - name: Lint (ruff)
         run: uv run --no-sync ruff check --output-format=github
