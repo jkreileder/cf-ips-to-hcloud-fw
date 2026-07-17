@@ -18,7 +18,7 @@ from pydantic import SecretStr, TypeAdapter, ValidationError
 from cf_ips_to_hcloud_fw.custom_logging import log_error_and_exit
 from cf_ips_to_hcloud_fw.models import Project
 
-ENV_TOKEN = "HCLOUD_TOKEN"  # noqa: S105 # env var name, not a secret value
+ENV_TOKEN = "HCLOUD_TOKEN"  # ruff:ignore[hardcoded-password-string] # env var name, not a secret value
 ENV_FIREWALLS = "HCLOUD_FIREWALLS"
 DEFAULT_CONFIG_FILE = "config.yaml"
 
