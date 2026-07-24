@@ -297,8 +297,10 @@ limit exposure operationally instead:
 - **Prefer environment variables over a config file.** Passing the token via
   `HCLOUD_TOKEN` (see [Using Environment
   Variables](#using-environment-variables-single-project)) keeps it out of any
-  on-disk file and lets your platform inject it as a native Docker or Kubernetes
-  secret. Use `config.yaml` when you need to drive several projects in one run.
+  on-disk file, and lets Kubernetes inject it straight from a Secret with
+  `secretKeyRef`. Docker Swarm secrets are mounted as files and never exported
+  into the environment — mount one as `config.yaml` instead. Use `config.yaml`
+  as well when you need to drive several projects in one run.
 - **Restrict the config file when you do use one.** See the permission notes in
   [Configuring the Application](#configuring-the-application).
 - **Rotate the token periodically**, and revoke it immediately if a host that
