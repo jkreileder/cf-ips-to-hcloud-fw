@@ -25,6 +25,7 @@ rules up-to-date with the current Cloudflare IP ranges.
   - [Docker and Kubernetes](#docker-and-kubernetes)
 - [Configuration](#configuration)
   - [Preparing the Hetzner Cloud Firewall](#preparing-the-hetzner-cloud-firewall)
+  - [Securing the API Token](#securing-the-api-token)
   - [Configuring the Application](#configuring-the-application)
   - [Using Environment Variables (Single Project)](#using-environment-variables-single-project)
 - [Usage](#usage)
@@ -276,7 +277,37 @@ To prepare your Hetzner Cloud Firewall:
    for the project that contains the firewall. This token will be used to
    authenticate your requests to the Hetzner Cloud API. You can generate a token
    in the Hetzner Cloud Console by going to "Security" > "API Tokens" >
-   "Generate API Token".
+   "Generate API Token". Read [Securing the API
+   Token](#securing-the-api-token) before you do — the token is more powerful
+   than this tool needs.
+
+### Securing the API Token
+
+Hetzner Cloud API tokens are **project-wide and read-write**. There is no
+firewall-only scope: the same token this tool uses to edit firewall rules can
+also create and delete servers, volumes, snapshots, and every other resource in
+that project.
+
+This tool only ever reads firewalls and writes their rules, but the Hetzner API
+cannot enforce that restriction for you. Nor does moving the firewalls to a
+separate project help — a firewall must live in the same project as the servers
+it protects. So treat the token as equivalent to full control of the project and
+limit exposure operationally instead:
+
+- **Prefer environment variables over a config file.** Passing the token via
+  `HCLOUD_TOKEN` (see [Using Environment
+  Variables](#using-environment-variables-single-project)) keeps it out of any
+  on-disk file and lets your platform inject it as a native Docker or Kubernetes
+  secret. Use `config.yaml` when you need to drive several projects in one run.
+- **Restrict the config file when you do use one.** See the permission notes in
+  [Configuring the Application](#configuring-the-application).
+- **Rotate the token periodically**, and revoke it immediately if a host that
+  held it is decommissioned or compromised. Hetzner tokens cannot be rotated in
+  place: generate a replacement under "Security" > "API Tokens", roll it out,
+  then delete the old one. The tool picks up the new value on its next run, with
+  no other changes needed.
+- **Use a separate token per deployment** rather than sharing one across hosts,
+  so a single revocation doesn't take down everything else.
 
 ### Configuring the Application
 
