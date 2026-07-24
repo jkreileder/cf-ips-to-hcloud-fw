@@ -12,7 +12,7 @@ repos:
       - id: pretty-format-json
         args: [--autofix, --indent=4]
   - repo: https://github.com/astral-sh/uv-pre-commit
-    rev: 36bed8143874b34d77931e1236de048cf551e940  # frozen: 0.11.30
+    rev: e3e6ef7d9bda544b2e795782dbd7d2a4fbd7eb6d  # frozen: 0.11.32
     hooks:
       - id: uv-lock
         args: [--check]
@@ -57,14 +57,14 @@ repos:
       # YAML/expression checks otherwise.
       - id: actionlint
   - repo: https://github.com/zizmorcore/zizmor-pre-commit
-    rev: 64a97fb7fa63188393d3215c6e312f5f9c6d0f78  # frozen: v1.27.0
+    rev: 067260dc5fe6ea86b7551bfd6f8b3ba4e6c93129  # frozen: v1.28.0
     hooks:
       # Security audit of GitHub Actions workflows (template injection,
       # credential persistence, cache poisoning, ...); complements actionlint,
       # which checks correctness.
       - id: zizmor
   - repo: https://github.com/renovatebot/pre-commit-hooks
-    rev: 6a2c81da9cecf1e84ceefa61c67f0cece2482067  # frozen: 43.272.4
+    rev: 08dd4fee330cc109f0b90dd3b42ee22059b44535  # frozen: 43.280.0
     hooks:
       - id: renovate-config-validator
         args: [--strict]
