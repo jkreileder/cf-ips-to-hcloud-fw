@@ -5,6 +5,14 @@ name: SLSA generator smoke test
 # call the release workflow uses, and verifies the resulting provenance with
 # slsa-verifier.
 #
+# Why this exists: slsa-github-generator is effectively unmaintained. v2.1.0 is
+# from February 2025, the last commit to its main branch was March 2026, and the
+# Renovate PR that would refresh its actions has been open since May 2026. Every
+# job inside the generator also runs on `ubuntu-latest`, which we cannot pin from
+# here — so a runner image roll can break our release with no warning. Run this
+# before cutting a release (see .claude/skills/cut-release) and monthly, so
+# breakage surfaces on a canary instead of on a v* tag.
+#
 # Nothing is released: the generator's `upload-assets` job is gated on
 # `inputs.upload-assets && (tag ref || upload-tag-name != '')`, and we pass
 # `upload-assets: false` from a branch, so that job never runs. No PyPI or
@@ -15,12 +23,16 @@ name: SLSA generator smoke test
 # need a real pushed image digest and are not covered here.
 
 on:
-  # `workflow_dispatch` only appears once this file is on the default branch,
-  # so the push trigger is what makes the smoke test runnable from a branch.
+  # Manual run before cutting a release. Scheduled runs and `workflow_dispatch`
+  # only work from the default branch; the push trigger is what makes the smoke
+  # test runnable from a branch while iterating on this workflow itself.
+  workflow_dispatch:
+  schedule:
+    # Monthly, at an off-peak minute so the run is less likely to be dropped.
+    - cron: "17 6 1 * *"
   push:
     branches:
       - "ci/slsa-smoke-test*"
-  workflow_dispatch:
 
 permissions:
   contents: read
