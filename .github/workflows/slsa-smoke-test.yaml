@@ -1,0 +1,147 @@
+name: SLSA generator smoke test
+
+# Checks that the SLSA generic generator still works before we depend on it
+# during a release. It builds a throwaway subject, runs the same generator
+# call the release workflow uses, and verifies the resulting provenance with
+# slsa-verifier.
+#
+# Why this exists: slsa-github-generator is effectively unmaintained. v2.1.0 is
+# from February 2025, the last commit to its main branch was March 2026, and the
+# Renovate PR that would refresh its actions has been open since May 2026. Every
+# job inside the generator also runs on `ubuntu-latest`, which we cannot pin from
+# here — so a runner image roll can break our release with no warning. Run this
+# before cutting a release (see .claude/skills/cut-release) and monthly, so
+# breakage surfaces on a canary instead of on a v* tag.
+#
+# Nothing is released: the generator's `upload-assets` job is gated on
+# `inputs.upload-assets && (tag ref || upload-tag-name != '')`, and we pass
+# `upload-assets: false` from a branch, so that job never runs. No PyPI or
+# Docker publishing is involved either — this workflow is self-contained.
+#
+# Scope: this only exercises `generator_generic_slsa3.yml` (the Python package
+# release path). The `generator_container_slsa3.yml` calls in `docker.yaml`
+# need a real pushed image digest and are not covered here.
+
+on:
+  # Manual run before cutting a release. Scheduled runs and `workflow_dispatch`
+  # only work from the default branch; the push trigger is what makes the smoke
+  # test runnable from a branch while iterating on this workflow itself.
+  workflow_dispatch:
+  schedule:
+    # Monthly, at an off-peak minute so the run is less likely to be dropped.
+    - cron: "17 6 1 * *"
+  push:
+    branches:
+      - "ci/slsa-smoke-test*"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-subject:
+    name: Build throwaway subject
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      hashes: ${{ steps.hash.outputs.hashes }}
+
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@bf7454d06d71f1098171f2acdf0cd4708d7b5920 # v2.20.0
+        with:
+          disable-sudo: true
+          egress-policy: block
+          allowed-endpoints: >
+            api.github.com:443
+            github.com:443
+
+      # A synthetic file keeps the test focused on the generator: it only ever
+      # consumes base64 subjects, so wiring in the real `uv build` would add
+      # failure modes that are not the thing under test.
+      - name: Create subject
+        run: |
+          mkdir -p subject
+          printf 'slsa smoke test %s %s\n' "${GITHUB_SHA}" "${GITHUB_RUN_ID}" \
+            > subject/slsa-smoke-test.txt
+
+      - name: Generate hashes
+        id: hash
+        run: cd subject && echo "hashes=$(sha256sum -- * | base64 -w0)" >> "$GITHUB_OUTPUT"
+
+      - name: Store the subject
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: slsa-smoke-test-subject
+          path: subject/
+          retention-days: 1
+
+  provenance:
+    name: Generate provenance
+    needs:
+      - build-subject
+    # Deliberately identical to the release workflow's permissions so a pass
+    # here means the release path passes. `contents: write` is inert: the only
+    # job that uses it is skipped because `upload-assets` is false.
+    permissions:
+      actions: read
+      id-token: write
+      contents: write
+    # Can't pin with hash: SLSA verification requires calling the generator
+    # by tag, and GitHub evaluates the ref for nested actions inside it too.
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.1.0 # zizmor: ignore[unpinned-uses]
+    with:
+      base64-subjects: ${{ needs.build-subject.outputs.hashes }}
+      provenance-name: slsa-smoke-test.intoto.jsonl
+      upload-assets: false
+
+  verify:
+    name: Verify provenance
+    needs:
+      - build-subject
+      - provenance
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+
+    steps:
+      # `audit` rather than `block`: slsa-verifier talks to the Sigstore TUF
+      # root and Rekor, and a missing endpoint would look exactly like "the
+      # generator is broken". This workflow's job is to give an unambiguous
+      # answer, so it must not fail for firewall reasons.
+      - name: Harden runner
+        uses: step-security/harden-runner@bf7454d06d71f1098171f2acdf0cd4708d7b5920 # v2.20.0
+        with:
+          disable-sudo: true
+          egress-policy: audit
+
+      - name: Download the subject
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: slsa-smoke-test-subject
+          path: subject
+
+      - name: Download the provenance
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: ${{ needs.provenance.outputs.provenance-name }}
+          path: provenance
+
+      - name: Install slsa-verifier
+        uses: slsa-framework/slsa-verifier/actions/installer@ea584f4502babc6f60d9bc799dbbb13c1caa9ee6 # v2.7.1
+
+      - name: Verify
+        env:
+          PROVENANCE_NAME: ${{ needs.provenance.outputs.provenance-name }}
+          SOURCE_URI: github.com/${{ github.repository }}
+        run: |
+          slsa-verifier verify-artifact subject/slsa-smoke-test.txt \
+            --provenance-path "provenance/${PROVENANCE_NAME}" \
+            --source-uri "${SOURCE_URI}" \
+            --builder-id https://github.com/slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@refs/tags/v2.1.0
