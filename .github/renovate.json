@@ -122,19 +122,23 @@
             ]
         },
         {
-            "automerge": false,
-            "description": "Build backend (uv_build): its own PR, manual - build-system changes can affect packaging.",
-            "groupName": "uv (build-system)",
+            "automerge": true,
+            "description": "Build backend (uv_build): rides with the uv group so the pinned range moves in the same PR as the toolchain, and automerges with it - CI builds the wheel/sdist and installs the image on every PR. Majors are excluded here so they fall through to the default automerge: false.",
+            "groupName": "uv",
             "matchDepTypes": [
                 "build-system.requires"
             ],
             "matchManagers": [
                 "pep621"
+            ],
+            "matchUpdateTypes": [
+                "minor",
+                "patch"
             ]
         },
         {
             "automerge": true,
-            "description": "Keep uv together in one PR (the setup-uv input, the Docker uv image, and the uv-pre-commit hook).",
+            "description": "Keep uv together in one PR (the setup-uv input, the Docker uv image, the uv-pre-commit hook, and - via the build-system rule above - the uv_build backend).",
             "groupName": "uv",
             "matchPackageNames": [
                 "astral-sh/uv",
@@ -145,7 +149,7 @@
         },
         {
             "automerge": false,
-            "description": "uv majors (across managers) get their own manual PR; the uv group otherwise has no update-type filter.",
+            "description": "uv majors (across managers) get their own manual PR; the uv group otherwise has no update-type filter. A uv_build major is not covered by the rule above either, so it defaults to manual as well.",
             "matchPackageNames": [
                 "astral-sh/uv",
                 "astral-sh/uv-pre-commit",
