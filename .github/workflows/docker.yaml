@@ -118,17 +118,15 @@ jobs:
           fi
           echo "Release version '$version' matches tag $TAG"
 
-      # Log in to Docker Hub before the provenance check and the QEMU/buildx
-      # tooling pulls so every Docker Hub request — including the uv base-image
-      # manifest fetches in the verify step below — counts against the
-      # authenticated limit, not the shared-runner anonymous pool. Skipped for
-      # fork PRs and Dependabot (no secret access); those fall back to anonymous.
-      - name: Login to DockerHub
-        if: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.head.repo.fork) && github.actor != 'dependabot[bot]' }}
-        uses: docker/login-action@abd2ef45e78c5afb21d64d4ca52ee8550d9572c7 # v4.5.1
-        with:
-          username: ${{ vars.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      # No global Docker Hub login here on purpose: GitHub-hosted runners ship
+      # a rate-limit-free pull token in the default docker config, and an
+      # unscoped `docker login` would overwrite it. All Hub pulls — the uv
+      # manifest fetches in the verify step below (gh uses the docker
+      # keychain), the binfmt/buildkit tooling images, and the base images
+      # during the build — ride that embedded token, including on fork PRs and
+      # Dependabot runs. Push credentials are scoped to buildx (below) and a
+      # global login only happens after the build, when unlimited pulls no
+      # longer matter.
 
       # Verify the uv base images carry astral-sh's signed SLSA build provenance
       # before building on them — fail closed, so a PR that repins to an
@@ -174,6 +172,19 @@ jobs:
             type=semver,pattern={{major}}
         env:
           DOCKER_METADATA_ANNOTATIONS_LEVELS: manifest${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' && ',index' || '' }}
+
+      # Scoped login (requires buildx >= 0.31, pinned below): credentials land
+      # in the buildx-only config, not the default docker config, so the
+      # runner's embedded pull token survives and base-image pulls during the
+      # build stay rate-limit-free. Buildx uses these credentials solely to
+      # push our repo.
+      - name: Login to DockerHub (buildx push scope)
+        if: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' }}
+        uses: docker/login-action@abd2ef45e78c5afb21d64d4ca52ee8550d9572c7 # v4.5.1
+        with:
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          scope: ${{ vars.DOCKERHUB_USERNAME }}/cf-ips-to-hcloud-fw@push
 
       - name: Login to Quay
         if: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' }}
@@ -238,6 +249,17 @@ jobs:
           cache-from: ${{ !startsWith(github.ref, 'refs/tags/') && 'type=gha' || '' }}
           cache-to: ${{ !startsWith(github.ref, 'refs/tags/') && 'type=gha,mode=max' || '' }}
 
+      # The attest step below and Grype read the default docker config, where
+      # only the runner's embedded pull-only token lives — pushing attestations
+      # to Docker Hub needs a real login. Overwriting the embedded token is
+      # fine now: everything that benefits from its unlimited pulls has run.
+      - name: Login to DockerHub
+        if: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' }}
+        uses: docker/login-action@abd2ef45e78c5afb21d64d4ca52ee8550d9572c7 # v4.5.1
+        with:
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
       - name: Generate artifact attestation for DockerHub
         if: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' }}
         uses: actions/attest@f7c74d28b9d84cb8768d0b8ca14a4bac6ef463e6 # v4.2.0
@@ -262,12 +284,18 @@ jobs:
           subject-digest: ${{ steps.build-and-push.outputs.digest }}
           push-to-registry: true
 
+      # Scout needs Docker Hub credentials for its API (organization + stream
+      # compare), which the embedded pull token doesn't provide. Pass them as
+      # inputs so the step works on non-fork PR builds too, where no docker
+      # login has happened.
       - name: Analyze for critical and high CVEs with Docker Scout
         if: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.head.repo.fork) && github.actor != 'dependabot[bot]' }}
         id: docker-scout-cves
         continue-on-error: true
         uses: docker/scout-action@2688993af7bafd6ba8c6a74ec652442be91dd82b # v1.23.1
         with:
+          dockerhub-user: ${{ vars.DOCKERHUB_USERNAME }}
+          dockerhub-password: ${{ secrets.DOCKERHUB_TOKEN }}
           command: cves${{ !startsWith(github.ref, 'refs/tags/') && ',recommendations,compare' || '' }}
           image: ${{ vars.DOCKERHUB_USERNAME }}/cf-ips-to-hcloud-fw:${{ steps.docker-meta.outputs.version }}
           sarif-file: sarif.output.json
