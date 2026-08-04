@@ -226,7 +226,7 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0 # zizmor: ignore[cache-poisoning]
         with:
-          driver-opts: image=moby/buildkit:v0.32.0@sha256:1f8167fcb0eca5b7126353d35299386945cbb8949cc516c592a49f80cfce4fa2
+          driver-opts: image=moby/buildkit:v0.32.2@sha256:28a898719c18a33f4e8000685287fa36fd0dd9560c6440227d3a732d79bb41d8
           version: v0.36.0
           # Fetch the buildx binary fresh from the pinned release on tag builds
           # instead of restoring it from the gha cache (hermetic; the binary is
