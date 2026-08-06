@@ -29,14 +29,8 @@ jobs:
         with:
           disable-sudo: true
           egress-policy: block
-          # api.lob.com is TruffleHog's Lob-detector verification endpoint: a
-          # candidate in the scanned history trips that detector, and with
-          # verification enabled TruffleHog dials Lob to confirm it. Allow the
-          # host so verification actually runs (returns a definite verified/not
-          # result) instead of a blocked DNS lookup tripping harden-runner.
           allowed-endpoints: >
             api.github.com:443
-            api.lob.com:443
             ghcr.io:443
             github.com:443
             pkg-containers.githubusercontent.com:443
@@ -51,4 +45,11 @@ jobs:
         uses: trufflesecurity/trufflehog@6f3c981e7b77f235fd2702dd74af25fc4b72bf11 # v3.96.0
         with:
           path: .
-          extra_args: --results=verified,unknown
+          # `version` selects the scanner image and defaults to latest; the action pin
+          # alone leaves it floating. Renovate bumps the version + digest.
+          version: 3.96.0@sha256:aa821cf4ace8861c7d096d83818cdf7bb9719028a52d37a52eaad44086a52577
+          # Lob excluded: the reordered-is-noop test name (tests/test_firewall.py) is
+          # test_ + exactly 35 word chars, matching Lob's key pattern; TruffleHog verifies
+          # it against Cloudflare-fronted api.lob.com, whose bot-block 403 the detector
+          # reads as a successful verification.
+          extra_args: --results=verified,unknown --exclude-detectors=lob
