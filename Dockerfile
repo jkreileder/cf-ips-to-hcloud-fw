@@ -40,6 +40,13 @@ WORKDIR /usr/src/app
 
 ENV PYTHONFAULTHANDLER=1 PYTHONDONTWRITEBYTECODE=1
 
+# Drop the base image's bundled pip: uv creates .venv without pip and the app
+# runs from .venv/bin, so nothing here imports it. pip ≥26.2 ships a CycloneDX
+# SBOM of its vendored libraries (pip/_vendor/bom.cdx.json), which makes
+# scanners report CVEs against vendored setuptools/msgpack that are never used.
+RUN rm -rf /usr/local/lib/python3.*/site-packages/pip \
+           /usr/local/lib/python3.*/site-packages/pip-*.dist-info
+
 # Resolve and install dependencies
 RUN --mount=type=bind,from=uv-tools-alpine,source=/usr/local/bin/uv,target=/usr/local/bin/uv \
     --mount=target=pyproject.toml,source=/pyproject.toml \
