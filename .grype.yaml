@@ -1,0 +1,42 @@
+# Grype ignore rules — every entry MUST state its removal condition.
+#
+# Tracking issue for clearing this list: #1412. Do not let entries outlive
+# their condition.
+#
+# CPython CVEs matched against the interpreter binary in the
+# python:3.14.x-alpine base image. Grype lists them as "fixed" only in the
+# 3.15 stream (3.15.0a6/b3/b4/3.15.0); the 3.14-branch backports are merged
+# upstream but unreleased, so no base-image bump can clear them yet and
+# only-fixed does not filter them.
+# REMOVE when the Dockerfile base image reaches python >= 3.14.8 (expected to
+# carry the backports) — delete the entries, run the Docker workflow, and
+# confirm the Grype step stays green.
+ignore:
+  - vulnerability: CVE-2026-15308
+    package:
+      name: python
+      type: binary
+  - vulnerability: CVE-2026-11972
+    package:
+      name: python
+      type: binary
+  - vulnerability: CVE-2026-11940
+    package:
+      name: python
+      type: binary
+  - vulnerability: CVE-2026-12003
+    package:
+      name: python
+      type: binary
+  - vulnerability: CVE-2026-0864
+    package:
+      name: python
+      type: binary
+  - vulnerability: CVE-2025-15366
+    package:
+      name: python
+      type: binary
+  - vulnerability: CVE-2025-15367
+    package:
+      name: python
+      type: binary
