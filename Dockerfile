@@ -45,7 +45,8 @@ ENV PYTHONFAULTHANDLER=1 PYTHONDONTWRITEBYTECODE=1
 # SBOM of its vendored libraries (pip/_vendor/bom.cdx.json), which makes
 # scanners report CVEs against vendored setuptools/msgpack that are never used.
 RUN rm -rf /usr/local/lib/python3.*/site-packages/pip \
-           /usr/local/lib/python3.*/site-packages/pip-*.dist-info
+           /usr/local/lib/python3.*/site-packages/pip-*.dist-info \
+           /usr/local/bin/pip*
 
 # Resolve and install dependencies
 RUN --mount=type=bind,from=uv-tools-alpine,source=/usr/local/bin/uv,target=/usr/local/bin/uv \
