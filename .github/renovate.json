@@ -35,6 +35,18 @@
             "matchStrings": [
                 "image=(?<depName>moby/buildkit):(?<currentValue>v[^@\\s]+)@(?<currentDigest>sha256:[a-f0-9]+)"
             ]
+        },
+        {
+            "customType": "regex",
+            "datasourceTemplate": "docker",
+            "depNameTemplate": "ghcr.io/trufflesecurity/trufflehog",
+            "description": "Pin the TruffleHog scanner image (version input of trufflesecurity/trufflehog) by version + digest.",
+            "managerFilePatterns": [
+                ".github/workflows/trufflehog.yaml"
+            ],
+            "matchStrings": [
+                "version: (?<currentValue>[^@\\s]+)@(?<currentDigest>sha256:[a-f0-9]+)"
+            ]
         }
     ],
     "extends": [
