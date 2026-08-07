@@ -298,6 +298,11 @@ jobs:
           dockerhub-password: ${{ secrets.DOCKERHUB_TOKEN }}
           command: cves${{ !startsWith(github.ref, 'refs/tags/') && ',recommendations,compare' || '' }}
           image: ${{ vars.DOCKERHUB_USERNAME }}/cf-ips-to-hcloud-fw:${{ steps.docker-meta.outputs.version }}
+          # Match Grype's only-fixed policy: report only actionable findings.
+          # Unfixable base-image CVEs surface once a fix ships and are then
+          # resolved by the next Renovate digest bump. Trade-off: disclosure of
+          # an unfixed critical isn't flagged here until a fix exists.
+          only-fixed: true
           sarif-file: sarif.output.json
           organization: ${{ vars.DOCKERHUB_USERNAME }}
           to: registry://${{ vars.DOCKERHUB_USERNAME }}/cf-ips-to-hcloud-fw:1
