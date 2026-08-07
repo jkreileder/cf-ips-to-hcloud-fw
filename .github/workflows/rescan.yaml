@@ -1,0 +1,102 @@
+name: Rescan released image
+
+# The build-time scans in docker.yaml only see an image at release time; new
+# advisories land against the released digest afterwards. Rescan the rolling
+# major tag (:1, updated on every release) daily with the same only-fixed
+# policy and upload SARIF to the Security tab. Unlike the build-time scans
+# this workflow gates nothing, so findings are allowed to fail the run — a
+# red run is the notification that a fixable CVE affects the released image.
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 5 * * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: true
+
+jobs:
+  rescan:
+    name: Rescan released image
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      security-events: write
+
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@b09bb98e06d4d774595224525879c09bc6e98c40 # v2.20.1
+        with:
+          disable-sudo: true
+          egress-policy: block
+          # Subset of the docker.yaml allowlist: Docker Hub pulls, the Scout
+          # API/CLI and its two d*.cloudfront.net vulnerability-data CDN
+          # distributions, the Grype binary (GitHub releases) and its DB, and
+          # the SARIF upload. If Docker or Anchore rotate hosts, update the
+          # names from the harden-runner insights of the failing run.
+          allowed-endpoints: >
+            api.dso.docker.com:443
+            api.github.com:443
+            api.scout.docker.com:443
+            auth.docker.io:443
+            d2glxqk2uabbnd.cloudfront.net:443
+            d5l0dvt14r5h8.cloudfront.net:443
+            docker-images-prod.6aa30f8b08e16409b46e0173d6de2f56.r2.cloudflarestorage.com:443
+            get.anchore.io:443
+            github.com:443
+            grype.anchore.io:443
+            hub.docker.com:443
+            index.docker.io:443
+            objects.githubusercontent.com:443
+            production.cloudflare.docker.com:443
+            production.cloudfront.docker.com:443
+            registry-1.docker.io:443
+            registry.scout.docker.com:443
+            release-assets.githubusercontent.com:443
+            uploads.github.com:443
+
+      # Scout needs Docker Hub credentials for its API; no docker login has
+      # happened in this workflow, so pass them as inputs (same pattern as
+      # docker.yaml). exit-code makes fixable findings fail the step.
+      - name: Rescan with Docker Scout
+        id: docker-scout-cves
+        uses: docker/scout-action@7c6b6c3f7844478ace1ffd4e7aef649053d1f87d # v1.24.0
+        with:
+          dockerhub-user: ${{ vars.DOCKERHUB_USERNAME }}
+          dockerhub-password: ${{ secrets.DOCKERHUB_TOKEN }}
+          command: cves
+          image: registry://${{ vars.DOCKERHUB_USERNAME }}/cf-ips-to-hcloud-fw:1
+          only-fixed: true
+          exit-code: true
+          sarif-file: sarif.output.json
+          organization: ${{ vars.DOCKERHUB_USERNAME }}
+
+      # Distinct SARIF categories keep these results separate from the
+      # build-time scans, which upload under the default tool category.
+      - name: Upload Docker Scout scan result to GitHub Security tab
+        if: ${{ !cancelled() }}
+        uses: github/codeql-action/upload-sarif@5595ccaf912efad79be6eef63a5619ff05969be3 # v4.37.6
+        with:
+          sarif_file: sarif.output.json
+          category: rescan-scout
+
+      - name: Rescan with Grype
+        if: ${{ !cancelled() }}
+        id: grype-scan
+        uses: anchore/scan-action@e1165082ffb1fe366ebaf02d8526e7c4989ea9d2 # v7.4.0
+        with:
+          image: docker.io/${{ vars.DOCKERHUB_USERNAME }}/cf-ips-to-hcloud-fw:1
+          only-fixed: true
+          add-cpes-if-none: true
+
+      - name: Upload Grype scan result to GitHub Security tab
+        if: ${{ !cancelled() && steps.grype-scan.outputs.sarif != '' }}
+        uses: github/codeql-action/upload-sarif@5595ccaf912efad79be6eef63a5619ff05969be3 # v4.37.6
+        with:
+          sarif_file: ${{ steps.grype-scan.outputs.sarif }}
+          category: rescan-grype

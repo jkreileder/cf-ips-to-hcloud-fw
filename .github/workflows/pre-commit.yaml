@@ -4,9 +4,7 @@ on:
   push:
     branches:
       - "main"
-  pull_request:
-    branches:
-      - "main"
+  pull_request:  # no base filter: stacked PRs target another PR's branch
 
 permissions:
   contents: read
