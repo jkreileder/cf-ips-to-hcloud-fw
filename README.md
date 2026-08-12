@@ -503,6 +503,13 @@ the signatures. For GitHub-hosted artifacts you can further restrict verificatio
 with `--signer-workflow`. Container attestations can be fetched with `docker scout
 attest get` after verifying build provenance.
 
+The attestations qualify for [SLSA Build Level 3](https://slsa.dev/spec/v1.0/levels):
+the build and the attestation signing run inside dedicated reusable workflows
+(`build-and-attest-dist.yaml` for the Python distributions, `docker-build.yaml` for
+the container images), which the `--signer-workflow` checks below pin.
+For v1.3.1 and earlier the signer workflow was `python-package.yaml` (Python) or
+`docker.yaml` (Docker) — substitute those paths when verifying older artifacts.
+
 ### Verifying Python Wheels and Source Code
 
 ```shell
@@ -512,23 +519,24 @@ VERSION=1.3.1
 # Verifying build provenance
 gh attestation verify cf_ips_to_hcloud_fw-$VERSION-py3-none-any.whl \
   --repo $GH_REPO \
-  --signer-workflow $GH_REPO/.github/workflows/python-package.yaml@refs/tags/v$VERSION
+  --signer-workflow $GH_REPO/.github/workflows/build-and-attest-dist.yaml@refs/tags/v$VERSION
 gh attestation verify cf_ips_to_hcloud_fw-$VERSION.tar.gz \
   --repo $GH_REPO \
-  --signer-workflow $GH_REPO/.github/workflows/python-package.yaml@refs/tags/v$VERSION
+  --signer-workflow $GH_REPO/.github/workflows/build-and-attest-dist.yaml@refs/tags/v$VERSION
 
 # Verifying and showing SBOM (only available for the the wheel)
 gh attestation verify cf_ips_to_hcloud_fw-$VERSION-py3-none-any.whl \
   --repo $GH_REPO \
-  --signer-workflow $GH_REPO/.github/workflows/python-package.yaml@refs/tags/v$VERSION \
+  --signer-workflow $GH_REPO/.github/workflows/build-and-attest-dist.yaml@refs/tags/v$VERSION \
   --predicate-type https://spdx.dev/Document/v2.3
 # Add --format json --jq '.[].verificationResult.statement.predicate' to also output the SBOM
 ```
 
 ### Verifying Docker Images
 
-It's recommended that you use an immutable image reference (pin to a digest) to avoid
-[TOCTOU attacks](https://github.com/slsa-framework/slsa-verifier?tab=readme-ov-file#toctou-attacks).
+It's recommended that you use an immutable image reference (pin to a digest) so the
+image you verify is exactly the image you run — a mutable tag can be repointed
+between verification and use (a time-of-check/time-of-use attack).
 
 Build provenance:
 
@@ -541,7 +549,7 @@ IMAGE=$IMAGE_REPO@$(crane digest $IMAGE_REPO:$VERSION)
 # Verifying build provenance
 gh attestation verify oci://$IMAGE \
   --repo $GH_REPO \
-  --signer-workflow $GH_REPO/.github/workflows/docker.yaml@refs/tags/v$VERSION
+  --signer-workflow $GH_REPO/.github/workflows/docker-build.yaml@refs/tags/v$VERSION
 
 # The SBOMs are attached to the now verified image, you can view with
 DIGEST=$(docker scout attest list --format json $IMAGE --predicate-type https://spdx.dev/Document \

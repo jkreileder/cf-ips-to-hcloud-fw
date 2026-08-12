@@ -48,29 +48,6 @@ git status                      # must be clean
 make lint && make test          # gates must pass
 ```
 
-### 2b. Verify the SLSA generator still works
-
-The release pipeline depends on `slsa-github-generator` v2.1.0, which is
-effectively unmaintained (see the header of
-`.github/workflows/slsa-smoke-test.yaml`). Confirm it still works **before**
-tagging — a failure discovered at tag time means a half-published release.
-
-```bash
-gh workflow run "SLSA generator smoke test" --ref main
-sleep 15 && gh run list --workflow slsa-smoke-test.yaml --limit 1   # get the run ID
-gh run watch <run-id> --exit-status
-```
-
-The run must end green, including the `Verify provenance` job — that job is what
-proves the provenance actually verifies, not just that the generator exited 0.
-
-If it fails, **stop and do not tag**. The release cannot produce valid
-provenance until it's resolved. Options at that point: wait for an upstream fix,
-or drop the generator and fall back to the native `actions/attest` attestations
-that `attest-dist` already produces (which would also mean revising the SLSA 3
-badge and verification docs in `README.md`, since GitHub's artifact attestations
-are documented as SLSA v1 Build L2).
-
 ### 3. Bump the version
 
 Edit `pyproject.toml` `version = "..."` to the release version (drop any
@@ -165,7 +142,9 @@ Pushing the tag starts the publish pipeline. Report the Actions URL:
 
 ### 9. Publish the draft release
 
-CI creates a **draft** GitHub release with provenance/SBOM/attestations.
+CI creates an empty **draft** GitHub release; the dists are attached after the
+PyPI publish, and provenance/SBOM attestations live in GitHub's attestation
+store (verify with `gh attestation verify`, see README.md).
 Once the workflows succeed, review and publish it:
 
 ```bash
@@ -200,7 +179,6 @@ Merge it (use the `ship-changes` skill if helpful).
 - [ ] Pinned version bumped in `README.md` and
       `.github/ISSUE_TEMPLATE/bug_report.md` (no stale old version remains).
 - [ ] `make lint` and `make test` pass; `make build` produced dist artifacts.
-- [ ] SLSA generator smoke test run green on `main` (step 2b) before tagging.
 - [ ] Release bump landed via a **merged PR** (not a direct push to `main`).
 - [ ] Release commit is signed-off + GPG-signed.
 - [ ] Annotated tag `vX.Y.Z` created on the merged commit, GPG-signed, verifies.
@@ -217,6 +195,3 @@ Merge it (use the `ship-changes` skill if helpful).
 - Tag the **merged** release commit, so the tagged tree's `pyproject.toml`
   version (`X.Y.Z`) matches the tag (`vX.Y.Z`).
 - Branch protection rejects unsigned commits/tags; ensure signing works first.
-- Don't skip the SLSA smoke test (step 2b) because the last release worked. The
-  generator is unmaintained and pinned to `ubuntu-latest` internally, so it can
-  break between releases without anything in this repo changing.
