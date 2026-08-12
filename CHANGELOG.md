@@ -2,6 +2,10 @@
 
 <!-- markdownlint-disable MD024 -->
 
+## [v1.3.2] – Unreleased
+
+- Start new development cycle
+
 ## [v1.3.1] – 2026-08-12
 
 - Hardened Hetzner firewall updates: the CLI now waits for each asynchronous
