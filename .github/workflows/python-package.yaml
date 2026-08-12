@@ -324,8 +324,6 @@ jobs:
     timeout-minutes: 20
     permissions:
       contents: read
-    outputs:
-      hashes: ${{ steps.hash.outputs.hashes }}
 
     steps:
       - name: Harden runner
@@ -384,12 +382,6 @@ jobs:
           name: sbom-python.spdx.json
           path: sbom-python.spdx.json
           retention-days: 14
-
-      # Hash only the distributions. The SBOM is written to the repo root (not
-      # into dist/), so the SLSA subjects cover exactly the wheel and sdist.
-      - name: Generate hashes
-        id: hash
-        run: cd dist && echo "hashes=$(sha256sum -- * | base64 -w0)" >> "$GITHUB_OUTPUT"
 
       - name: Store the distribution packages
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -457,30 +449,52 @@ jobs:
             dist/*.whl
             dist/*.tar.gz
 
-  provenance-and-draft-release:
-    name: Generate provenance and create draft release
+  draft-release:
+    name: Create draft release
+    # Replaces the retired slsa-github-generator call (the project is no longer
+    # maintained): build provenance comes from the GitHub artifact attestations
+    # that attest-dist publishes for every artifact (verified with
+    # `gh attestation verify`, see README.md), so this job only creates the
+    # draft release that the publish chain and upload-dist-to-github-release
+    # depend on. It never checks out or runs repository code.
     if: ${{ github.event_name != 'pull_request' && startsWith(github.ref, 'refs/tags/') }}
     needs:
       - build-dist
       - attest-dist
       - upload-event-file
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
     permissions:
-      actions: read
-      id-token: write
       contents: write
-    # Can't pin with hash: SLSA verification requires calling the generator
-    # by tag, and GitHub evaluates the ref for nested actions inside it too.
-    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.1.0 # zizmor: ignore[unpinned-uses]
-    with:
-      base64-subjects: ${{ needs.build-dist.outputs.hashes }}
-      upload-assets: true
-      draft-release: true
+
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@b09bb98e06d4d774595224525879c09bc6e98c40 # v2.20.1
+        with:
+          disable-sudo: true
+          egress-policy: block
+          allowed-endpoints: >
+            api.github.com:443
+            github.com:443
+            uploads.github.com:443
+
+      - name: Create draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          if gh release view "$TAG" --json isDraft --jq .isDraft >/dev/null 2>&1; then
+            echo "Release $TAG already exists; nothing to do."
+            exit 0
+          fi
+          gh release create "$TAG" --draft --title "$TAG" --verify-tag --notes ""
 
   publish-to-test-pypi:
     name: Publish to TestPyPI
     if: ${{ github.event_name != 'pull_request' && startsWith(github.ref, 'refs/tags/') }}
     needs:
-      - provenance-and-draft-release
+      - draft-release
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     environment:
@@ -518,7 +532,7 @@ jobs:
     name: Publish to PyPI
     if: ${{ github.event_name != 'pull_request' && startsWith(github.ref, 'refs/tags/') }}
     needs:
-      - provenance-and-draft-release
+      - draft-release
       - publish-to-test-pypi
     runs-on: ubuntu-24.04
     timeout-minutes: 15
