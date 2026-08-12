@@ -7,7 +7,7 @@
             "datasourceTemplate": "docker",
             "description": "Keep docker/scout-sbom-indexer current - it is passed as the sbom generator input to docker/build-push-action, so no standard manager sees it.",
             "managerFilePatterns": [
-                ".github/workflows/docker.yaml"
+                ".github/workflows/docker-build.yaml"
             ],
             "matchStrings": [
                 "generator=(?<depName>docker/scout-sbom-indexer):(?<currentValue>[^@'\\s]+)@(?<currentDigest>sha256:[a-f0-9]+)"
@@ -18,7 +18,7 @@
             "datasourceTemplate": "docker",
             "description": "Pin tonistiigi/binfmt (setup-qemu-action image input) by version + digest.",
             "managerFilePatterns": [
-                ".github/workflows/docker.yaml"
+                ".github/workflows/docker-build.yaml"
             ],
             "matchStrings": [
                 "image: (?<depName>tonistiigi/binfmt):(?<currentValue>qemu-v[^@\\s]+)@(?<currentDigest>sha256:[a-f0-9]+)"
@@ -30,7 +30,7 @@
             "datasourceTemplate": "docker",
             "description": "Pin moby/buildkit (setup-buildx-action driver image) by version + digest.",
             "managerFilePatterns": [
-                ".github/workflows/docker.yaml"
+                ".github/workflows/docker-build.yaml"
             ],
             "matchStrings": [
                 "image=(?<depName>moby/buildkit):(?<currentValue>v[^@\\s]+)@(?<currentDigest>sha256:[a-f0-9]+)"
@@ -66,13 +66,6 @@
     "minimumReleaseAge": "3 days",
     "osvVulnerabilityAlerts": true,
     "packageRules": [
-        {
-            "description": "SLSA generators run as reusable workflows verified by tag ref - never pin to a digest.",
-            "matchDepNames": [
-                "slsa-framework/slsa-github-generator"
-            ],
-            "pinDigests": false
-        },
         {
             "automerge": true,
             "description": "Group GitHub Actions minor/patch into one PR; majors get their own PR.",
