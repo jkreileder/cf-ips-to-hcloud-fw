@@ -2,9 +2,12 @@
 
 <!-- markdownlint-disable MD024 -->
 
-## [v1.3.2] – Unreleased
+## [v1.3.2] – 2026-08-12
 
-- Start new development cycle
+Provenance-migration release: the retired `slsa-github-generator` is fully replaced by
+GitHub artifact attestations signed from dedicated reusable workflows (SLSA Build
+Level 3). The CLI itself is unchanged from v1.3.1.
+
 - Replaced the retired `slsa-github-generator` provenance for Python release
   artifacts with GitHub artifact attestations (the generator project is no
   longer maintained). Attestations were already published for every wheel and
@@ -26,6 +29,11 @@
   (`docker-build.yaml`) for the same SLSA Build Level 3 guarantee on the
   container images; verify with `gh attestation verify oci://… --signer-workflow
   jkreileder/cf-ips-to-hcloud-fw/.github/workflows/docker-build.yaml`
+- **Security:** Enabled GitHub's "require actions to be pinned to a full-length
+  commit SHA" repository policy, previously blocked by the generator's
+  tag-referenced reusable workflows
+- Maintenance: dependency and CI-tooling updates, and test-result publishing no
+  longer reports failures for runs superseded by a newer push
 
 ## [v1.3.1] – 2026-08-12
 
