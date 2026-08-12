@@ -2,9 +2,8 @@
 
 <!-- markdownlint-disable MD024 -->
 
-## [v1.3.1] – Unreleased
+## [v1.3.1] – 2026-08-12
 
-- Start new development cycle
 - Hardened Hetzner firewall updates: the CLI now waits for each asynchronous
   `set_rules` action to finish (surfacing action failures and timeouts instead of
   reporting success at submission), applies a bounded connect/read timeout so a
@@ -16,6 +15,10 @@
   version exactly and that version is a final `X.Y.Z` release (no `.dev`,
   pre-release, or local component), preventing a wrong or non-final version from
   reaching PyPI or producing mismatched Docker semver tags
+- Maintenance: dependency updates and CI hardening — daily CVE rescans of the
+  released Docker image, malware scanning of locked dependencies (plus a `make
+  audit` target), and a smoke test that gates releases on the SLSA generator
+  still working
 
 ## [v1.3.0] – 2026-06-14
 
