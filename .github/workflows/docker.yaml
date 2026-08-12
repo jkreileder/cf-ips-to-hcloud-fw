@@ -29,8 +29,6 @@ jobs:
       security-events: write
       pull-requests: write
       attestations: write
-    outputs:
-      digest: ${{ steps.build-and-push.outputs.digest }}
 
     steps:
       - name: Harden runner
@@ -326,63 +324,3 @@ jobs:
         continue-on-error: true
         with:
           sarif_file: ${{ steps.grype-scan.outputs.sarif }}
-
-  provenance-docker:
-    name: Generate SLSA Provenance for DockerHub
-    if: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' }}
-    needs:
-      - docker
-    permissions:
-      actions: read
-      id-token: write
-      packages: write
-    # Can't pin with hash: SLSA verification requires calling the generator
-    # by tag, and GitHub evaluates the ref for nested actions inside it too.
-    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v2.1.0 # zizmor: ignore[unpinned-uses]
-    with:
-      image: ${{ vars.DOCKERHUB_USERNAME }}/cf-ips-to-hcloud-fw
-      digest: ${{ needs.docker.outputs.digest }}
-      private-repository: true
-      registry-username: ${{ vars.DOCKERHUB_USERNAME }}
-    secrets:
-      registry-password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-  provenance-quay:
-    name: Generate SLSA Provenance for Quay
-    if: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' }}
-    needs:
-      - docker
-    permissions:
-      actions: read
-      id-token: write
-      packages: write
-    # Can't pin with hash: SLSA verification requires calling the generator
-    # by tag, and GitHub evaluates the ref for nested actions inside it too.
-    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v2.1.0 # zizmor: ignore[unpinned-uses]
-    with:
-      image: quay.io/${{ vars.QUAY_USERNAME }}/cf-ips-to-hcloud-fw
-      digest: ${{ needs.docker.outputs.digest }}
-      private-repository: true
-      registry-username: ${{ vars.QUAY_ROBOT }}
-    secrets:
-      registry-password: ${{ secrets.QUAY_TOKEN }}
-
-  provenance-ghcr:
-    name: Generate SLSA Provenance for GitHub Container Registry
-    if: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' }}
-    needs:
-      - docker
-    permissions:
-      actions: read
-      id-token: write
-      packages: write
-    # Can't pin with hash: SLSA verification requires calling the generator
-    # by tag, and GitHub evaluates the ref for nested actions inside it too.
-    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v2.1.0 # zizmor: ignore[unpinned-uses]
-    with:
-      image: ghcr.io/${{ github.repository_owner }}/cf-ips-to-hcloud-fw
-      digest: ${{ needs.docker.outputs.digest }}
-      private-repository: true
-      registry-username: ${{ github.repository_owner }}
-    secrets:
-      registry-password: ${{ secrets.GITHUB_TOKEN }}

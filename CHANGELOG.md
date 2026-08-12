@@ -11,6 +11,12 @@
   sdist and are the verification path documented in the README
   (`gh attestation verify`); releases no longer attach a `multiple.intoto.jsonl`
   asset
+- Dropped the `slsa-github-generator` container provenance jobs for Docker Hub,
+  Quay, and GHCR for the same reason, along with the smoke-test workflow that
+  guarded the generator before releases. GitHub artifact attestations remain
+  published for the image on all three registries (`push-to-registry`, verified
+  with `gh attestation verify oci://…`), alongside the BuildKit inline SBOM and
+  provenance
 
 ## [v1.3.1] – 2026-08-12
 
