@@ -5,6 +5,12 @@
 ## [v1.3.2] – Unreleased
 
 - Start new development cycle
+- Replaced the retired `slsa-github-generator` provenance for Python release
+  artifacts with GitHub artifact attestations (the generator project is no
+  longer maintained). Attestations were already published for every wheel and
+  sdist and are the verification path documented in the README
+  (`gh attestation verify`); releases no longer attach a `multiple.intoto.jsonl`
+  asset
 
 ## [v1.3.1] – 2026-08-12
 
