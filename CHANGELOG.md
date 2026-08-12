@@ -2,6 +2,10 @@
 
 <!-- markdownlint-disable MD024 -->
 
+## [v1.3.3] – Unreleased
+
+- Start new development cycle
+
 ## [v1.3.2] – 2026-08-12
 
 Provenance-migration release: the retired `slsa-github-generator` is fully replaced by
