@@ -17,6 +17,11 @@
   published for the image on all three registries (`push-to-registry`, verified
   with `gh attestation verify oci://…`), alongside the BuildKit inline SBOM and
   provenance
+- Moved the Python build and attestation into a reusable workflow
+  (`build-and-attest-dist.yaml`) so the artifact attestations qualify for SLSA
+  Build Level 3 per GitHub's guidance; verifiers can require the signer with
+  `gh attestation verify --signer-workflow
+  jkreileder/cf-ips-to-hcloud-fw/.github/workflows/build-and-attest-dist.yaml`
 
 ## [v1.3.1] – 2026-08-12
 
