@@ -22,6 +22,10 @@
   Build Level 3 per GitHub's guidance; verifiers can require the signer with
   `gh attestation verify --signer-workflow
   jkreileder/cf-ips-to-hcloud-fw/.github/workflows/build-and-attest-dist.yaml`
+- Moved the Docker build and attestation into a reusable workflow
+  (`docker-build.yaml`) for the same SLSA Build Level 3 guarantee on the
+  container images; verify with `gh attestation verify oci://… --signer-workflow
+  jkreileder/cf-ips-to-hcloud-fw/.github/workflows/docker-build.yaml`
 
 ## [v1.3.1] – 2026-08-12
 
