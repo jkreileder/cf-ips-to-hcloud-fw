@@ -536,7 +536,7 @@ gh attestation verify cf_ips_to_hcloud_fw-$VERSION-py3-none-any.whl \
 # Add --format json --jq '.[].verificationResult.statement.predicate' to also output the SBOM
 ```
 
-The commands above query GitHub's attestation API. Releases from v1.3.2 on also ship the
+The commands above query GitHub's attestation API. Releases from v1.3.3 on also ship the
 signed bundles as a `multiple.intoto.jsonl` release asset, covering both the wheel and the
 sdist, so you can verify from disk instead:
 
@@ -552,6 +552,11 @@ gh attestation verify cf_ips_to_hcloud_fw-$VERSION-py3-none-any.whl \
 This still fetches the Sigstore trust root. For fully offline verification, capture it
 beforehand with `gh attestation trusted-root > trusted_root.jsonl` and pass
 `--custom-trusted-root trusted_root.jsonl`.
+
+v1.3.2 is the one release without a bundle asset — it was published between the
+`slsa-github-generator` removal and this change, and immutable releases prevent adding one
+after the fact. Verify it with the API-based commands above, or fetch its bundles yourself
+with `gh attestation download`.
 
 ### Verifying Docker Images
 
