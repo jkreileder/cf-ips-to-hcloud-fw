@@ -5,6 +5,11 @@
 ## [v1.3.3] – Unreleased
 
 - Start new development cycle
+- Switched the python base images from the `public.ecr.aws` mirror back to
+  Docker Hub (`docker.io/library/python`): GitHub-hosted runners now ship an
+  embedded rate-limit-free Docker Hub pull token, which the build already
+  relies on for the uv/binfmt/buildkit pulls, and the ECR mirror was lagging
+  behind Docker Hub on tag updates
 
 ## [v1.3.2] – 2026-08-12
 
