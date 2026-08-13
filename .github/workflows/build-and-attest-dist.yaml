@@ -163,14 +163,24 @@ jobs:
       # check can see the provenance, which it only detects via the
       # `.intoto.jsonl` asset name (ossf/scorecard#4667).
       #
-      # `jq -c .` normalizes each bundle to one line regardless of how many
-      # subjects a bundle covers, yielding the same JSON-lines-of-Sigstore-
-      # bundles file (and name) slsa-github-generator published up to v1.3.1.
+      # actions/attest writes one Sigstore bundle per `bundle-path` file, so
+      # `jq -c .` yields the same JSON-lines-of-Sigstore-bundles file (and name)
+      # slsa-github-generator published up to v1.3.1.
+      #
+      # The assertion guards against a future actions/attest release changing
+      # that layout: Scorecard accepts the asset on its name alone, so a
+      # malformed bundle would ship silently and only break the documented
+      # `gh attestation verify --bundle` path.
       - name: Assemble the attestation bundle
         env:
           SBOM_BUNDLE: ${{ steps.attest-sbom.outputs.bundle-path }}
           PROVENANCE_BUNDLE: ${{ steps.attest-provenance.outputs.bundle-path }}
-        run: jq -c . "$PROVENANCE_BUNDLE" "$SBOM_BUNDLE" > multiple.intoto.jsonl
+        run: |
+          jq -c . "$PROVENANCE_BUNDLE" "$SBOM_BUNDLE" > multiple.intoto.jsonl
+          jq -se 'length == 2
+            and all(.[]; .mediaType
+              | startswith("application/vnd.dev.sigstore.bundle"))' \
+            multiple.intoto.jsonl > /dev/null
 
       - name: Store the attestation bundle
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
