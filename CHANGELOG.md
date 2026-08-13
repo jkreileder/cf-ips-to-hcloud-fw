@@ -2,6 +2,10 @@
 
 <!-- markdownlint-disable MD024 -->
 
+## [v1.3.4] – Unreleased
+
+- Start new development cycle
+
 ## [v1.3.3] – 2026-08-13
 
 - Switched the python base images from the `public.ecr.aws` mirror back to
