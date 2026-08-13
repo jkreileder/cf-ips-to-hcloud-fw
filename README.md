@@ -146,7 +146,7 @@ Here's an example using Docker:
 ```shell
 docker run --rm \
   --mount type=bind,source=$(pwd)/config.yaml,target=/usr/src/app/config.yaml,readonly \
-  jkreileder/cf-ips-to-hcloud-fw:1.3.2
+  jkreileder/cf-ips-to-hcloud-fw:1.3.3
 ```
 
 (Add `--pull=always` if you use a rolling image tag.)
@@ -161,7 +161,7 @@ command override is needed:
 docker run --rm \
   -e HCLOUD_TOKEN=your-api-token \
   -e HCLOUD_FIREWALLS=$'firewall-1\nfirewall-2' \
-  jkreileder/cf-ips-to-hcloud-fw:1.3.2
+  jkreileder/cf-ips-to-hcloud-fw:1.3.3
 ```
 
 Docker images for `cf-ips-to-hcloud-fw` are available for both `linux/amd64` and
@@ -169,7 +169,7 @@ Docker images for `cf-ips-to-hcloud-fw` are available for both `linux/amd64` and
 
 - `1`: This tag always points to the latest `1.x.x` release.
 - `1.3`: This tag always points to the latest `1.3.x` release.
-- `1.3.2`: This tag points to the specific `1.3.2` release.
+- `1.3.3`: This tag points to the specific `1.3.3` release.
 - `main`: This tag points to the most recent development version of
   `cf-ips-to-hcloud-fw`. Use this at your own risk as it may contain unstable
   changes.
@@ -221,7 +221,7 @@ spec:
             runAsUser: 65534
           containers:
             - name: cf-ips-to-hcloud-fw
-              image: jkreileder/cf-ips-to-hcloud-fw:1.3.2
+              image: jkreileder/cf-ips-to-hcloud-fw:1.3.3
               # imagePullPolicy: Always # Uncomment this if you use a rolling image tag
               securityContext:
                 allowPrivilegeEscalation: false
@@ -248,7 +248,7 @@ falls back to these variables:
 ```yaml
 containers:
   - name: cf-ips-to-hcloud-fw
-    image: jkreileder/cf-ips-to-hcloud-fw:1.3.2
+    image: jkreileder/cf-ips-to-hcloud-fw:1.3.3
     env:
       - name: HCLOUD_TOKEN
         valueFrom:
@@ -451,7 +451,7 @@ service that uses the image's default one-shot entrypoint:
 ```yaml
 services:
   cf-ips-to-hcloud-fw:
-    image: jkreileder/cf-ips-to-hcloud-fw:1.3.2
+    image: jkreileder/cf-ips-to-hcloud-fw:1.3.3
     volumes:
       - ./config.yaml:/usr/src/app/config.yaml
 ```
@@ -471,7 +471,7 @@ the `docker compose run` line above, or the override makes the run never exit:
 ```yaml
 services:
   cf-ips-to-hcloud-fw:
-    image: jkreileder/cf-ips-to-hcloud-fw:1.3.2
+    image: jkreileder/cf-ips-to-hcloud-fw:1.3.3
     volumes:
       - ./config.yaml:/usr/src/app/config.yaml
     # Re-run every 24h (86400s) inside one container instead of a scheduler.
@@ -518,7 +518,7 @@ with the `gh attestation verify --bundle` command shown below.
 
 ```shell
 GH_REPO=jkreileder/cf-ips-to-hcloud-fw
-VERSION=1.3.2
+VERSION=1.3.3
 
 # Verifying build provenance
 gh attestation verify cf_ips_to_hcloud_fw-$VERSION-py3-none-any.whl \
@@ -570,7 +570,7 @@ Build provenance:
 ```shell
 GH_REPO=jkreileder/cf-ips-to-hcloud-fw
 IMAGE_REPO=docker.io/jkreileder/cf-ips-to-hcloud-fw
-VERSION=1.3.2
+VERSION=1.3.3
 IMAGE=$IMAGE_REPO@$(crane digest $IMAGE_REPO:$VERSION)
 
 # Verifying build provenance

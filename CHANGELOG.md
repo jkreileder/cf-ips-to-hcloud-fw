@@ -2,14 +2,19 @@
 
 <!-- markdownlint-disable MD024 -->
 
-## [v1.3.3] – Unreleased
+## [v1.3.3] – 2026-08-13
 
-- Start new development cycle
 - Switched the python base images from the `public.ecr.aws` mirror back to
   Docker Hub (`docker.io/library/python`): GitHub-hosted runners now ship an
   embedded rate-limit-free Docker Hub pull token, which the build already
   relies on for the uv/binfmt/buildkit pulls, and the ECR mirror was lagging
-  behind Docker Hub on tag updates
+  behind Docker Hub on tag updates — this release's alpine base picks up the
+  newer digest the mirror was missing
+- Releases attach the signed attestation bundle (`multiple.intoto.jsonl`,
+  covering the wheel and sdist) as a release asset again, restoring offline
+  verification with `gh attestation verify --bundle` (see README.md); the
+  bundles now carry `slsa.dev/provenance/v1` predicates and verify with `gh`
+  rather than `slsa-verifier`
 
 ## [v1.3.2] – 2026-08-12
 
