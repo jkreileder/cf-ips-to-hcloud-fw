@@ -528,7 +528,8 @@ gh attestation verify cf_ips_to_hcloud_fw-$VERSION.tar.gz \
   --repo $GH_REPO \
   --signer-workflow $GH_REPO/.github/workflows/build-and-attest-dist.yaml@refs/tags/v$VERSION
 
-# Verifying and showing SBOM (only available for the the wheel)
+# Verifying and showing the SBOM (one attestation covers both distributions,
+# so either file below verifies against it)
 gh attestation verify cf_ips_to_hcloud_fw-$VERSION-py3-none-any.whl \
   --repo $GH_REPO \
   --signer-workflow $GH_REPO/.github/workflows/build-and-attest-dist.yaml@refs/tags/v$VERSION \
