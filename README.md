@@ -508,7 +508,11 @@ the build and the attestation signing run inside dedicated reusable workflows
 (`build-and-attest-dist.yaml` for the Python distributions, `docker-build.yaml` for
 the container images), which the `--signer-workflow` checks below pin.
 For v1.3.1 and earlier the signer workflow was `python-package.yaml` (Python) or
-`docker.yaml` (Docker) — substitute those paths when verifying older artifacts.
+`docker.yaml` (Docker) — substitute those paths when verifying older artifacts. Those
+releases also carry a `multiple.intoto.jsonl` asset, but it was produced by
+[slsa-github-generator](https://github.com/slsa-framework/slsa-github-generator) and is
+verified with [slsa-verifier](https://github.com/slsa-framework/slsa-verifier) rather than
+with the `gh attestation verify --bundle` command shown below.
 
 ### Verifying Python Wheels and Source Code
 
@@ -531,6 +535,28 @@ gh attestation verify cf_ips_to_hcloud_fw-$VERSION-py3-none-any.whl \
   --predicate-type https://spdx.dev/Document/v2.3
 # Add --format json --jq '.[].verificationResult.statement.predicate' to also output the SBOM
 ```
+
+The commands above query GitHub's attestation API. Releases from v1.3.3 on also ship the
+signed bundles as a `multiple.intoto.jsonl` release asset, covering both the wheel and the
+sdist, so you can verify from disk instead:
+
+```shell
+gh release download v$VERSION --repo $GH_REPO --pattern multiple.intoto.jsonl
+
+gh attestation verify cf_ips_to_hcloud_fw-$VERSION-py3-none-any.whl \
+  --repo $GH_REPO \
+  --bundle multiple.intoto.jsonl \
+  --signer-workflow $GH_REPO/.github/workflows/build-and-attest-dist.yaml@refs/tags/v$VERSION
+```
+
+This still fetches the Sigstore trust root. For fully offline verification, capture it
+beforehand with `gh attestation trusted-root > trusted_root.jsonl` and pass
+`--custom-trusted-root trusted_root.jsonl`.
+
+v1.3.2 is the one release without a bundle asset — it was published between the
+`slsa-github-generator` removal and this change, and immutable releases prevent adding one
+after the fact. Verify it with the API-based commands above, or fetch its bundles yourself
+with `gh attestation download`.
 
 ### Verifying Docker Images
 
