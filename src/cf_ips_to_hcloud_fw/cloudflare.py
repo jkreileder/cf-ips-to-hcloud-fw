@@ -22,6 +22,14 @@ _NO_AUTH_HEADERS = {
     "X-Auth-User-Service-Key": Omit(),
 }
 
+# Passed explicitly because the SDK otherwise falls back to the
+# CLOUDFLARE_BASE_URL environment variable. The tool never advertised that knob,
+# and it decides where the firewall's entire allow list comes from, so anything
+# able to set an env var on the job - a CronJob spec, a compose file, a workflow
+# env block - could redirect the fetch to its own server. Pinning it here makes
+# the variable inert; the value is the SDK's own default.
+CLOUDFLARE_API_BASE_URL = "https://api.cloudflare.com/client/v4"
+
 
 def cf_ips_list() -> cloudflare.types.ips.IPListResponse | None:
     """Call Cloudflare's `ips.list` endpoint and return the raw response.
@@ -30,7 +38,7 @@ def cf_ips_list() -> cloudflare.types.ips.IPListResponse | None:
         cloudflare.types.ips.IPListResponse | None: Raw API response, or None
         when the SDK returns no payload.
     """
-    cf = cloudflare.Cloudflare()
+    cf = cloudflare.Cloudflare(base_url=CLOUDFLARE_API_BASE_URL)
     try:
         return cf.ips.list(extra_headers=_NO_AUTH_HEADERS)
     except (cloudflare.APIConnectionError, cloudflare.APIStatusError) as e:
