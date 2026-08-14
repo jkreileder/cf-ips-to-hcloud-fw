@@ -173,6 +173,17 @@
                 "digest",
                 "pin"
             ]
+        },
+        {
+            "automerge": false,
+            "description": "GitHub Actions digest refreshes are reviewed by hand: minimumReleaseAge cannot hold them back. The github-tags datasource ages a digest against the matched version's original release date, so an action tag force-pushed to new commits clears the 3-day check immediately and would otherwise automerge within hours. Kept in its own group so image digests - where Docker Hub's tag_last_pushed restarts the hold - still automerge.",
+            "groupName": "github-actions-digests",
+            "matchManagers": [
+                "github-actions"
+            ],
+            "matchUpdateTypes": [
+                "digest"
+            ]
         }
     ],
     "semanticCommits": "enabled",
