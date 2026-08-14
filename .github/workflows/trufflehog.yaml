@@ -45,7 +45,7 @@ jobs:
           path: .
           # `version` selects the scanner image and defaults to latest; the action pin
           # alone leaves it floating. Renovate bumps the version + digest.
-          version: 3.96.0@sha256:aa821cf4ace8861c7d096d83818cdf7bb9719028a52d37a52eaad44086a52577
+          version: 3.97.0@sha256:ff4c95e9df7d645daf2140e3ca1039031c63106268d5fbb25feb43ceca1bcc33
           # Lob excluded: the reordered-is-noop test name (tests/test_firewall.py) is
           # test_ + exactly 35 word chars, matching Lob's key pattern; TruffleHog verifies
           # it against Cloudflare-fronted api.lob.com, whose bot-block 403 the detector
