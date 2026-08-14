@@ -5,6 +5,11 @@
 ## [v1.3.4] – Unreleased
 
 - Start new development cycle
+- GitHub Actions digest refreshes are no longer automerged. The 3-day
+  `minimumReleaseAge` hold cannot gate them — the `github-tags` datasource ages
+  a digest against the matched version's original release date, so an action tag
+  force-pushed to new commits clears the check immediately. Image digests still
+  automerge, since Docker Hub's `tag_last_pushed` restarts the hold
 
 ## [v1.3.3] – 2026-08-13
 
