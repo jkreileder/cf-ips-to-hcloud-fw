@@ -18,6 +18,17 @@
   names into its own error text, so a stray `*` or `&` before the value leaked
   it too. Errors now report only the error type plus the line and column,
   matching the redaction already applied to config validation errors
+- Pinned the Cloudflare API base URL in code. The SDK falls back to the
+  `CLOUDFLARE_BASE_URL` environment variable when no base URL is passed, so
+  anything able to set an env var on the job — a CronJob spec, a compose file, a
+  workflow env block — could point the IP fetch at its own server and dictate
+  what the firewall rules end up allowing. That variable is now inert
+- Cloudflare CIDR responses are checked for routability, not just syntax.
+  Default routes (`0.0.0.0/0`, `::/0`) and unspecified, loopback, link-local,
+  multicast, and private ranges are rejected instead of being written verbatim
+  into firewall rules — a broken or tampered response can no longer widen an
+  allow list. No minimum prefix length is enforced, so a broader aggregate from
+  Cloudflare will not fail the run
 
 ## [v1.3.3] – 2026-08-13
 
