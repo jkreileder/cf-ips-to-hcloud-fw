@@ -216,16 +216,31 @@ def test_read_config_broken_yaml(mock_logging: MagicMock) -> None:
     assert "Error reading config file 'config.yaml': " in mock_logging.call_args[0][0]
 
 
-# Malformations whose PyYAML error marks land on the token line, so that
-# `MarkedYAMLError.__str__` would splice the token into the message. Verified
-# against PyYAML: each of these leaks the raw value when the exception is
-# formatted with `str(e)`.
+# Malformations that put the token into PyYAML's own error output, verified
+# against PyYAML. The first three land the error marks on the token line, so
+# `MarkedYAMLError.__str__` splices in the source snippet. The rest turn the
+# token into an identifier that PyYAML interpolates into `problem` itself, so
+# forwarding the parser's description would leak it even without the snippet.
 LEAKY_YAML = {
     "unterminated-quote": (
         '- token: "SUPER_SECRET_TOKEN_VALUE\n  firewalls:\n    - fw-1\n'
     ),
     "tab-after-key": "- token:\tSUPER_SECRET_TOKEN_VALUE\n  firewalls: [fw-1]\n",
     "unclosed-flow-mapping": "- {token: SUPER_SECRET_TOKEN_VALUE, firewalls: [fw-1]\n",
+    "undefined-alias": "- token: *SUPER_SECRET_TOKEN_VALUE\n  firewalls: [fw-1]\n",
+    "duplicate-anchor": (
+        "- token: &SUPER_SECRET_TOKEN_VALUE t1\n"
+        "  firewalls: [fw-1]\n"
+        "- token: &SUPER_SECRET_TOKEN_VALUE t2\n"
+        "  firewalls: [fw-2]\n"
+    ),
+    "duplicate-tag-handle": (
+        "%TAG !SUPER_SECRET_TOKEN_VALUE! tag:example.com,2026:\n"
+        "%TAG !SUPER_SECRET_TOKEN_VALUE! tag:example.com,2027:\n"
+        "---\n"
+        "- token: t\n"
+        "  firewalls: [fw-1]\n"
+    ),
 }
 
 
@@ -236,7 +251,7 @@ def test_read_config_yaml_error_redacts_secret_value(
     mock_logging: MagicMock,
     yaml_source: str,
 ) -> None:
-    """YAML parse errors must not echo the source line holding the token."""
+    """YAML parse errors must not echo any part of the file holding the token."""
     with (
         patch("builtins.open", mock_open(read_data=yaml_source)),
         pytest.raises(SystemExit) as e,

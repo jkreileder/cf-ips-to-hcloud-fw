@@ -10,12 +10,14 @@
   a digest against the matched version's original release date, so an action tag
   force-pushed to new commits clears the check immediately. Image digests still
   automerge, since Docker Hub's `tag_last_pushed` restarts the hold
-- Config file YAML parse errors no longer echo the offending source line into
-  the log. PyYAML's error formatting embeds a snippet of the file, which put the
-  raw Hetzner API token into the log stream whenever the syntax error sat on or
-  next to the `token:` line (an unterminated quote, a stray tab, an unclosed
-  flow mapping). Errors now report the parser's own description plus the line
-  and column, matching the redaction already applied to config validation errors
+- Config file YAML parse errors no longer echo any part of the file into the
+  log. PyYAML's error formatting embeds a snippet of the offending source line,
+  which put the raw Hetzner API token into the log stream whenever the syntax
+  error sat on or next to the `token:` line (an unterminated quote, a stray tab,
+  an unclosed flow mapping); PyYAML also interpolates alias, anchor, and tag
+  names into its own error text, so a stray `*` or `&` before the value leaked
+  it too. Errors now report only the error type plus the line and column,
+  matching the redaction already applied to config validation errors
 
 ## [v1.3.3] – 2026-08-13
 
