@@ -52,6 +52,42 @@ def _validate_config_permissions(config_file: str) -> None:
         )
 
 
+def _describe_yaml_error(e: yaml.YAMLError) -> str:
+    """Summarize a YAML parse failure without echoing the file's contents.
+
+    ``yaml.MarkedYAMLError.__str__`` embeds ``Mark.get_snippet()``, a verbatim
+    copy of the offending source line. When the syntax error sits on or next to
+    the ``token:`` line - an unterminated quote, a stray tab, an unclosed flow
+    mapping - that snippet writes the raw Hetzner API token straight into the
+    log stream, which is typically readable by far more principals than the
+    config file itself. PyYAML's ``context``/``problem`` strings are static
+    descriptions that interpolate at most a single offending character, and the
+    marks carry line/column numbers, so both are safe to report; the snippets
+    are not. This mirrors the ``include_input=False`` redaction already applied
+    to the Pydantic validation errors below.
+
+    Args:
+        e: Exception raised while parsing the config file.
+
+    Returns:
+        str: What failed and where, free of file contents.
+    """
+    detail = ": ".join(
+        str(part)
+        for part in (getattr(e, "context", None), getattr(e, "problem", None))
+        if part
+    )
+    # ReaderError and bare YAMLErrors carry no marks; fall back to the position
+    # being unknown rather than raising while handling an error.
+    mark = getattr(e, "problem_mark", None) or getattr(e, "context_mark", None)
+    location = (
+        f" at line {mark.line + 1}, column {mark.column + 1}"
+        if mark is not None
+        else ""
+    )
+    return f"{detail or type(e).__name__}{location}"
+
+
 def _read_config(config_file: str) -> list[Project]:
     """Load and validate project definitions from a YAML file.
 
@@ -73,7 +109,9 @@ def _read_config(config_file: str) -> list[Project]:
     except PermissionError:
         log_error_and_exit(f"Config file {config_file!r} is unreadable.")
     except yaml.YAMLError as e:
-        log_error_and_exit(f"Error reading config file {config_file!r}: {e}")
+        log_error_and_exit(
+            f"Error reading config file {config_file!r}: {_describe_yaml_error(e)}"
+        )
 
     try:
         projects = TypeAdapter(list[Project]).validate_python(config)

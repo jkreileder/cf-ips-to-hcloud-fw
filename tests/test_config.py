@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, mock_open, patch
 
 import pytest
+import yaml
 from pydantic import SecretStr
 
 from cf_ips_to_hcloud_fw.config import (
@@ -213,6 +214,63 @@ def test_read_config_broken_yaml(mock_logging: MagicMock) -> None:
     assert e.value.code == 1
     mock_logging.assert_called_once()
     assert "Error reading config file 'config.yaml': " in mock_logging.call_args[0][0]
+
+
+# Malformations whose PyYAML error marks land on the token line, so that
+# `MarkedYAMLError.__str__` would splice the token into the message. Verified
+# against PyYAML: each of these leaks the raw value when the exception is
+# formatted with `str(e)`.
+LEAKY_YAML = {
+    "unterminated-quote": (
+        '- token: "SUPER_SECRET_TOKEN_VALUE\n  firewalls:\n    - fw-1\n'
+    ),
+    "tab-after-key": "- token:\tSUPER_SECRET_TOKEN_VALUE\n  firewalls: [fw-1]\n",
+    "unclosed-flow-mapping": "- {token: SUPER_SECRET_TOKEN_VALUE, firewalls: [fw-1]\n",
+}
+
+
+@pytest.mark.parametrize("yaml_source", LEAKY_YAML.values(), ids=LEAKY_YAML.keys())
+@patch("cf_ips_to_hcloud_fw.config.os.name", "nt")
+@patch("logging.error")
+def test_read_config_yaml_error_redacts_secret_value(
+    mock_logging: MagicMock,
+    yaml_source: str,
+) -> None:
+    """YAML parse errors must not echo the source line holding the token."""
+    with (
+        patch("builtins.open", mock_open(read_data=yaml_source)),
+        pytest.raises(SystemExit) as e,
+    ):
+        _read_config("config.yaml")
+
+    assert e.value.code == 1
+    mock_logging.assert_called_once()
+    error_msg = mock_logging.call_args[0][0]
+    assert "Error reading config file 'config.yaml': " in error_msg
+    assert "SUPER_SECRET_TOKEN_VALUE" not in error_msg
+    # The operator still gets an actionable message: what broke and where.
+    assert "line " in error_msg
+
+
+@patch("logging.error")
+def test_read_config_yaml_error_without_marks(mock_logging: MagicMock) -> None:
+    """A YAMLError carrying no position marks still logs without raising."""
+    with (
+        patch("builtins.open", mock_open(read_data="- token: token\n")),
+        patch(
+            "cf_ips_to_hcloud_fw.config.yaml.safe_load",
+            side_effect=yaml.YAMLError("bare failure"),
+        ),
+        pytest.raises(SystemExit) as e,
+    ):
+        _read_config("config.yaml")
+
+    assert e.value.code == 1
+    mock_logging.assert_called_once()
+    assert (
+        "Error reading config file 'config.yaml': YAMLError"
+        in mock_logging.call_args[0][0]
+    )
 
 
 @patch(
