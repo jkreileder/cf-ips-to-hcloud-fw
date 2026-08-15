@@ -78,13 +78,48 @@ def test_cloudflare_ip_networks_rejects_unroutable_ipv4(cidr: str) -> None:
 
 @pytest.mark.parametrize(
     "cidr",
-    ["fc00::/7", "fe80::/10", "ff00::/8", "2001:db8::/32", "2002::/16", "::1/128"],
+    [
+        # Outside global unicast 2000::/3 — rejected by the containment rule.
+        "fc00::/7",  # unique local
+        "fe80::/10",  # link-local
+        "ff00::/8",  # multicast
+        "::1/128",  # loopback
+        "::ffff:0:0/96",  # IPv4-mapped
+        "64:ff9b::/96",  # NAT64
+        "64:ff9b:1::/48",  # NAT64 local-use
+        "100::/64",  # discard-only
+        "100:0:0:1::/64",  # dummy prefix (RFC 9780)
+        "5f00::/16",  # SRv6 SIDs (RFC 9602)
+        "4000::/16",  # IANA-reserved 400::/6
+        # Inside 2000::/3 — need an explicit block entry.
+        "2001::/32",  # Teredo
+        "2001:2::/48",  # benchmarking
+        "2001:10::/28",  # ORCHID
+        "2001:db8::/32",  # documentation
+        "2002::/16",  # 6to4
+        "3fff::/20",  # documentation (RFC 9637)
+    ],
 )
 def test_cloudflare_ip_networks_rejects_unroutable_ipv6(cidr: str) -> None:
     """Unroutable IPv6 ranges are rejected with an explanatory message."""
     with pytest.raises(ValidationError) as e:
         CloudflareIPNetworks(ipv4_cidrs=["198.27.128.0/21"], ipv6_cidrs=[cidr])
     assert _REJECTED in str(e.value)
+
+
+@pytest.mark.parametrize(
+    "cidr",
+    ["2001:200::/32", "2400:cb00::/32", "2a06:98c0::/29", "3000::/16"],
+)
+def test_cloudflare_ip_networks_accepts_global_unicast_ipv6(cidr: str) -> None:
+    """Real global-unicast allocations must survive the containment rule.
+
+    ``2001:200::/32`` is the important one: it is a genuine APNIC allocation
+    that sits just past the ``2001::/23`` protocol-assignments block, so an
+    over-broad reserved entry would wrongly refuse it.
+    """
+    networks = CloudflareIPNetworks(ipv4_cidrs=["198.27.128.0/21"], ipv6_cidrs=[cidr])
+    assert len(networks.ipv6_cidrs) == 1
 
 
 # Aggregates whose two endpoints each look routable in isolation. The

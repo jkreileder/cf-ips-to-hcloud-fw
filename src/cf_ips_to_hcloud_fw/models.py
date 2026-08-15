@@ -37,21 +37,20 @@ _RESERVED_IPV4 = tuple(
         "240.0.0.0/4",  # reserved, incl. 255.255.255.255 broadcast
     )
 )
+# IPv6 takes the inverse approach: rather than enumerate everything that is not
+# globally reachable, require membership of global unicast (RFC 4291) and list
+# only the special-purpose blocks that sit *inside* it. That closes the whole
+# outside-2000::/3 space in one rule - unique-local, link-local, multicast,
+# IPv4-mapped, NAT64, SRv6 SIDs (5f00::/16), IANA-reserved 400::/6 - without
+# needing an exhaustive registry copy that goes stale as IANA adds entries.
+_GLOBAL_UNICAST_IPV6 = IPv6Network("2000::/3")
 _RESERVED_IPV6 = tuple(
     IPv6Network(c)
     for c in (
-        "::/128",  # unspecified
-        "::1/128",  # loopback
-        "::ffff:0:0/96",  # IPv4-mapped
-        "64:ff9b::/96",  # IPv4/IPv6 translation
-        "100::/64",  # discard-only
-        "2001::/32",  # Teredo
-        "2001:10::/28",  # ORCHID
+        "2001::/23",  # IETF protocol assignments (Teredo, benchmarking, ORCHID)
         "2001:db8::/32",  # documentation
         "2002::/16",  # 6to4
-        "fc00::/7",  # unique local
-        "fe80::/10",  # link-local
-        "ff00::/8",  # multicast
+        "3fff::/20",  # documentation (RFC 9637)
     )
 )
 
@@ -100,6 +99,13 @@ def _require_globally_routable(network: _Network) -> _Network:
         msg = (
             f"{network} is not globally routable: broader than /{floor}, and "
             "Cloudflare does not publish ranges this large"
+        )
+        raise ValueError(msg)
+
+    if isinstance(network, IPv6Network) and not network.subnet_of(_GLOBAL_UNICAST_IPV6):
+        msg = (
+            f"{network} is not globally routable: outside global unicast "
+            f"{_GLOBAL_UNICAST_IPV6}"
         )
         raise ValueError(msg)
 
