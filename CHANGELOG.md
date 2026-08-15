@@ -5,6 +5,16 @@
 ## [v1.3.4] – Unreleased
 
 - Start new development cycle
+- **Security:** The uv base-image provenance gate can no longer be satisfied by
+  a Dockerfile comment. It grepped the whole file, so a well-formed
+  `docker.io/astral/uv:…@sha256:…` reference on a comment line passed
+  verification while the real `FROM` pointed anywhere — publishing an image
+  built on an unattested base with the provenance check reported green.
+  Comments are now stripped before matching, and every uv reference the file
+  pulls must be digest-pinned, which also closes an unpinned
+  `docker.io/astral/uv:latest` riding along unverified beside a pinned one.
+  Tagless digest pins (`uv@sha256:…`) and images pulled by `COPY --from=` are
+  covered too
 - **Breaking:** A config file containing no projects now exits 1 instead of 0.
   `[]` is a valid YAML document, so a truncated file or a mis-rendered template
   validated cleanly and synced nothing — while the exit code told systemd, a
