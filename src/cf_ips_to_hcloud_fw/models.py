@@ -9,8 +9,9 @@ from pydantic import AfterValidator, BaseModel, ConfigDict, Field, SecretStr
 
 _Network = TypeVar("_Network", IPv4Network, IPv6Network)
 
-# Special-purpose blocks that must never reach a Cloudflare-only allow rule
-# (IANA IPv4/IPv6 Special-Purpose Address Registries, plus multicast).
+# Special-purpose blocks that must never reach a Cloudflare-only allow rule:
+# the not-globally-reachable entries of the IANA IPv4 Special-Purpose Address
+# Registry, plus multicast and the reserved 240.0.0.0/4.
 #
 # These are tested with `overlaps()`, NOT with the ipaddress `is_*` flags. On a
 # *network*, those flags are a conjunction over the two endpoints -
@@ -29,7 +30,11 @@ _RESERVED_IPV4 = tuple(
         "172.16.0.0/12",  # private
         "192.0.0.0/24",  # IETF protocol assignments
         "192.0.2.0/24",  # TEST-NET-1
+        "192.31.196.0/24",  # AS112-v4
+        "192.52.193.0/24",  # AMT
+        "192.88.99.0/24",  # deprecated 6to4 relay anycast
         "192.168.0.0/16",  # private
+        "192.175.48.0/24",  # direct delegation AS112
         "198.18.0.0/15",  # benchmarking
         "198.51.100.0/24",  # TEST-NET-2
         "203.0.113.0/24",  # TEST-NET-3
@@ -79,6 +84,16 @@ def _require_globally_routable(network: _Network) -> _Network:
     tables would be refused, and unallocated space is not routable to an
     attacker anyway.
 
+    Note the blast radius of a false rejection. ``overlaps()`` is bidirectional,
+    so this refuses a range that merely *contains* a reserved block, and
+    ``get_cloudflare_cidrs`` turns any rejection into ``log_error_and_exit`` -
+    one bad CIDR aborts the whole sync and leaves every firewall on stale
+    rules. That is deliberate: dropping the offending range and syncing the
+    rest would quietly narrow the allow-list and break real traffic, which is
+    harder to notice than a loud non-zero exit the scheduler already alerts on.
+    It does mean the blocks listed above must stay conservative - each one is a
+    range Cloudflare can never legitimately publish.
+
     Args:
         network: A parsed CIDR from the Cloudflare response.
 
@@ -95,17 +110,21 @@ def _require_globally_routable(network: _Network) -> _Network:
         reserved = _RESERVED_IPV6
         floor = _MIN_PREFIXLEN_IPV6
 
-    if network.prefixlen < floor:
-        msg = (
-            f"{network} is not globally routable: broader than /{floor}, and "
-            "Cloudflare does not publish ranges this large"
-        )
-        raise ValueError(msg)
-
+    # Containment is checked before the floor so the message names the real
+    # reason: fc00::/7, fe80::/10 and ff00::/8 are all shorter than the /16
+    # floor, and reporting them as merely "too broad" would send an operator
+    # looking for a prefix problem when the range is not unicast at all.
     if isinstance(network, IPv6Network) and not network.subnet_of(_GLOBAL_UNICAST_IPV6):
         msg = (
             f"{network} is not globally routable: outside global unicast "
             f"{_GLOBAL_UNICAST_IPV6}"
+        )
+        raise ValueError(msg)
+
+    if network.prefixlen < floor:
+        msg = (
+            f"{network} is not globally routable: broader than /{floor}, and "
+            "Cloudflare does not publish ranges this large"
         )
         raise ValueError(msg)
 

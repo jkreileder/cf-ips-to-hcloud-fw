@@ -67,6 +67,10 @@ def test_cloudflare_ip_networks_accepts_published_ranges() -> None:
         "224.0.0.0/4",
         "240.0.0.0/4",
         "198.51.100.0/24",
+        "192.31.196.0/24",  # AS112-v4
+        "192.52.193.0/24",  # AMT
+        "192.88.99.0/24",  # deprecated 6to4 relay anycast
+        "192.175.48.0/24",  # direct delegation AS112
     ],
 )
 def test_cloudflare_ip_networks_rejects_unroutable_ipv4(cidr: str) -> None:
