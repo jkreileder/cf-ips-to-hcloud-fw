@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import re
 import sys
 from typing import TYPE_CHECKING, NoReturn
 
@@ -20,6 +21,27 @@ REDACTED = "[REDACTED]"
 # a new call site cannot forget, and covers any future SDK that decides to put
 # the credential in a message.
 _secrets: set[str] = set()
+# Compiled at registration rather than matched per call. Two reasons: the
+# alternation is built once instead of re-sorted on every log line, and the
+# secret is consumed by re.compile here instead of appearing as an argument at
+# the point of logging - so a taint analyser does not read the scrubber as a
+# path from credential to log sink, which is the opposite of what it does.
+# Held in a one-element list so the binding is mutated in place rather than
+# rebound, matching how `_secrets` above is updated and avoiding a `global`.
+_pattern: list[re.Pattern[str] | None] = [None]
+
+
+def _rebuild_pattern() -> None:
+    """Recompile the alternation after the registry changes."""
+    if not _secrets:
+        _pattern[0] = None
+        return
+    # Longest first: alternation matches leftmost-first, so a shorter token
+    # that happens to prefix a longer one would otherwise match first and
+    # leave the longer token's tail in the output.
+    _pattern[0] = re.compile(
+        "|".join(re.escape(s) for s in sorted(_secrets, key=len, reverse=True))
+    )
 
 
 def register_secret(secret: str) -> None:
@@ -31,11 +53,13 @@ def register_secret(secret: str) -> None:
     """
     if secret and secret.strip():
         _secrets.add(secret)
+        _rebuild_pattern()
 
 
 def forget_secrets() -> None:
     """Drop every registered secret. For tests."""
     _secrets.clear()
+    _rebuild_pattern()
 
 
 def redact(msg: str) -> str:
@@ -47,13 +71,8 @@ def redact(msg: str) -> str:
     Returns:
         str: The text with any registered secret masked.
     """
-    # Longest first: with two projects configured, a shorter token that happens
-    # to be a prefix of a longer one would otherwise be substituted first and
-    # destroy the longer match, leaking its tail. Set iteration order is
-    # arbitrary, so without this the failure would be nondeterministic.
-    for secret in sorted(_secrets, key=len, reverse=True):
-        msg = msg.replace(secret, REDACTED)
-    return msg
+    pattern = _pattern[0]
+    return pattern.sub(REDACTED, msg) if pattern else msg
 
 
 def setup_logging(args: argparse.Namespace) -> None:
