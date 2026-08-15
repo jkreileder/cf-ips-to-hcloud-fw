@@ -9,6 +9,52 @@ from typing import TYPE_CHECKING, NoReturn
 if TYPE_CHECKING:  # pragma: no cover
     import argparse  # pragma: no cover
 
+REDACTED = "[REDACTED]"
+
+# Values that must never reach the log stream, registered once at the point the
+# credential is first used. Third-party exception text is the reason this
+# exists: an hcloud token with a trailing newline (routine for a Kubernetes
+# secret mounted as a file) makes requests raise InvalidHeader carrying the
+# whole `Authorization: Bearer <token>` value, and the per-firewall handlers
+# log the exception verbatim so the run can continue. Scrubbing centrally means
+# a new call site cannot forget, and covers any future SDK that decides to put
+# the credential in a message.
+_secrets: set[str] = set()
+
+
+def register_secret(secret: str) -> None:
+    """Mark a value for redaction from all subsequent error output.
+
+    Args:
+        secret: The literal value to scrub. Blank values are ignored, since
+            scrubbing the empty string would rewrite every message.
+    """
+    if secret and secret.strip():
+        _secrets.add(secret)
+
+
+def forget_secrets() -> None:
+    """Drop every registered secret. For tests."""
+    _secrets.clear()
+
+
+def redact(msg: str) -> str:
+    """Replace every registered secret in `msg` with a placeholder.
+
+    Args:
+        msg: Text about to be logged.
+
+    Returns:
+        str: The text with any registered secret masked.
+    """
+    # Longest first: with two projects configured, a shorter token that happens
+    # to be a prefix of a longer one would otherwise be substituted first and
+    # destroy the longer match, leaking its tail. Set iteration order is
+    # arbitrary, so without this the failure would be nondeterministic.
+    for secret in sorted(_secrets, key=len, reverse=True):
+        msg = msg.replace(secret, REDACTED)
+    return msg
+
 
 def setup_logging(args: argparse.Namespace) -> None:
     """Configure root logging with optional debug-level verbosity.
@@ -35,7 +81,7 @@ def log_error(msg: str) -> None:
     Args:
         msg: Pre-formatted error message to log.
     """
-    logging.error(msg)
+    logging.error(redact(msg))
 
 
 def log_error_and_exit(msg: str) -> NoReturn:

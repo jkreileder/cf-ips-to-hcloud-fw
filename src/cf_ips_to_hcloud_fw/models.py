@@ -5,7 +5,14 @@ from __future__ import annotations
 from ipaddress import IPv4Network, IPv6Network
 from typing import Annotated, TypeVar
 
-from pydantic import AfterValidator, BaseModel, ConfigDict, Field, SecretStr
+from pydantic import (
+    AfterValidator,
+    BaseModel,
+    BeforeValidator,
+    ConfigDict,
+    Field,
+    SecretStr,
+)
 
 _Network = TypeVar("_Network", IPv4Network, IPv6Network)
 
@@ -161,10 +168,40 @@ class CloudflareCIDRs(BaseModel):
     ipv6_cidrs: list[str]
 
 
+def _strip_token(value: object) -> object:
+    """Trim surrounding whitespace from a token before it is wrapped.
+
+    A Kubernetes secret mounted as a file ends with a newline by convention,
+    and a YAML block scalar preserves one too. That trailing byte is not part
+    of the credential, and carrying it makes every request fail: ``requests``
+    refuses a header value containing a newline, raising ``InvalidHeader`` with
+    the whole ``Authorization`` value - token included - in its message. So
+    this both fixes an ordinary deployment footgun and removes the trigger for
+    that disclosure path (which :func:`custom_logging.redact` also guards).
+
+    Handles both shapes the model is built from: a plain string (the config
+    file, parsed by YAML) and an already-wrapped ``SecretStr`` (the env-var
+    path, which constructs ``Project`` directly).
+
+    Args:
+        value: The raw token as supplied to the model.
+
+    Returns:
+        object: The token with surrounding whitespace removed, or the value
+        unchanged when it is neither a string nor a SecretStr.
+    """
+    if isinstance(value, SecretStr):
+        return value.get_secret_value().strip()
+    return value.strip() if isinstance(value, str) else value
+
+
 class Project(BaseModel):
     """A Hetzner Cloud API token paired with the firewalls it should update."""
 
     model_config = ConfigDict(extra="forbid")
 
-    token: SecretStr
+    # min_length is applied after the strip, so a whitespace-only token in a
+    # config file is refused with the sanitized validation error rather than
+    # authenticating as the empty string and failing on every firewall.
+    token: Annotated[SecretStr, BeforeValidator(_strip_token)] = Field(min_length=1)
     firewalls: list[str] = Field(min_length=1)

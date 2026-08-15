@@ -10,7 +10,7 @@ from hcloud.actions import ActionException
 from hcloud.firewalls.domain import Firewall, FirewallRule
 from requests.exceptions import RequestException
 
-from cf_ips_to_hcloud_fw.custom_logging import log_error
+from cf_ips_to_hcloud_fw.custom_logging import log_error, register_secret
 
 if TYPE_CHECKING:  # pragma: no cover
     from cf_ips_to_hcloud_fw.models import CloudflareCIDRs, Project  # pragma: no cover
@@ -62,7 +62,12 @@ def update_project(
     Returns:
         ProjectOutcome: Labels of skipped and failed firewalls, project-prefixed.
     """
-    client = Client(token=project.token.get_secret_value(), timeout=HCLOUD_TIMEOUT)
+    token = project.token.get_secret_value()
+    # The per-firewall handlers below log SDK exceptions verbatim so one
+    # failure does not abort the run; register the token first so it cannot
+    # ride along in any of that text.
+    register_secret(token)
+    client = Client(token=token, timeout=HCLOUD_TIMEOUT)
     skipped: list[str] = []
     failed: list[str] = []
     for name in project.firewalls:

@@ -5,6 +5,16 @@
 ## [v1.3.4] – Unreleased
 
 - Start new development cycle
+- **Security:** Hetzner API tokens can no longer reach the log stream through
+  third-party exception text. A token carrying a trailing newline — routine for
+  a Kubernetes secret mounted as a file, or a YAML block scalar — made
+  `requests` raise `InvalidHeader` with the whole `Authorization: Bearer …`
+  value in its message, which the per-firewall error handlers logged verbatim
+  so the run could continue. Registered secrets are now scrubbed centrally in
+  `log_error`/`log_error_and_exit`, so no call site has to remember
+- Config tokens are stripped of surrounding whitespace. A trailing newline is
+  not part of the credential, and carrying it previously made *every* API
+  request fail, since `requests` rejects a header value containing one
 - GitHub Actions digest refreshes are no longer automerged. The 3-day
   `minimumReleaseAge` hold cannot gate them — the `github-tags` datasource ages
   a digest against the matched version's original release date, so an action tag

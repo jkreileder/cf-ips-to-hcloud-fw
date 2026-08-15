@@ -143,7 +143,11 @@ def _read_config_from_env() -> list[Project]:
     Returns:
         list[Project]: A single-element list with the env-derived project.
     """
-    token = os.environ.get(ENV_TOKEN)
+    # Stripped before the guard, not after: the model strips the token too, so
+    # a variable holding only a newline (HCLOUD_TOKEN=$(cat secret-file) on an
+    # otherwise-empty file) would otherwise slip past this check and surface as
+    # a 401 on every firewall instead of the actionable message below.
+    token = (os.environ.get(ENV_TOKEN) or "").strip()
     if not token:
         log_error_and_exit(
             f"No configuration found and {ENV_TOKEN} is not set; provide -c "
