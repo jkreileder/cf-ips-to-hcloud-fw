@@ -23,12 +23,15 @@
   anything able to set an env var on the job — a CronJob spec, a compose file, a
   workflow env block — could point the IP fetch at its own server and dictate
   what the firewall rules end up allowing. That variable is now inert
-- Cloudflare CIDR responses are checked for routability, not just syntax.
-  Default routes (`0.0.0.0/0`, `::/0`) and unspecified, loopback, link-local,
-  multicast, and private ranges are rejected instead of being written verbatim
-  into firewall rules — a broken or tampered response can no longer widen an
-  allow list. No minimum prefix length is enforced, so a broader aggregate from
-  Cloudflare will not fail the run
+- Cloudflare CIDR responses are checked for routability, not just syntax. A
+  range is rejected if it overlaps IANA special-purpose space (RFC 1918,
+  loopback, link-local, CGNAT, multicast, reserved, documentation) or is
+  broader than /8 for IPv4 or /16 for IPv6, instead of being written verbatim
+  into firewall rules — so a broken or tampered response can no longer widen an
+  allow list, whether by naming a reserved range outright (`10.0.0.0/8`) or by
+  hiding it inside an aggregate (`0.0.0.0/0`, `128.0.0.0/1`, `8000::/1`). The
+  prefix floors sit far below the /13 and /29 the published list bottoms out
+  at, so a legitimately broader range from Cloudflare will not fail the run
 
 ## [v1.3.3] – 2026-08-13
 
