@@ -11,6 +11,7 @@ import yaml
 from pydantic import SecretStr
 
 from cf_ips_to_hcloud_fw.config import (
+    ENV_TOKEN,
     _read_config,
     _read_config_from_env,
     load_projects,
@@ -574,3 +575,47 @@ def test_load_projects_env_fallback(
     mock_exists.assert_called_once_with("config.yaml")
     mock_read_config.assert_not_called()
     mock_read_env.assert_called_once_with()
+
+
+@patch.dict(
+    "os.environ",
+    {"HCLOUD_TOKEN": "\n", "HCLOUD_FIREWALLS": "fw-1"},
+    clear=True,
+)
+@patch("logging.error")
+def test_read_config_from_env_rejects_whitespace_only_token(
+    mock_logging: MagicMock,
+) -> None:
+    """A secret file holding only a newline must fail as "not set".
+
+    `HCLOUD_TOKEN=$(cat /run/secrets/token)` on an empty-ish file yields a lone
+    newline. The model strips it, so without stripping before this guard the
+    run would proceed with an empty token and 401 on every firewall instead of
+    telling the operator the variable is unset.
+    """
+    with pytest.raises(SystemExit) as e:
+        _read_config_from_env()
+
+    assert e.value.code == 1
+    assert f"{ENV_TOKEN} is not set" in mock_logging.call_args[0][0]
+
+
+@patch(
+    "builtins.open",
+    mock_open(
+        read_data="""
+- token: "   "
+  firewalls:
+    - fw-1
+""",
+    ),
+)
+@patch("cf_ips_to_hcloud_fw.config.os.name", "nt")
+@patch("logging.error")
+def test_read_config_rejects_whitespace_only_token(mock_logging: MagicMock) -> None:
+    """The same empty-after-strip state, arriving via a config file."""
+    with pytest.raises(SystemExit) as e:
+        _read_config("config.yaml")
+
+    assert e.value.code == 1
+    assert "Config file 'config.yaml' is broken:" in mock_logging.call_args[0][0]

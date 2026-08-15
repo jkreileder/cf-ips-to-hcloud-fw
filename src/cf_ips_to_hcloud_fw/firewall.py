@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, NamedTuple
 from hcloud import APIException, Client
 from hcloud.actions import ActionException
 from hcloud.firewalls.domain import Firewall, FirewallRule
-from requests.exceptions import RequestException
+from requests.exceptions import InvalidHeader, RequestException
 
 from cf_ips_to_hcloud_fw.custom_logging import log_error
 
@@ -44,6 +44,35 @@ class ProjectOutcome(NamedTuple):
     failed: list[str]
 
 
+def _describe_sdk_error(e: Exception) -> str:
+    """Summarize an SDK failure without echoing anything that holds the token.
+
+    ``InvalidHeader`` is the one exception that quotes the offending header
+    back: a token with a trailing newline - routine for a Kubernetes secret
+    mounted as a file, and preserved by a YAML block scalar - makes requests
+    refuse the header and name the whole ``Authorization: Bearer <token>``
+    value. Since these handlers log and continue so one firewall failure does
+    not abort the run, forwarding it would land the credential in a log stream
+    readable by principals who cannot read the secret itself.
+
+    Nothing else is withheld. hcloud's own exceptions carry text built from the
+    API *response* (status codes, "not found", rate limits), and every other
+    ``requests`` failure carries the URL, host, or underlying OS reason -
+    checked: ConnectionError, ProxyError and InvalidURL never quote headers.
+    Blanking those too would cost the detail that makes a failed sync
+    diagnosable, since nothing else in the package logs a traceback.
+
+    Args:
+        e: The exception raised by the hcloud SDK call.
+
+    Returns:
+        str: Message text for the log line.
+    """
+    if isinstance(e, InvalidHeader):
+        return type(e).__name__
+    return str(e)
+
+
 def update_project(
     *, project: Project, cf_cidrs: CloudflareCIDRs, project_index: int
 ) -> ProjectOutcome:
@@ -72,7 +101,7 @@ def update_project(
         except (APIException, RequestException) as e:
             log_error(
                 "hcloud/firewalls.get_by_name failed for "
-                f"{name!r} in project {project_index}: {e}"
+                f"{name!r} in project {project_index}: {_describe_sdk_error(e)}"
             )
             failed.append(label)
             continue
@@ -181,7 +210,7 @@ def fw_set_rules(client: Client, fw: Firewall, project_index: int) -> bool:
     except (APIException, ActionException, RequestException) as e:
         log_error(
             f"hcloud/firewall.set_rules failed for {fw.name!r} in project "
-            f"{project_index}: {e}"
+            f"{project_index}: {_describe_sdk_error(e)}"
         )
         return False
     return True

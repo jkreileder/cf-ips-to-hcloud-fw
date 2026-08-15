@@ -5,6 +5,19 @@
 ## [v1.3.4] – Unreleased
 
 - Start new development cycle
+- **Security:** Hetzner API tokens can no longer reach the log stream through
+  third-party exception text. A token carrying a trailing newline — routine for
+  a Kubernetes secret mounted as a file, or a YAML block scalar — made
+  `requests` raise `InvalidHeader` with the whole `Authorization: Bearer …`
+  value in its message, which the per-firewall error handlers logged verbatim
+  so the run could continue. `InvalidHeader` is now reported by type only. It
+  is the sole exception that quotes the header back, so every other failure —
+  hcloud's own `APIException`/`ActionException`, and `requests`' connection,
+  TLS, proxy and timeout errors — keeps its full message, which is where the
+  detail that makes a failed sync diagnosable lives
+- Config tokens are stripped of surrounding whitespace. A trailing newline is
+  not part of the credential, and carrying it previously made *every* API
+  request fail, since `requests` rejects a header value containing one
 - GitHub Actions digest refreshes are no longer automerged. The 3-day
   `minimumReleaseAge` hold cannot gate them — the `github-tags` datasource ages
   a digest against the matched version's original release date, so an action tag

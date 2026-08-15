@@ -5,7 +5,7 @@ from __future__ import annotations
 from ipaddress import IPv4Network, ip_network
 
 import pytest
-from pydantic import SecretStr, ValidationError
+from pydantic import SecretStr, TypeAdapter, ValidationError
 
 from cf_ips_to_hcloud_fw.models import CloudflareIPNetworks, Project
 
@@ -231,3 +231,28 @@ def test_project_extra_field_rejected() -> None:
             unknown_field="value",  # ty: ignore[unknown-argument]
         )
     assert "Extra inputs are not permitted" in str(e.value)
+
+
+@pytest.mark.parametrize(
+    "raw",
+    ["my-token\n", "my-token\r\n", "  my-token  ", "\tmy-token\t", "my-token"],
+)
+def test_project_token_strips_surrounding_whitespace(raw: str) -> None:
+    """A mounted secret file ends with a newline; that byte is not credential.
+
+    Carried through, it makes every request fail — ``requests`` rejects a
+    header value containing a newline — so this is a functional fix as well as
+    removing the trigger for the disclosure path that
+    `firewall._describe_sdk_error` guards.
+    """
+    assert Project(
+        token=SecretStr(raw), firewalls=["fw-1"]
+    ).token.get_secret_value() == ("my-token")
+
+
+def test_project_token_strips_when_parsed_from_a_config_file() -> None:
+    """The config-file path hands the validator a plain str, not a SecretStr."""
+    projects = TypeAdapter(list[Project]).validate_python([
+        {"token": "my-token\n", "firewalls": ["fw-1"]}
+    ])
+    assert projects[0].token.get_secret_value() == "my-token"
