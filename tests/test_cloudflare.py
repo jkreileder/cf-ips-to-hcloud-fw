@@ -153,7 +153,7 @@ def test_get_cloudflare_cidrs_empty_ipv6(mock_logging: MagicMock) -> None:
     MagicMock(
         return_value=cloudflare.types.ips.ip_list_response.PublicIPIPs(
             ipv4_cidrs=["399.27.128.0/21", "198.27.128.0/21"],
-            ipv6_cidrs=["2400:cb00::/32", "1400:cb00::/32"],
+            ipv6_cidrs=["2400:cb00::/32", "2606:4700::/32"],
         )
     ),
 )
@@ -208,7 +208,7 @@ def test_get_cloudflare_cidrs_rejects_unroutable(
     MagicMock(
         return_value=cloudflare.types.ips.ip_list_response.PublicIPIPs(
             ipv4_cidrs=["199.27.128.0/21", "198.27.128.0/21"],
-            ipv6_cidrs=["2400:cb00::/32", "1400:cb00::/32"],
+            ipv6_cidrs=["2606:4700::/32", "2400:cb00::/32"],
         )
     ),
 )
@@ -217,5 +217,5 @@ def test_get_cloudflare_cidrs() -> None:
     result = get_cloudflare_cidrs()
     assert result == CloudflareCIDRs(
         ipv4_cidrs=["198.27.128.0/21", "199.27.128.0/21"],
-        ipv6_cidrs=["1400:cb00::/32", "2400:cb00::/32"],
+        ipv6_cidrs=["2400:cb00::/32", "2606:4700::/32"],
     )
