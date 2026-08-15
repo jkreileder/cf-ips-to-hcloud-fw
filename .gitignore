@@ -28,6 +28,10 @@ coverage.xml
 htmlcov
 test-results.xml
 
+# Security scan output (vvaharness): reports plus an error log that can quote
+# scanned source. Regenerated per run and never committed.
+security-scan
+
 # OS artifacts
 .DS_Store
 
