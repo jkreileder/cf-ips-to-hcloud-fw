@@ -5,11 +5,13 @@ from __future__ import annotations
 from unittest.mock import MagicMock, call, patch
 
 import pytest
+import requests
 from hcloud import APIException
 from hcloud.actions import ActionFailedException, ActionTimeoutException
 from hcloud.firewalls.domain import Firewall, FirewallRule
 from pydantic import SecretStr
 from requests.exceptions import ConnectionError as RequestsConnectionError
+from requests.exceptions import RequestException
 
 from cf_ips_to_hcloud_fw.firewall import (
     CF_ALL,
@@ -334,8 +336,10 @@ def test_fw_set_rules_transport_fail(
     mock_client.firewalls.set_rules.side_effect = RequestsConnectionError("boom")
     assert fw_set_rules(mock_client, fw, 1) is False
     mock_client.firewalls.set_rules.assert_called_once_with(fw, [])
+    # Transport errors report the exception type only: a requests message can
+    # carry the request headers, and the Authorization value with them.
     mock_logging.assert_called_once_with(
-        "hcloud/firewall.set_rules failed for 'fw-1' in project 1: boom"
+        "hcloud/firewall.set_rules failed for 'fw-1' in project 1: ConnectionError"
     )
 
 
@@ -488,7 +492,7 @@ def test_update_project_transport_fail_continues(
         mock_client.return_value, fw2, cf_ips, project_index=1
     )
     mock_logging.assert_called_once_with(
-        "hcloud/firewalls.get_by_name failed for 'fw-1' in project 1: boom"
+        "hcloud/firewalls.get_by_name failed for 'fw-1' in project 1: ConnectionError"
     )
 
 
@@ -509,3 +513,49 @@ def test_update_project_set_rules_fail_recorded(
     mock_update_firewall.assert_called_once_with(
         mock_client.return_value, fw, cf_ips, project_index=1
     )
+
+
+@patch("cf_ips_to_hcloud_fw.firewall.Client")
+@patch("logging.error")
+def test_transport_error_message_never_reaches_the_log(
+    mock_logging: MagicMock, mock_client: MagicMock
+) -> None:
+    """The real leak: requests puts the Authorization header in InvalidHeader.
+
+    A token with a trailing newline — routine for a Kubernetes secret mounted
+    as a file — makes requests refuse the header and name the whole
+    `Bearer <token>` value in its message. These handlers log and continue so
+    one firewall failure does not abort the run, so that message must not be
+    forwarded. Drives the genuine exception rather than a hand-built one, so
+    the test still holds if requests changes its wording.
+    """
+    secret = "hcloud-SUPER_SECRET_TOKEN_VALUE"  # ruff: ignore[hardcoded-password-string]
+    with pytest.raises(RequestException) as excinfo:
+        requests.get(
+            "http://127.0.0.1:9/x",
+            headers={"Authorization": f"Bearer {secret}\n"},
+            timeout=1,
+        )
+    assert secret in str(excinfo.value)  # the exception really carries it
+
+    fw = Firewall(name="fw-1", rules=[])
+    mock_client.firewalls.set_rules.side_effect = excinfo.value
+    assert fw_set_rules(mock_client, fw, 1) is False
+
+    logged = mock_logging.call_args.args[0]
+    assert secret not in logged
+    assert logged.endswith("InvalidHeader")
+
+
+@patch("cf_ips_to_hcloud_fw.firewall.Client")
+@patch("logging.error")
+def test_api_exception_detail_is_preserved(
+    mock_logging: MagicMock, mock_client: MagicMock
+) -> None:
+    """Hcloud's own exceptions carry response-derived text worth keeping."""
+    fw = Firewall(name="fw-1", rules=[])
+    mock_client.firewalls.set_rules.side_effect = APIException(
+        code="rate_limit_exceeded", message="Too many requests", details=None
+    )
+    assert fw_set_rules(mock_client, fw, 1) is False
+    assert "Too many requests" in mock_logging.call_args.args[0]

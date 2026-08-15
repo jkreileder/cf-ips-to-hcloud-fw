@@ -10,8 +10,10 @@
   a Kubernetes secret mounted as a file, or a YAML block scalar — made
   `requests` raise `InvalidHeader` with the whole `Authorization: Bearer …`
   value in its message, which the per-firewall error handlers logged verbatim
-  so the run could continue. Registered secrets are now scrubbed centrally in
-  `log_error`/`log_error_and_exit`, so no call site has to remember
+  so the run could continue. Those handlers now report only the exception type
+  for transport-level (`requests`) failures. hcloud's own `APIException` and
+  `ActionException` are unchanged — their text comes from the API response and
+  is where the useful detail lives
 - Config tokens are stripped of surrounding whitespace. A trailing newline is
   not part of the credential, and carrying it previously made *every* API
   request fail, since `requests` rejects a header value containing one
