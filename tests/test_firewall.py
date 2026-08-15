@@ -336,10 +336,10 @@ def test_fw_set_rules_transport_fail(
     mock_client.firewalls.set_rules.side_effect = RequestsConnectionError("boom")
     assert fw_set_rules(mock_client, fw, 1) is False
     mock_client.firewalls.set_rules.assert_called_once_with(fw, [])
-    # Transport errors report the exception type only: a requests message can
-    # carry the request headers, and the Authorization value with them.
+    # Connection detail is preserved: only InvalidHeader quotes the header
+    # back, so blanking every transport error would cost real diagnostics.
     mock_logging.assert_called_once_with(
-        "hcloud/firewall.set_rules failed for 'fw-1' in project 1: ConnectionError"
+        "hcloud/firewall.set_rules failed for 'fw-1' in project 1: boom"
     )
 
 
@@ -492,7 +492,7 @@ def test_update_project_transport_fail_continues(
         mock_client.return_value, fw2, cf_ips, project_index=1
     )
     mock_logging.assert_called_once_with(
-        "hcloud/firewalls.get_by_name failed for 'fw-1' in project 1: ConnectionError"
+        "hcloud/firewalls.get_by_name failed for 'fw-1' in project 1: boom"
     )
 
 

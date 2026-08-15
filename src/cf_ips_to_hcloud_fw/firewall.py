@@ -5,10 +5,10 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, NamedTuple
 
-from hcloud import APIException, Client, HCloudException
+from hcloud import APIException, Client
 from hcloud.actions import ActionException
 from hcloud.firewalls.domain import Firewall, FirewallRule
-from requests.exceptions import RequestException
+from requests.exceptions import InvalidHeader, RequestException
 
 from cf_ips_to_hcloud_fw.custom_logging import log_error
 
@@ -45,23 +45,22 @@ class ProjectOutcome(NamedTuple):
 
 
 def _describe_sdk_error(e: Exception) -> str:
-    """Summarize an SDK failure without echoing anything that may hold the token.
+    """Summarize an SDK failure without echoing anything that holds the token.
 
-    hcloud's own exceptions (``APIException``, ``ActionException``) carry text
-    built from the API *response*, which is safe to log and is where the useful
-    detail lives - status codes, "not found", rate limits.
+    ``InvalidHeader`` is the one exception that quotes the offending header
+    back: a token with a trailing newline - routine for a Kubernetes secret
+    mounted as a file, and preserved by a YAML block scalar - makes requests
+    refuse the header and name the whole ``Authorization: Bearer <token>``
+    value. Since these handlers log and continue so one firewall failure does
+    not abort the run, forwarding it would land the credential in a log stream
+    readable by principals who cannot read the secret itself.
 
-    A ``requests`` exception is transport-level and can carry the *request*
-    instead. ``InvalidHeader`` is the concrete case: a token with a trailing
-    newline - routine for a Kubernetes secret mounted as a file, and preserved
-    by a YAML block scalar - makes requests refuse the header and put the whole
-    ``Authorization: Bearer <token>`` value in its message. Since these handlers
-    log and continue so one firewall failure does not abort the run, that lands
-    the credential in a log stream readable by principals who cannot read the
-    secret itself. Only the exception type is reported for those; the class name
-    (``ConnectionError``, ``ReadTimeout``, ``InvalidHeader``) is the diagnostic
-    part anyway, and the token is stripped at load time so the newline case
-    should no longer arise.
+    Nothing else is withheld. hcloud's own exceptions carry text built from the
+    API *response* (status codes, "not found", rate limits), and every other
+    ``requests`` failure carries the URL, host, or underlying OS reason -
+    checked: ConnectionError, ProxyError and InvalidURL never quote headers.
+    Blanking those too would cost the detail that makes a failed sync
+    diagnosable, since nothing else in the package logs a traceback.
 
     Args:
         e: The exception raised by the hcloud SDK call.
@@ -69,9 +68,9 @@ def _describe_sdk_error(e: Exception) -> str:
     Returns:
         str: Message text for the log line.
     """
-    if isinstance(e, HCloudException):
-        return str(e)
-    return type(e).__name__
+    if isinstance(e, InvalidHeader):
+        return type(e).__name__
+    return str(e)
 
 
 def update_project(

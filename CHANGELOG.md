@@ -10,10 +10,11 @@
   a Kubernetes secret mounted as a file, or a YAML block scalar — made
   `requests` raise `InvalidHeader` with the whole `Authorization: Bearer …`
   value in its message, which the per-firewall error handlers logged verbatim
-  so the run could continue. Those handlers now report only the exception type
-  for transport-level (`requests`) failures. hcloud's own `APIException` and
-  `ActionException` are unchanged — their text comes from the API response and
-  is where the useful detail lives
+  so the run could continue. `InvalidHeader` is now reported by type only. It
+  is the sole exception that quotes the header back, so every other failure —
+  hcloud's own `APIException`/`ActionException`, and `requests`' connection,
+  TLS, proxy and timeout errors — keeps its full message, which is where the
+  detail that makes a failed sync diagnosable lives
 - Config tokens are stripped of surrounding whitespace. A trailing newline is
   not part of the credential, and carrying it previously made *every* API
   request fail, since `requests` rejects a header value containing one

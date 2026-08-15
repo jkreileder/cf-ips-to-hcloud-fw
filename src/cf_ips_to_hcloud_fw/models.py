@@ -177,7 +177,8 @@ def _strip_token(value: object) -> object:
     refuses a header value containing a newline, raising ``InvalidHeader`` with
     the whole ``Authorization`` value - token included - in its message. So
     this both fixes an ordinary deployment footgun and removes the trigger for
-    that disclosure path (which :func:`custom_logging.redact` also guards).
+    that disclosure path, which :func:`firewall._describe_sdk_error` then keeps
+    out of the log if it ever arises another way.
 
     Handles both shapes the model is built from: a plain string (the config
     file, parsed by YAML) and an already-wrapped ``SecretStr`` (the env-var

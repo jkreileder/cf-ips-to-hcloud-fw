@@ -242,7 +242,8 @@ def test_project_token_strips_surrounding_whitespace(raw: str) -> None:
 
     Carried through, it makes every request fail — ``requests`` rejects a
     header value containing a newline — so this is a functional fix as well as
-    removing the trigger for the disclosure path in `custom_logging.redact`.
+    removing the trigger for the disclosure path that
+    `firewall._describe_sdk_error` guards.
     """
     assert Project(
         token=SecretStr(raw), firewalls=["fw-1"]
