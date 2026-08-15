@@ -5,6 +5,12 @@
 ## [v1.3.4] – Unreleased
 
 - Start new development cycle
+- **Breaking:** A config file containing no projects now exits 1 instead of 0.
+  `[]` is a valid YAML document, so a truncated file or a mis-rendered template
+  validated cleanly and synced nothing — while the exit code told systemd, a
+  Kubernetes CronJob, or a cron wrapper the run was healthy and the firewall
+  rules quietly froze at their last-synced state. The environment-variable path
+  already failed loudly for the same condition; the two now agree
 - **Security:** Hetzner API tokens can no longer reach the log stream through
   third-party exception text. A token carrying a trailing newline — routine for
   a Kubernetes secret mounted as a file, or a YAML block scalar — made

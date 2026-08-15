@@ -195,14 +195,20 @@ def test_read_config_empty(mock_logging: MagicMock) -> None:
 
 
 @patch("builtins.open", mock_open(read_data="[]"))
-@patch("logging.warning")
+@patch("logging.error")
 def test_read_config_empty_list(mock_logging: MagicMock) -> None:
-    """Empty project lists exit with code 0 after warning the operator."""
+    """An empty project list fails the run rather than reporting success.
+
+    `[]` is a valid YAML document, so a truncated file or a mis-rendered
+    template validates cleanly and syncs nothing. Exiting 0 would tell an
+    exit-code-keyed monitor the run was healthy while the firewall rules froze.
+    """
     with pytest.raises(SystemExit) as e:
         _read_config("config.yaml")
-    assert e.value.code == 0
+    assert e.value.code == 1
     mock_logging.assert_called_once_with(
-        "Config file 'config.yaml' contains no projects - exiting",
+        "Config file 'config.yaml' contains no projects - no firewalls would "
+        "be synced. Add at least one project entry."
     )
 
 
