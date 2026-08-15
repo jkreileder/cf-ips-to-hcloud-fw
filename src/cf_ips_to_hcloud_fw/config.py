@@ -5,7 +5,6 @@ from __future__ import annotations
 import logging
 import os
 import stat
-import sys
 
 # coverage.py's sys.monitoring tracer (Python 3.14) calls os.stat while tracing;
 # binding stat under a private name lets tests patch config's own lookup without
@@ -125,8 +124,16 @@ def _read_config(config_file: str) -> list[Project]:
         log_error_and_exit(f"Config file {config_file!r} is broken: {sanitized_errors}")
 
     if not projects:
-        logging.warning(f"Config file {config_file!r} contains no projects - exiting")
-        sys.exit(0)
+        # Non-zero, not a clean exit. An empty list is a valid YAML document, so
+        # a truncated file or a mis-rendered template validates fine and syncs
+        # nothing; exiting 0 told every exit-code-keyed monitor - systemd,
+        # a Kubernetes CronJob, a cron wrapper - that the run was healthy while
+        # the firewall rules quietly froze at their last-synced state. The
+        # env-var path already fails loudly for the same condition.
+        log_error_and_exit(
+            f"Config file {config_file!r} contains no projects - no firewalls "
+            "would be synced. Add at least one project entry."
+        )
 
     return projects
 
