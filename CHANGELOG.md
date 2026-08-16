@@ -4,6 +4,20 @@
 
 ## [v1.4.1] – Unreleased
 
+- Container images are now reproducible: rebuilding a given commit yields
+  byte-identical per-platform image manifests. `SOURCE_DATE_EPOCH` is taken from
+  the source commit rather than the clock, and the image exporter runs with
+  `rewrite-timestamp=true` — without the latter only the config, history and
+  index timestamps are pinned, while file mtimes inside the layers still drift.
+  One further source of variance was removed: `uv pip install` writes a
+  `uv_cache.json` into the project's own `.dist-info` containing nothing but a
+  wall-clock install timestamp (every other field is null or empty), and it has
+  no runtime purpose, so it is now deleted along with its `RECORD` line. With
+  that, two consecutive cache-free builds on the pinned BuildKit produce the
+  same manifest digest. The multi-platform *index* digest still differs per
+  build, because buildx provenance deliberately records each invocation
+  (moby/buildkit#3421) — reproducibility is verifiable at the level of the image
+  the attestations point at, which is the in-toto subject
 - Container attestation moved out of the build job into its own `Attest` job in
   `docker-build.yaml`, so a transient Sigstore or GitHub outage during a release
   can be retried with "Re-run failed jobs" instead of re-running the build. The

@@ -56,10 +56,23 @@ RUN --mount=type=bind,from=uv-tools-alpine,source=/usr/local/bin/uv,target=/usr/
     uv sync --link-mode copy --frozen --no-group dev --no-install-project
 
 # Install wheel without dependencies
+#
+# uv pip install writes a uv_cache.json into the installed dist-info holding a
+# wall-clock install timestamp (and otherwise only nulls and empty objects). It
+# has no runtime purpose, and it was the single thing keeping this image from
+# being byte-identical across rebuilds under SOURCE_DATE_EPOCH — every other
+# file in every layer already matches. Drop it, and its RECORD line with it, so
+# RECORD doesn't reference a file that isn't there. Only the project's own
+# dist-info is touched; uv sync's packages never get one.
 RUN --mount=type=bind,from=uv-tools-alpine,source=/usr/local/bin/uv,target=/usr/local/bin/uv \
     --mount=from=builder,target=/dist,source=/usr/src/app/dist \
-    --mount=type=cache,id=uv-cache,target=/root/.cache/uv \
+    --mount=type=cache,id=uv-cache,target=/root/.cache/uv <<EOF
+    set -eux
     uv pip install --link-mode copy --no-compile --force-reinstall --no-deps /dist/*.whl
+    rm -f .venv/lib/python*/site-packages/cf_ips_to_hcloud_fw-*.dist-info/uv_cache.json
+    sed -i '/\.dist-info\/uv_cache\.json,/d' \
+        .venv/lib/python*/site-packages/cf_ips_to_hcloud_fw-*.dist-info/RECORD
+EOF
 
 USER 65534
 
