@@ -27,9 +27,11 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     # Skip cancelled runs too: a run cancelled by concurrency (superseded
-    # push) or deleted afterwards has no test artifacts, so the download step
-    # would fail on nothing to publish. Failed runs still publish — a red test
-    # run must report its results.
+    # push) or deleted afterwards has no results worth publishing, and an empty
+    # check run would only bury the real one. Not a hard requirement any more —
+    # the download step warns rather than fails when nothing matches — so this
+    # is about signal, not about avoiding an error. Failed runs still publish:
+    # a red test run must report its results.
     if: ${{ github.event.workflow_run.conclusion != 'skipped' && github.event.workflow_run.conclusion != 'cancelled' }}
 
     permissions:
@@ -72,14 +74,25 @@ jobs:
       #
       # An empty object removes that: with no pull_request.number the action
       # falls back to resolving the PR from `commit` below, which comes from the
-      # workflow_run payload and is filtered against the PR's own head SHA. The
-      # file must still exist — the action treats a missing event_file as an
-      # unprivileged fork run (is_fork) and would skip publishing altogether.
+      # workflow_run payload and is filtered against the PR's own head SHA.
+      #
+      # The input must still be passed, and the file must exist. Omitting the
+      # input lets `event` fall back to GITHUB_EVENT_PATH — the workflow_run
+      # payload, which has no pull_request key — so is_fork becomes true for PR
+      # runs and both the check run and the comment are suppressed. Naming a
+      # file that is not there fails the step outright.
       #
       # The base-commit comparison survives: with a falsy event, the action's
       # get_base_commit_sha skips the event lookup and derives the merge base
       # from the API instead, so that figure now comes from GitHub rather than
       # from the same file an attacker controlled.
+      #
+      # One deliberate loss: pushes to the default branch no longer show the
+      # "compared against earlier commit" delta, which came from the push
+      # event's `before` field in the downloaded file. The workflow_run payload
+      # does not carry it, and reinstating it would mean another API lookup for
+      # a line nobody reads on a green build. PR runs are unaffected — a
+      # pull_request event has no `before` either way.
       - name: Write trusted event file
         shell: bash
         run: |
