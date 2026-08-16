@@ -95,6 +95,42 @@ make build      # rm -rf dist && uv build
 ls dist         # expect a wheel + sdist for the new version
 ```
 
+### 5b. Optional: spot-check image reproducibility
+
+Only worth doing if someone is actually questioning a release, or if the
+Dockerfile or `uv.lock` changed in ways that could reintroduce a timestamp (the
+last offender was a `uv_cache.json` that `uv pip install` wrote into the
+project's `.dist-info`). There is no CI job for this — deliberately, since the
+check costs two cold builds and nothing downstream depends on the property.
+
+Both builds must be cache-free, or the second one just replays the first's
+layers and proves nothing. Expect this to take a while: each build runs ruff, ty
+and pytest inside the builder stage.
+
+```bash
+bk="$(sed -nE 's/.*image=(moby\/buildkit:[^ ]+).*/\1/p' \
+  .github/workflows/docker-build.yaml | head -1)"    # same BuildKit as CI
+docker buildx create --name repro-check --driver docker-container \
+  --driver-opt "image=$bk" --bootstrap
+for i in 1 2; do
+  SOURCE_DATE_EPOCH="$(git log -1 --pretty=%ct)" docker buildx build \
+    --builder repro-check --no-cache --provenance=false --sbom=false \
+    --output "type=oci,dest=repro-$i.tar,rewrite-timestamp=true" .
+  tar -xOf "repro-$i.tar" index.json | jq -r '.manifests[0].digest'
+done
+docker buildx rm repro-check
+```
+
+The two digests must be identical. If they aren't, diff the layers to find the
+offending file rather than guessing — extract each tar, walk `index.json` →
+manifest → `layers[]`, and compare the layer digests to find which one moved.
+
+Two things this does **not** cover: it builds one native platform, not the
+multi-arch pair, and it exports via `type=oci` rather than CI's
+`type=image,push=true`, so it checks the Dockerfile's determinism rather than
+the export spelling. The multi-platform *index* digest is expected to differ per
+build regardless — buildx provenance records each invocation by design.
+
 ### 6. Open the release PR (the bump cannot go straight to `main`)
 
 `main` is protected, so commit on a branch and open a PR:
