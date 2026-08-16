@@ -5,6 +5,11 @@
 ## [v1.3.4] – Unreleased
 
 - Start new development cycle
+- Test-result publishing is no longer cancellable from a fork. The concurrency
+  group was keyed on the triggering run's branch name alone, so a fork pull
+  request from a branch called `main` shared a group with the base repository's
+  own main-branch run — and `cancel-in-progress` let the fork's run cancel it,
+  dropping the results for that push. The key now includes the head repository
 - **Security:** A fork pull request can no longer steer the test-result
   publisher. GitHub runs the fork's copy of `python-package.yaml` for a fork PR,
   so the `event-file` artifact it uploaded was attacker-controlled — and the
