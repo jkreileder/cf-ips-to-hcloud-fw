@@ -268,14 +268,37 @@ jobs:
           # the builder itself). Keep the cache for main/PR speed.
           cache-binary: ${{ !startsWith(github.ref, 'refs/tags/') }}
 
+      # Timestamps come from the source commit, not the clock, so rebuilding a
+      # given commit reproduces the same image. Read from the checkout above;
+      # the default fetch-depth of 1 is enough for the tip commit's date.
+      - name: Set SOURCE_DATE_EPOCH from the commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          epoch="$(git log -1 --pretty=%ct)"
+          if ! printf '%s' "$epoch" | grep -Eq '^[0-9]+$'; then
+            echo "::error::Could not read a commit timestamp for SOURCE_DATE_EPOCH"
+            exit 1
+          fi
+          echo "SOURCE_DATE_EPOCH=$epoch" >> "$GITHUB_ENV"
+          echo "SOURCE_DATE_EPOCH=$epoch"
+
       - name: Build and push
         id: build-and-push
         uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
+        env:
+          SOURCE_DATE_EPOCH: ${{ env.SOURCE_DATE_EPOCH }}
         with:
           context: .
           platforms: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' && 'linux/amd64,linux/arm64' || '' }}
-          push: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' }}
-          load: ${{ github.event_name == 'pull_request' || github.actor == 'dependabot[bot]' }}
+          # Spelled as `outputs` rather than push/load because rewrite-timestamp
+          # is an image-exporter attribute and the `push` input cannot carry one.
+          # SOURCE_DATE_EPOCH on its own only clamps the config, history and
+          # index timestamps; rewrite-timestamp is what rewrites file mtimes
+          # inside the layers, and without it the image is not reproducible.
+          # `type=docker` is what `load: true` expands to, for the PR/Dependabot
+          # path that builds without pushing.
+          outputs: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' && 'type=image,push=true,rewrite-timestamp=true' || 'type=docker' }}
           sbom: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' && 'generator=docker/scout-sbom-indexer:1.24.0@sha256:4b67f29eb0d1244ab0f62de867ac5dafd7262fcd7ebbdefa6ec8aacd6b15252d' || '' }}
           provenance: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' && 'mode=max,version=v1' || '' }}
           tags: ${{ steps.docker-meta.outputs.tags }}
