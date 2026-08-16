@@ -4,6 +4,23 @@
 
 ## [v1.4.1] – Unreleased
 
+- Container attestation moved out of the build job into its own `Attest` job in
+  `docker-build.yaml`, so a transient Sigstore or GitHub outage during a release
+  can be retried with "Re-run failed jobs" instead of re-running the build. The
+  old layout made that retry unusable: re-running the job re-executed the push
+  before it ever reached the attestation step, and a rebuild cannot reproduce
+  the digest that was published — buildx provenance (`mode=max`) stamps a fresh
+  `invocationId` and start/finish timestamps into every build, so the image
+  index digest differs even from an identical context. That is deliberate
+  upstream rather than a gap `SOURCE_DATE_EPOCH` could close: moby/buildkit#3421
+  requested reproducible provenance and was closed as not planned, since
+  provenance describes one invocation while it is the image it points at that is
+  meant to be reproducible. The retry therefore
+  retargeted the release tags to a second image. The attest job consumes only
+  the digest the build job outputs, so it can never push an image itself. Both
+  jobs still live in the same reusable workflow file, which is what the SLSA
+  Build Level 3 `--signer-workflow` check pins, so published verification
+  commands are unchanged
 - Start new development cycle
 
 ## [v1.4.0] – 2026-08-16

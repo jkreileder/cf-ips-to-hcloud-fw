@@ -2,10 +2,11 @@ name: Docker build
 
 # Reusable build + attest path for the container image. The buildx build and
 # the GitHub artifact attestation generation live together in this reusable
-# workflow so the attestations qualify for SLSA Build Level 3: the signed
-# provenance records this workflow file as the signer (its job_workflow_ref),
-# which the calling workflow cannot influence beyond invoking it. Verifiers
-# can require it:
+# workflow — in two jobs, `build` and `attest` — so the attestations qualify
+# for SLSA Build Level 3: the signed provenance records this workflow file as
+# the signer (its job_workflow_ref), which is per-file, not per-job, so the
+# split keeps it intact and the calling workflow still cannot influence it
+# beyond invoking this workflow. Verifiers can require it:
 #
 #   gh attestation verify oci://<image> --repo jkreileder/cf-ips-to-hcloud-fw \
 #     --signer-workflow jkreileder/cf-ips-to-hcloud-fw/.github/workflows/docker-build.yaml
@@ -34,10 +35,12 @@ jobs:
     permissions:
       contents: read
       packages: write
-      id-token: write
       security-events: write
       pull-requests: write
-      attestations: write
+
+    # The image digest is the only thing the attest job needs from here.
+    outputs:
+      digest: ${{ steps.build-and-push.outputs.digest }}
 
     steps:
       - name: Harden runner
@@ -128,9 +131,9 @@ jobs:
       # manifest fetches in the verify step below (gh uses the docker
       # keychain), the binfmt/buildkit tooling images, and the base images
       # during the build — ride that embedded token, including on fork PRs and
-      # Dependabot runs. Push credentials are scoped to buildx (below) and a
-      # global login only happens after the build, when unlimited pulls no
-      # longer matter.
+      # Dependabot runs. Push credentials are scoped to buildx (below), and the
+      # unscoped logins that attestation pushes need live in the attest job, on
+      # its own runner, where overwriting the embedded token costs nothing.
 
       # Verify the uv base images carry astral-sh's signed SLSA build provenance
       # before building on them — fail closed, so a PR that repins to an
@@ -281,40 +284,10 @@ jobs:
           cache-from: ${{ !startsWith(github.ref, 'refs/tags/') && 'type=gha' || '' }}
           cache-to: ${{ !startsWith(github.ref, 'refs/tags/') && 'type=gha,mode=max' || '' }}
 
-      # The attest step below and Grype read the default docker config, where
-      # only the runner's embedded pull-only token lives — pushing attestations
-      # to Docker Hub needs a real login. Overwriting the embedded token is
-      # fine now: everything that benefits from its unlimited pulls has run.
-      - name: Login to DockerHub
-        if: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' }}
-        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
-        with:
-          username: ${{ vars.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-      - name: Generate artifact attestation for DockerHub
-        if: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' }}
-        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
-        with:
-          subject-name: index.docker.io/${{ vars.DOCKERHUB_USERNAME }}/cf-ips-to-hcloud-fw
-          subject-digest: ${{ steps.build-and-push.outputs.digest }}
-          push-to-registry: true
-
-      - name: Generate artifact attestation for Quay
-        if: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' }}
-        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
-        with:
-          subject-name: quay.io/${{ vars.QUAY_USERNAME }}/cf-ips-to-hcloud-fw
-          subject-digest: ${{ steps.build-and-push.outputs.digest }}
-          push-to-registry: true
-
-      - name: Generate artifact attestation for GitHub Container Registry
-        if: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' }}
-        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
-        with:
-          subject-name: ghcr.io/${{ github.repository_owner }}/cf-ips-to-hcloud-fw
-          subject-digest: ${{ steps.build-and-push.outputs.digest }}
-          push-to-registry: true
+      # No unscoped `docker login` after the build any more: the attestations
+      # that needed one moved to the attest job below. Grype pulls the freshly
+      # pushed image with the runner's embedded pull token, which is
+      # rate-limit-free, and Scout takes its credentials as inputs (below).
 
       # Scout needs Docker Hub credentials for its API (organization + stream
       # compare), which the embedded pull token doesn't provide. Pass them as
@@ -360,3 +333,112 @@ jobs:
         continue-on-error: true
         with:
           sarif_file: ${{ steps.grype-scan.outputs.sarif }}
+
+  # Attestation runs in its own job so a transient Sigstore/GitHub failure can
+  # be retried with "Re-run failed jobs" without re-running the build. That
+  # matters because a rebuild can never reproduce the pushed digest: buildx
+  # provenance (mode=max) carries a fresh `invocationId` and startedOn/
+  # finishedOn per build, so the index digest changes even with an identical
+  # context. A re-push would therefore retarget the release tags, and would be
+  # rejected outright once Docker Hub's immutable tags are enabled for exact
+  # versions.
+  #
+  # Don't try to fix this with SOURCE_DATE_EPOCH — it is deliberate upstream.
+  # moby/buildkit#3421 asked for exactly that and was closed not_planned:
+  # "there is no such thing as reproducible provenance ... the provenance is
+  # for the actual invocation of the build request". A reproducible build is
+  # meant to yield an identical in-toto *subject* (the per-platform image)
+  # while each invocation's provenance legitimately differs — which is what
+  # lets a third party rebuild and sign their own provenance over the same
+  # subject. The index digest sits above both, so it inherits the variance.
+  #
+  # This job takes only the digest from `build`, so it never pushes an image;
+  # it just attaches attestations to what is already published.
+  attest:
+    name: Attest
+    needs: build
+    # The event/actor guard mirrors the build job's push guard. The digest
+    # check is what actually has to hold: PR and Dependabot builds use
+    # `load:` instead of `push:`, so there is no pushed digest to attest and
+    # `actions/attest` would fail obscurely on an empty subject-digest.
+    if: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' && needs.build.outputs.digest != '' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@05e31511f85b41b11d1cf0ef85d0992719546e2c # v2.21.0
+        with:
+          disable-sudo: true
+          egress-policy: block
+          # Sigstore (fulcio/rekor/timestamp/tuf) for signing, api.github.com
+          # for the attestation store, and the three registries for pushing the
+          # attestation as a referrer of the image digest. No layer pulls
+          # happen here, so the registry CDNs the build job needs are absent.
+          allowed-endpoints: >
+            api.github.com:443
+            auth.docker.io:443
+            cdn01.quay.io:443
+            cdn02.quay.io:443
+            cdn03.quay.io:443
+            fulcio.sigstore.dev:443
+            ghcr.io:443
+            github.com:443
+            index.docker.io:443
+            objects.githubusercontent.com:443
+            pkg-containers.githubusercontent.com:443
+            production.cloudflare.docker.com:443
+            quay.io:443
+            registry-1.docker.io:443
+            rekor.sigstore.dev:443
+            release-assets.githubusercontent.com:443
+            timestamp.sigstore.dev:443
+            tuf-repo-cdn.sigstore.dev:443
+
+      # Unlike the build job there is nothing here that benefits from the
+      # runner's embedded pull token, so these logins are unscoped.
+      - name: Login to DockerHub
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Login to Quay
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: quay.io
+          username: ${{ vars.QUAY_ROBOT }}
+          password: ${{ secrets.QUAY_TOKEN }}
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate artifact attestation for DockerHub
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-name: index.docker.io/${{ vars.DOCKERHUB_USERNAME }}/cf-ips-to-hcloud-fw
+          subject-digest: ${{ needs.build.outputs.digest }}
+          push-to-registry: true
+
+      - name: Generate artifact attestation for Quay
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-name: quay.io/${{ vars.QUAY_USERNAME }}/cf-ips-to-hcloud-fw
+          subject-digest: ${{ needs.build.outputs.digest }}
+          push-to-registry: true
+
+      - name: Generate artifact attestation for GitHub Container Registry
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-name: ghcr.io/${{ github.repository_owner }}/cf-ips-to-hcloud-fw
+          subject-digest: ${{ needs.build.outputs.digest }}
+          push-to-registry: true
