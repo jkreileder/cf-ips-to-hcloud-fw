@@ -140,6 +140,44 @@ Pushing the tag starts the publish pipeline. Report the Actions URL:
 > If pushing the tag is also rejected, the tag must be created via a release on
 > the merged commit instead — pause and tell the user; do not force anything.
 
+### 8b. If the publish run fails — retry per job, never re-push
+
+Docker Hub has immutable tags enabled for `^\d+\.\d+\.\d+$`, so once `docker.yaml`
+has pushed `X.Y.Z` that tag can never be overwritten **or deleted**. How you retry
+matters. First find out whether the image was already pushed:
+
+```bash
+run_id="$(gh run list --branch vX.Y.Z --workflow docker.yaml --limit 1 --json databaseId --jq '.[0].databaseId')"
+gh run view "$run_id" --json jobs --jq '.jobs[] | "\(.name): \(.conclusion)"'
+```
+
+- **`Build` failed before/at `Build and push`** — nothing was published. Re-running
+  the whole workflow is safe.
+- **`Build` succeeded and `Attest` failed** (a Sigstore or GitHub blip is the
+  common case) — use **"Re-run failed jobs"**, which re-runs only `Attest`. That
+  job consumes `needs.build.outputs.digest` and never pushes an image, which is
+  exactly why it is a separate job.
+
+  ```bash
+  gh run rerun "$run_id" --failed
+  ```
+
+  Ignore `gh run rerun --help`, which describes `--failed` as "including
+  dependencies" — the REST endpoint it calls re-runs "all of the failed jobs and
+  their **dependent** jobs", i.e. downstream, not upstream. A successful `Build`
+  is not re-run, and `Attest` still reads its `outputs.digest` from that attempt.
+
+- **`Build` failed *after* the push step** — that version is burned. Do not retag,
+  do not delete the tag, do not re-run. Cut the next patch instead.
+
+**Never re-run the whole workflow once the push has happened.** A rebuild cannot
+reproduce the published digest: buildx provenance (`mode=max`) stamps a fresh
+`invocationId` and start/finish timestamps into every build, which is deliberate
+upstream (moby/buildkit#3421, closed not_planned) and not something
+`SOURCE_DATE_EPOCH` can fix. Hub would reject the push outright; Quay and ghcr have
+no immutability and would silently accept it, leaving the three registries
+disagreeing about what `X.Y.Z` is.
+
 ### 9. Publish the draft release
 
 CI creates an empty **draft** GitHub release; the dists are attached after the
@@ -192,6 +230,9 @@ Merge it (use the `ship-changes` skill if helpful).
 - `main` is protected — direct pushes are rejected. Both the release bump and
   the dev-cycle bump go through PRs; only the tag is pushed directly.
 - Never publish PyPI manually — CI owns publishing on tag push.
+- Docker Hub freezes exact version tags (`^\d+\.\d+\.\d+$`); they cannot be
+  overwritten or deleted. A failed publish run is retried with "Re-run failed
+  jobs", never by re-running the build or re-pushing the tag — see step 8b.
 - Tag the **merged** release commit, so the tagged tree's `pyproject.toml`
   version (`X.Y.Z`) matches the tag (`vX.Y.Z`).
 - Branch protection rejects unsigned commits/tags; ensure signing works first.
