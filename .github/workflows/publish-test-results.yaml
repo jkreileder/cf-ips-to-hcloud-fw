@@ -17,8 +17,18 @@ permissions:
 # workflow_run runs on the default-branch ref, so group by the *triggering*
 # run's branch — otherwise unrelated builds finishing together would cancel
 # each other's result publish.
+#
+# Keyed on the head repository as well, because a branch name is not unique
+# across forks: a fork PR from a branch called `main` produced the same group
+# as the base repo's own main-branch run, and cancel-in-progress then let the
+# fork's run cancel it — dropping test results for a push to main. Branch names
+# are unique within a repository, so the pair separates every fork from the base
+# repo; it does not separate two runs from the same branch of the same repo, but
+# those are the ones cancel-in-progress is meant to collapse anyway.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.workflow_run.head_branch }}
+  group: >-
+    ${{ github.workflow }}-${{ github.event.workflow_run.head_repository.full_name }}-${{
+    github.event.workflow_run.head_branch }}
   cancel-in-progress: true
 
 jobs:
