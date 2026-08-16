@@ -23,7 +23,13 @@ jobs:
     # The whole build runs inside the reusable docker-build.yaml so the GitHub
     # artifact attestations qualify for SLSA Build Level 3 (see its header).
     # This job's checks report as "Docker build / <job>"; the default-branch
-    # ruleset's required check references "Docker build / Build".
+    # ruleset's required check references "Docker build / Build". The reusable
+    # workflow also has an "Attest" job, which is skipped on PRs and so is not
+    # a useful required check.
+    #
+    # These permissions are the union the reusable workflow's jobs need — a
+    # caller cannot grant more than it holds — and each job there narrows to
+    # its own subset.
     permissions:
       contents: read
       packages: write
