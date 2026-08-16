@@ -27,7 +27,7 @@ _NO_AUTH_HEADERS = {
 # where the firewall's entire allow list comes from. Pinning it here makes that
 # one variable inert; the value is the SDK's own default.
 #
-# This is tidiness, not a security boundary, and the scope is worth being exact
+# That is a real boundary but a partial one, and the scope is worth being exact
 # about. The transport is deliberately left alone: httpx keeps trust_env=True,
 # so HTTPS_PROXY and SSL_CERT_FILE still apply and a principal who can set them
 # can still intercept the fetch. That is on purpose - operators behind a
