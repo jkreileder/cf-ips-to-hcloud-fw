@@ -2,34 +2,13 @@
 
 <!-- markdownlint-disable MD024 -->
 
-## [v1.3.4] – Unreleased
+## [v1.4.0] – 2026-08-16
 
-- Start new development cycle
-- Test-result publishing is no longer cancellable from a fork. The concurrency
-  group was keyed on the triggering run's branch name alone, so a fork pull
-  request from a branch called `main` shared a group with the base repository's
-  own main-branch run — and `cancel-in-progress` let the fork's run cancel it,
-  dropping the results for that push. The key now includes the head repository
-- **Security:** A fork pull request can no longer steer the test-result
-  publisher. GitHub runs the fork's copy of `python-package.yaml` for a fork PR,
-  so the `event-file` artifact it uploaded was attacker-controlled — and the
-  publishing action reads the target PR number straight out of that file, in
-  preference to resolving it from the commit. A crafted event file therefore
-  redirected the bot's comment onto any pull request in the repository. The
-  event file is now written in the trusted job instead of downloaded, so the PR
-  is resolved from the triggering run's own commit, and the artifact that made
-  this possible is no longer produced. The report's base-commit comparison now
-  comes from the GitHub API rather than that file
-- **Security:** The uv base-image provenance gate can no longer be satisfied by
-  a Dockerfile comment. It grepped the whole file, so a well-formed
-  `docker.io/astral/uv:…@sha256:…` reference on a comment line passed
-  verification while the real `FROM` pointed anywhere — publishing an image
-  built on an unattested base with the provenance check reported green.
-  Comments are now stripped before matching, and every uv reference the file
-  pulls must be digest-pinned, which also closes an unpinned
-  `docker.io/astral/uv:latest` riding along unverified beside a pinned one.
-  Tagless digest pins (`uv@sha256:…`) and images pulled by `COPY --from=` are
-  covered too
+Security-hardening release. An agentic SAST sweep of the repository turned up a set of
+issues across the CLI and the release pipeline; every finding is either fixed here or
+recorded as accepted. The only behaviour change an existing deployment can notice is the
+exit code for an empty config, called out first below.
+
 - **Breaking:** A config file containing no projects now exits 1 instead of 0.
   `[]` is a valid YAML document, so a truncated file or a mis-rendered template
   validated cleanly and synced nothing — while the exit code told systemd, a
@@ -46,15 +25,7 @@
   hcloud's own `APIException`/`ActionException`, and `requests`' connection,
   TLS, proxy and timeout errors — keeps its full message, which is where the
   detail that makes a failed sync diagnosable lives
-- Config tokens are stripped of surrounding whitespace. A trailing newline is
-  not part of the credential, and carrying it previously made *every* API
-  request fail, since `requests` rejects a header value containing one
-- GitHub Actions digest refreshes are no longer automerged. The 3-day
-  `minimumReleaseAge` hold cannot gate them — the `github-tags` datasource ages
-  a digest against the matched version's original release date, so an action tag
-  force-pushed to new commits clears the check immediately. Image digests still
-  automerge, since Docker Hub's `tag_last_pushed` restarts the hold
-- Config file YAML parse errors no longer echo any part of the file into the
+- **Security:** Config file YAML parse errors no longer echo any part of the file into the
   log. PyYAML's error formatting embeds a snippet of the offending source line,
   which put the raw Hetzner API token into the log stream whenever the syntax
   error sat on or next to the `token:` line (an unterminated quote, a stray tab,
@@ -62,12 +33,7 @@
   names into its own error text, so a stray `*` or `&` before the value leaked
   it too. Errors now report only the error type plus the line and column,
   matching the redaction already applied to config validation errors
-- Pinned the Cloudflare API base URL in code. The SDK falls back to the
-  `CLOUDFLARE_BASE_URL` environment variable when no base URL is passed, so
-  anything able to set an env var on the job — a CronJob spec, a compose file, a
-  workflow env block — could point the IP fetch at its own server and dictate
-  what the firewall rules end up allowing. That variable is now inert
-- Cloudflare CIDR responses are checked for routability, not just syntax. A
+- **Security:** Cloudflare CIDR responses are checked for routability, not just syntax. A
   range is rejected if it overlaps IANA special-purpose space (RFC 1918,
   loopback, link-local, CGNAT, multicast, reserved, documentation) or is
   broader than /8 for IPv4 or /16 for IPv6, instead of being written verbatim
@@ -76,6 +42,44 @@
   hiding it inside an aggregate (`0.0.0.0/0`, `128.0.0.0/1`, `8000::/1`). The
   prefix floors sit far below the /13 and /29 the published list bottoms out
   at, so a legitimately broader range from Cloudflare will not fail the run
+- **Security:** The uv base-image provenance gate can no longer be satisfied by
+  a Dockerfile comment. It grepped the whole file, so a well-formed
+  `docker.io/astral/uv:…@sha256:…` reference on a comment line passed
+  verification while the real `FROM` pointed anywhere — publishing an image
+  built on an unattested base with the provenance check reported green.
+  Comments are now stripped before matching, and every uv reference the file
+  pulls must be digest-pinned, which also closes an unpinned
+  `docker.io/astral/uv:latest` riding along unverified beside a pinned one.
+  Tagless digest pins (`uv@sha256:…`) and images pulled by `COPY --from=` are
+  covered too
+- **Security:** A fork pull request can no longer steer the test-result
+  publisher. GitHub runs the fork's copy of `python-package.yaml` for a fork PR,
+  so the `event-file` artifact it uploaded was attacker-controlled — and the
+  publishing action reads the target PR number straight out of that file, in
+  preference to resolving it from the commit. A crafted event file therefore
+  redirected the bot's comment onto any pull request in the repository. The
+  event file is now written in the trusted job instead of downloaded, so the PR
+  is resolved from the triggering run's own commit, and the artifact that made
+  this possible is no longer produced. The report's base-commit comparison now
+  comes from the GitHub API rather than that file
+- Pinned the Cloudflare API base URL in code. The SDK falls back to the
+  `CLOUDFLARE_BASE_URL` environment variable when no base URL is passed, so
+  anything able to set an env var on the job — a CronJob spec, a compose file, a
+  workflow env block — could point the IP fetch at its own server and dictate
+  what the firewall rules end up allowing. That variable is now inert
+- Config tokens are stripped of surrounding whitespace. A trailing newline is
+  not part of the credential, and carrying it previously made *every* API
+  request fail, since `requests` rejects a header value containing one
+- GitHub Actions digest refreshes are no longer automerged. The 3-day
+  `minimumReleaseAge` hold cannot gate them — the `github-tags` datasource ages
+  a digest against the matched version's original release date, so an action tag
+  force-pushed to new commits clears the check immediately. Image digests still
+  automerge, since Docker Hub's `tag_last_pushed` restarts the hold
+- Test-result publishing is no longer cancellable from a fork. The concurrency
+  group was keyed on the triggering run's branch name alone, so a fork pull
+  request from a branch called `main` shared a group with the base repository's
+  own main-branch run — and `cancel-in-progress` let the fork's run cancel it,
+  dropping the results for that push. The key now includes the head repository
 
 ## [v1.3.3] – 2026-08-13
 
