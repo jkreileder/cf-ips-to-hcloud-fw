@@ -23,11 +23,22 @@ _NO_AUTH_HEADERS = {
 }
 
 # Passed explicitly because the SDK otherwise falls back to the
-# CLOUDFLARE_BASE_URL environment variable. The tool never advertised that knob,
-# and it decides where the firewall's entire allow list comes from, so anything
-# able to set an env var on the job - a CronJob spec, a compose file, a workflow
-# env block - could redirect the fetch to its own server. Pinning it here makes
-# the variable inert; the value is the SDK's own default.
+# CLOUDFLARE_BASE_URL environment variable, an undocumented knob that decides
+# where the firewall's entire allow list comes from. Pinning it here makes that
+# one variable inert; the value is the SDK's own default.
+#
+# This is tidiness, not a security boundary, and the scope is worth being exact
+# about. The transport is deliberately left alone: httpx keeps trust_env=True,
+# so HTTPS_PROXY and SSL_CERT_FILE still apply and a principal who can set them
+# can still intercept the fetch. That is on purpose - operators behind a
+# corporate egress proxy need it, and turning it off would break them with no
+# way to opt back in. The trade is easy because anyone able to set environment
+# variables on this job can already set HCLOUD_TOKEN, replace the config file,
+# or point PYTHONPATH at their own code; TLS interception is a longer road to
+# capabilities they already have. What actually guards a tampered response is
+# the routability check in models.py, and that is bounded too - it rejects
+# reserved and over-broad ranges, not a globally routable prefix an attacker
+# happens to control.
 CLOUDFLARE_API_BASE_URL = "https://api.cloudflare.com/client/v4"
 
 
