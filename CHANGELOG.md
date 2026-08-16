@@ -2,6 +2,10 @@
 
 <!-- markdownlint-disable MD024 -->
 
+## [v1.4.1] – Unreleased
+
+- Start new development cycle
+
 ## [v1.4.0] – 2026-08-16
 
 Security-hardening release. An agentic SAST sweep of the repository turned up a set of
