@@ -339,9 +339,18 @@ jobs:
   # matters because a rebuild can never reproduce the pushed digest: buildx
   # provenance (mode=max) carries a fresh `invocationId` and startedOn/
   # finishedOn per build, so the index digest changes even with an identical
-  # context — measured, not assumed. A re-push would therefore retarget the
-  # release tags, and would be rejected outright once Docker Hub's immutable
-  # tags are enabled for exact versions.
+  # context. A re-push would therefore retarget the release tags, and would be
+  # rejected outright once Docker Hub's immutable tags are enabled for exact
+  # versions.
+  #
+  # Don't try to fix this with SOURCE_DATE_EPOCH — it is deliberate upstream.
+  # moby/buildkit#3421 asked for exactly that and was closed not_planned:
+  # "there is no such thing as reproducible provenance ... the provenance is
+  # for the actual invocation of the build request". A reproducible build is
+  # meant to yield an identical in-toto *subject* (the per-platform image)
+  # while each invocation's provenance legitimately differs — which is what
+  # lets a third party rebuild and sign their own provenance over the same
+  # subject. The index digest sits above both, so it inherits the variance.
   #
   # This job takes only the digest from `build`, so it never pushes an image;
   # it just attaches attestations to what is already published.
