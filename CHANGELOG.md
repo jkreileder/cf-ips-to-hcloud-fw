@@ -5,6 +5,16 @@
 ## [v1.3.4] – Unreleased
 
 - Start new development cycle
+- **Security:** A fork pull request can no longer steer the test-result
+  publisher. GitHub runs the fork's copy of `python-package.yaml` for a fork PR,
+  so the `event-file` artifact it uploaded was attacker-controlled — and the
+  publishing action reads the target PR number straight out of that file, in
+  preference to resolving it from the commit. A crafted event file therefore
+  redirected the bot's comment onto any pull request in the repository. The
+  event file is now written in the trusted job instead of downloaded, so the PR
+  is resolved from the triggering run's own commit, and the artifact that made
+  this possible is no longer produced. The report's base-commit comparison now
+  comes from the GitHub API rather than that file
 - **Security:** The uv base-image provenance gate can no longer be satisfied by
   a Dockerfile comment. It grepped the whole file, so a well-formed
   `docker.io/astral/uv:…@sha256:…` reference on a comment line passed

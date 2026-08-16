@@ -27,9 +27,11 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     # Skip cancelled runs too: a run cancelled by concurrency (superseded
-    # push) or deleted afterwards has no test artifacts, so the download step
-    # would fail on nothing to publish. Failed runs still publish — a red test
-    # run must report its results.
+    # push) or deleted afterwards has no results worth publishing, and an empty
+    # check run would only bury the real one. Not a hard requirement any more —
+    # the download step warns rather than fails when nothing matches — so this
+    # is about signal, not about avoiding an error. Failed runs still publish:
+    # a red test run must report its results.
     if: ${{ github.event.workflow_run.conclusion != 'skipped' && github.event.workflow_run.conclusion != 'cancelled' }}
 
     permissions:
@@ -50,17 +52,70 @@ jobs:
         uses: dawidd6/action-download-artifact@b6e2e70617bc3265edd6dab6c906732b2f1ae151 # v21
         with:
           run_id: ${{ github.event.workflow_run.id }}
-          name: test-results-.*|event-file
+          name: test-results-.*
           name_is_regexp: true
           path: artifacts
+          # The action defaults to failing when nothing matches, and the
+          # event-file artifact used to guarantee a match. Now that only test
+          # results are downloaded, a run that failed before pytest produced any
+          # XML — a ruff or ty failure across the whole matrix — legitimately has
+          # nothing to fetch. Warn instead, and let the publish step report the
+          # empty result set.
+          if_no_artifact_found: warn
+
+      # The event file is written here rather than downloaded. GitHub runs the
+      # *fork's* copy of python-package.yaml for a fork PR, so anything that run
+      # uploads is attacker-controlled. The action reads pull_request.number
+      # straight out of the event file (publisher.py get_pull_from_event) and
+      # that lookup wins over the commit-based one, with only a
+      # base.repo.full_name check the same attacker also supplies — so a crafted
+      # file redirected this job's comment onto any PR in the repository, posted
+      # by the bot with pull-requests:write.
+      #
+      # An empty object removes that: with no pull_request.number the action
+      # falls back to resolving the PR from `commit` below, which comes from the
+      # workflow_run payload and is filtered against the PR's own head SHA.
+      #
+      # The input must still be passed, and the file must exist. Omitting the
+      # input lets `event` fall back to GITHUB_EVENT_PATH — the workflow_run
+      # payload, which has no pull_request key — so is_fork becomes true for PR
+      # runs and both the check run and the comment are suppressed. Naming a
+      # file that is not there fails the step outright.
+      #
+      # The base-commit comparison survives: with a falsy event, the action's
+      # get_base_commit_sha skips the event lookup and derives the merge base
+      # from the API instead, so that figure now comes from GitHub rather than
+      # from the same file an attacker controlled.
+      #
+      # One deliberate loss: pushes to the default branch no longer show the
+      # "compared against earlier commit" delta, which came from the push
+      # event's `before` field in the downloaded file. The workflow_run payload
+      # does not carry it, and reinstating it would mean another API lookup for
+      # a line nobody reads on a green build. PR runs are unaffected — a
+      # pull_request event has no `before` either way.
+      - name: Write trusted event file
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p trusted
+          echo '{}' > trusted/event.json
 
       - name: Publish test results
         uses: EnricoMi/publish-unit-test-result-action@d0a4676d0e0b938bc201470d88276b7c74c712b3 # v2.24.0
         with:
           commit: ${{ github.event.workflow_run.head_sha }}
-          event_file: artifacts/event-file/event.json
+          event_file: trusted/event.json
           event_name: ${{ github.event.workflow_run.event }}
           files: artifacts/test-results-*/*.xml
           comment_mode: ${{ github.event.workflow_run.event == 'pull_request' && 'always' || 'off' }}
           report_individual_runs: true
+          # Test names and failure messages come from the fork's own pytest run
+          # and render as markdown here. That is accepted rather than blocked:
+          # with the event file no longer steerable, the output lands on the
+          # contributor's own pull request, where they already control the
+          # title, body and diff. check_run_annotations_branch cannot narrow it
+          # — the action matches that list against GITHUB_REF, which a
+          # workflow_run job always reports as the default branch, so any value
+          # matches. The lever that would work is `check_run_annotations: none`,
+          # at the cost of inline annotations for every pull request.
           check_run_annotations_branch: "*"
