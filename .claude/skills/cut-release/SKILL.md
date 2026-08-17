@@ -53,6 +53,18 @@ make lint && make test          # gates must pass
 Edit `pyproject.toml` `version = "..."` to the release version (drop any
 `.devN` suffix). This is the single source of truth (`uv_build` reads it).
 
+`uv.lock` records the project's own version too, and neither `uv build` nor
+`uv sync` refreshes it — they install the new version while leaving the lock
+pinned at the old one. Run `uv lock` explicitly and commit the result:
+
+```bash
+uv lock
+grep -A1 'name = "cf-ips-to-hcloud-fw"' uv.lock   # must show the release version
+```
+
+Skip this and the `uv-lock` pre-commit hook fails at `git commit` time, after
+you have already staged everything.
+
 ### 4. Finalize the CHANGELOG
 
 In `CHANGELOG.md`, update the top entry:
@@ -137,7 +149,8 @@ build regardless — buildx provenance records each invocation by design.
 
 ```bash
 git switch -c release/vX.Y.Z
-git add pyproject.toml CHANGELOG.md README.md .github/ISSUE_TEMPLATE/bug_report.md
+git add pyproject.toml uv.lock CHANGELOG.md README.md \
+  .github/ISSUE_TEMPLATE/bug_report.md
 git commit -s -S -m "chore(release): vX.Y.Z"
 git push -u origin release/vX.Y.Z
 gh pr create --base main --title "chore(release): vX.Y.Z" \
@@ -237,7 +250,8 @@ minor/major dev version later only if the work warrants it) — and add a fresh
 
 ```bash
 git switch -c chore/start-vNEXT-dev-cycle
-# edit pyproject.toml + CHANGELOG.md
+# edit pyproject.toml + CHANGELOG.md, then refresh the lock
+uv lock
 git commit -s -S -am "chore: start new development cycle"
 git push -u origin chore/start-vNEXT-dev-cycle
 gh pr create --base main --title "chore: start new development cycle" \
@@ -248,7 +262,8 @@ Merge it (use the `ship-changes` skill if helpful).
 
 ## Completion Checklist
 
-- [ ] `pyproject.toml` version set to the release version (no `.devN`).
+- [ ] `pyproject.toml` version set to the release version (no `.devN`), and
+      `uv.lock` refreshed to match (`uv lock`).
 - [ ] CHANGELOG top entry dated and accurate.
 - [ ] Pinned version bumped in `README.md` and
       `.github/ISSUE_TEMPLATE/bug_report.md` (no stale old version remains).
