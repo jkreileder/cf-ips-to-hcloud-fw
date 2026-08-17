@@ -2,7 +2,7 @@
 
 <!-- markdownlint-disable MD024 -->
 
-## [v1.4.1] – Unreleased
+## [v1.4.1] – 2026-08-17
 
 - Container images are now reproducible: rebuilding a given commit yields
   byte-identical per-platform image manifests. `SOURCE_DATE_EPOCH` is taken from
@@ -29,13 +29,12 @@
   upstream rather than a gap `SOURCE_DATE_EPOCH` could close: moby/buildkit#3421
   requested reproducible provenance and was closed as not planned, since
   provenance describes one invocation while it is the image it points at that is
-  meant to be reproducible. The retry therefore
-  retargeted the release tags to a second image. The attest job consumes only
-  the digest the build job outputs, so it can never push an image itself. Both
+  meant to be reproducible. The retry would therefore have retargeted the release
+  tags to a second image. The attest job consumes only the digest the build job
+  outputs, so it can never push an image itself. Both
   jobs still live in the same reusable workflow file, which is what the SLSA
   Build Level 3 `--signer-workflow` check pins, so published verification
   commands are unchanged
-- Start new development cycle
 
 ## [v1.4.0] – 2026-08-16
 
