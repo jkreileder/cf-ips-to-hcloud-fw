@@ -2,6 +2,10 @@
 
 <!-- markdownlint-disable MD024 -->
 
+## [v1.4.2] – Unreleased
+
+- Start new development cycle
+
 ## [v1.4.1] – 2026-08-17
 
 - Container images are now reproducible: rebuilding a given commit yields
