@@ -4,6 +4,14 @@
 
 ## [v1.4.2] – Unreleased
 
+- The container image now runs `apk upgrade` in its final stage, so security
+  fixes that Alpine has already published reach the image without waiting for
+  the next rebuild of the official `python:*-alpine` base. The base image is
+  rebuilt only on CPython and Alpine point releases, which left the published
+  image with a `libssl3`/`libcrypto3` that Alpine had already patched. This
+  adds one input outside the digest-pinned set (Alpine's package repo; apk
+  still verifies package signatures), so a rebuild of a given commit is
+  byte-identical only while that repo has not moved in between
 - Start new development cycle
 
 ## [v1.4.1] – 2026-08-17
