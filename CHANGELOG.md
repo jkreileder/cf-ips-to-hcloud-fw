@@ -2,17 +2,18 @@
 
 <!-- markdownlint-disable MD024 -->
 
-## [v1.4.2] – Unreleased
+## [v1.4.2] – 2026-08-27
 
-- The container image now runs `apk upgrade` in its final stage, so security
-  fixes that Alpine has already published reach the image without waiting for
-  the next rebuild of the official `python:*-alpine` base. The base image is
-  rebuilt only on CPython and Alpine point releases, which left the published
-  image with a `libssl3`/`libcrypto3` that Alpine had already patched. This
-  adds one input outside the digest-pinned set (Alpine's package repo; apk
-  still verifies package signatures), so a rebuild of a given commit is
-  byte-identical only while that repo has not moved in between
-- Start new development cycle
+- **Security:** The container image now runs `apk upgrade` in its final stage, so Alpine
+  security fixes reach the image without waiting for the next rebuild of the official
+  `python:*-alpine` base. That base is rebuilt only on CPython and Alpine point releases,
+  which had left the published image with a `libssl3`/`libcrypto3` Alpine had already
+  patched — ten fixable CVEs, seven of them high. The upgrade covers the whole base going
+  forward, not just openssl. It adds one build input outside the digest-pinned set
+  (Alpine's package repo; apk still verifies package signatures), so rebuilding a given
+  commit is byte-identical only while that repo has not moved in between. Release builds
+  were already cache-free; `main` and pull-request builds now exclude the final stage from
+  the layer cache, so the upgrade cannot replay a stale layer
 
 ## [v1.4.1] – 2026-08-17
 
