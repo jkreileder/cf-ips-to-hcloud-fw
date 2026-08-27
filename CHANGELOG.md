@@ -2,6 +2,10 @@
 
 <!-- markdownlint-disable MD024 -->
 
+## [v1.4.3] – Unreleased
+
+- Start new development cycle
+
 ## [v1.4.2] – 2026-08-27
 
 - **Security:** The container image now runs `apk upgrade` in its final stage, so Alpine
