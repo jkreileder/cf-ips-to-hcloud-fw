@@ -48,6 +48,14 @@ RUN rm -rf /usr/local/lib/python3.*/site-packages/pip \
            /usr/local/lib/python3.*/site-packages/pip-*.dist-info \
            /usr/local/bin/pip*
 
+# The official python image is rebuilt only on CPython and Alpine point
+# releases, while Alpine's security repo moves between them. Pull in whatever
+# package updates the repo has so a fixed CVE in the base (openssl, musl,
+# busybox, ...) never waits for the next upstream rebuild. This is the one
+# build input that isn't digest-pinned; apk still verifies every package
+# against the Alpine signing keys shipped in the base image.
+RUN apk upgrade --no-cache
+
 # Resolve and install dependencies
 RUN --mount=type=bind,from=uv-tools-alpine,source=/usr/local/bin/uv,target=/usr/local/bin/uv \
     --mount=target=pyproject.toml,source=/pyproject.toml \

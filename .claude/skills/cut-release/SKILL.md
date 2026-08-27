@@ -143,6 +143,11 @@ multi-arch pair, and it exports via `type=oci` rather than CI's
 the export spelling. The multi-platform *index* digest is expected to differ per
 build regardless — buildx provenance records each invocation by design.
 
+The `apk upgrade` in the final stage is the one input outside the pinned
+digests: two builds match only if Alpine's package repo did not move between
+them. If the digests differ, diff the two images' `apk list -I` output before
+suspecting a timestamp.
+
 ### 6. Open the release PR (the bump cannot go straight to `main`)
 
 `main` is protected, so commit on a branch and open a PR:
