@@ -307,6 +307,12 @@ jobs:
           annotations: ${{ steps.docker-meta.outputs.annotations }}
           cache-from: ${{ !startsWith(github.ref, 'refs/tags/') && 'type=gha' || '' }}
           cache-to: ${{ !startsWith(github.ref, 'refs/tags/') && 'type=gha,mode=max' || '' }}
+          # The gha cache keys a layer on its instruction and parent chain, so
+          # the final stage's `apk upgrade` would replay from cache long after
+          # Alpine moved on, and the `:main` image would ship stale packages.
+          # Rebuild that stage every time; the builder stage (lint, tests,
+          # wheel) stays cached. Tag builds run cache-free regardless.
+          no-cache-filters: ${{ !startsWith(github.ref, 'refs/tags/') && 'final-image' || '' }}
 
       # No unscoped `docker login` after the build any more: the attestations
       # that needed one moved to the attest job below. Grype pulls the freshly
