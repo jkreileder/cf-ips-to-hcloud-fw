@@ -1,0 +1,14 @@
+# GitHub's self-repository `uses:` form (`$/...`) resolves to the caller's own
+# commit without a checkout, and counts as pinning under the "require actions
+# pinned to a SHA" policy, which the workspace-relative `./...` form does not.
+# actionlint does not recognize the syntax yet (rhysd/actionlint#711), so it
+# reports a format error for every such reference.
+#
+# The two patterns match only `$/`-prefixed refs: a ref that is malformed for
+# any other reason is still reported. Delete this file once actionlint accepts
+# the syntax.
+paths:
+  .github/workflows/**/*.{yaml,yml}:
+    ignore:
+      - reusable workflow call "\$/.+" at "uses" is not following the format
+      - specifying action "\$/.+" in invalid format because ref is missing

@@ -56,12 +56,13 @@ jobs:
           persist-credentials: false
 
       - name: Set up Python ${{ matrix.python-version }} and install uv
-        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1 # zizmor: ignore[cache-poisoning]
         with:
           python-version: ${{ matrix.python-version }}
           version: "0.12.5"
           # No cache restore on tag runs so the release path can't be tainted
-          # by a poisoned cache (cache-poisoning audit).
+          # by a poisoned cache (cache-poisoning audit). zizmor cannot evaluate
+          # the expression, hence the ignore on the step.
           enable-cache: ${{ !startsWith(github.ref, 'refs/tags/') }}
 
       # Scan the locked deps against OSV's malware advisories on every PR/push
@@ -307,7 +308,7 @@ jobs:
       contents: read
       id-token: write
       attestations: write
-    uses: ./.github/workflows/build-and-attest-dist.yaml
+    uses: $/.github/workflows/build-and-attest-dist.yaml
 
   draft-release:
     name: Create draft release
