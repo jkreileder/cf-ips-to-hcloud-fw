@@ -260,7 +260,7 @@ jobs:
       # write what a build restores) and a compromised main build publishes
       # images directly anyway, so the cache adds no new trust boundary.
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0 # zizmor: ignore[cache-poisoning]
+        uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0 # zizmor: ignore[cache-poisoning]
         with:
           driver-opts: image=moby/buildkit:v0.32.2@sha256:28a898719c18a33f4e8000685287fa36fd0dd9560c6440227d3a732d79bb41d8
           version: v0.36.1
@@ -345,12 +345,12 @@ jobs:
       - name: Upload Docker Scout scan result to GitHub Security tab
         if: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.head.repo.fork) && github.actor != 'dependabot[bot]' }}
         continue-on-error: true
-        uses: github/codeql-action/upload-sarif@ff2f1c621b7f889edc0d3c761ac2e6a3f8cdb0dd # v4.37.7
+        uses: github/codeql-action/upload-sarif@cdf488f595d80d6e07e03d4674febd5ab45fa938 # v4.37.9
         with:
           sarif_file: sarif.output.json
 
       - name: Scan image with Grype
-        uses: anchore/scan-action@e1165082ffb1fe366ebaf02d8526e7c4989ea9d2 # v7.4.0
+        uses: anchore/scan-action@8964e60c6fabdb85fdbbbfd9834d8f19c97a3086 # v7.4.1
         id: grype-scan
         continue-on-error: true
         with:
@@ -359,7 +359,7 @@ jobs:
           add-cpes-if-none: true
 
       - name: Upload Grype scan result to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@ff2f1c621b7f889edc0d3c761ac2e6a3f8cdb0dd # v4.37.7
+        uses: github/codeql-action/upload-sarif@cdf488f595d80d6e07e03d4674febd5ab45fa938 # v4.37.9
         continue-on-error: true
         with:
           sarif_file: ${{ steps.grype-scan.outputs.sarif }}
