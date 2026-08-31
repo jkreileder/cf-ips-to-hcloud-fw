@@ -37,7 +37,7 @@ jobs:
       security-events: write
       pull-requests: write
       attestations: write
-    uses: ./.github/workflows/docker-build.yaml
+    uses: $/.github/workflows/docker-build.yaml
     secrets:
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
       QUAY_TOKEN: ${{ secrets.QUAY_TOKEN }}
