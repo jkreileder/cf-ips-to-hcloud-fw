@@ -121,7 +121,9 @@ def _require_globally_routable(network: _Network) -> _Network:
     # reason: fc00::/7, fe80::/10 and ff00::/8 are all shorter than the /16
     # floor, and reporting them as merely "too broad" would send an operator
     # looking for a prefix problem when the range is not unicast at all.
-    if isinstance(network, IPv6Network) and not network.subnet_of(_GLOBAL_UNICAST_IPV6):
+    if isinstance(network, IPv6Network) and not _GLOBAL_UNICAST_IPV6.supernet_of(
+        network
+    ):
         msg = (
             f"{network} is not globally routable: outside global unicast "
             f"{_GLOBAL_UNICAST_IPV6}"
