@@ -2,9 +2,14 @@
 
 <!-- markdownlint-disable MD024 -->
 
-## [v1.4.3] – Unreleased
+## [v1.4.3] – 2026-09-05
 
-- Start new development cycle
+- **Security:** The container image now ships Alpine's `util-linux` 2.42.3-r0, fixing four
+  high-severity CVEs in the `libuuid` it installs — CVE-2026-76642, CVE-2026-78408,
+  CVE-2026-78409 and CVE-2026-78410. The v1.4.2 image was built against 2.42.1-r0
+- Updated the Cloudflare SDK to 5.7.0, Pydantic to 2.13.5 and anyio to 4.15.0, and refreshed the
+  pinned base images (`python:3.14.7-alpine3.24`, `python:3.14.7-trixie`, `astral/uv` 0.12.10)
+  and the Dockerfile frontend to 1.27.0
 
 ## [v1.4.2] – 2026-08-27
 
