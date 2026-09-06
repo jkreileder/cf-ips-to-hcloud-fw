@@ -2,6 +2,10 @@
 
 <!-- markdownlint-disable MD024 -->
 
+## [v1.4.5] – Unreleased
+
+- Start new development cycle
+
 ## [v1.4.4] – 2026-09-06
 
 - **Security:** The container image now ships Alpine's `util-linux` 2.42.3-r1. Alpine reassigned
