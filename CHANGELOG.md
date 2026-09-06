@@ -2,9 +2,11 @@
 
 <!-- markdownlint-disable MD024 -->
 
-## [v1.4.4] – Unreleased
+## [v1.4.4] – 2026-09-06
 
-- Start new development cycle
+- **Security:** The container image now ships Alpine's `util-linux` 2.42.3-r1. Alpine reassigned
+  CVE-2026-78408 from 2.42.3-r0 to 2.42.3-r1 after the v1.4.3 image was built, so the v1.4.3
+  image still reports that one high-severity CVE in `libuuid`
 
 ## [v1.4.3] – 2026-09-05
 
