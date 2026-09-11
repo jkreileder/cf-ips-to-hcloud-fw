@@ -5,7 +5,7 @@
 #
 # CPython CVEs matched against the interpreter binary in the
 # python:3.14.x-alpine base image. Grype lists them as "fixed" only in the
-# 3.15 stream (3.15.0a6/b3/b4/3.15.0); the 3.14-branch backports are merged
+# 3.15 stream (3.15.0a6/b3/b4/rc2/3.15.0); the 3.14-branch backports are merged
 # upstream but unreleased, so no base-image bump can clear them yet and
 # only-fixed does not filter them.
 # REMOVE when the Dockerfile base image reaches python >= 3.14.8 (expected to
@@ -37,6 +37,18 @@ ignore:
       name: python
       type: binary
   - vulnerability: CVE-2025-15367
+    package:
+      name: python
+      type: binary
+  - vulnerability: CVE-2026-15310
+    package:
+      name: python
+      type: binary
+  - vulnerability: CVE-2026-15806
+    package:
+      name: python
+      type: binary
+  - vulnerability: CVE-2026-17084
     package:
       name: python
       type: binary
