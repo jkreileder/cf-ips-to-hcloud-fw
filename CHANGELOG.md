@@ -2,6 +2,10 @@
 
 <!-- markdownlint-disable MD024 -->
 
+## [v1.4.6] – Unreleased
+
+- Start new development cycle
+
 ## [v1.4.5] – 2026-10-01
 
 - **Security:** The container image now ships urllib3 2.8.0, fixing three advisories in 2.7.0 —
