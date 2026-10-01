@@ -30,7 +30,7 @@ permissions:
 jobs:
   build:
     name: Build
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 45
     permissions:
       contents: read
@@ -392,7 +392,7 @@ jobs:
     # `load:` instead of `push:`, so there is no pushed digest to attest and
     # `actions/attest` would fail obscurely on an empty subject-digest.
     if: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' && needs.build.outputs.digest != '' }}
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 15
     permissions:
       contents: read
