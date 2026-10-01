@@ -24,7 +24,7 @@ jobs:
     name: Build distribution
     # Builds the publishable sdist/wheel, read-only. The privileged attestation
     # happens in attest-dist, which only downloads these artifacts.
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 20
     permissions:
       contents: read
@@ -106,7 +106,7 @@ jobs:
     if: ${{ github.actor != 'dependabot[bot]' }}
     needs:
       - build-dist
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 10
     permissions:
       contents: read
