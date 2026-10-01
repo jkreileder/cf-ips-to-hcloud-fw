@@ -1,14 +1,22 @@
+# Workarounds for GitHub Actions syntax that actionlint does not know yet. Each
+# pattern matches only the construct it works around, so anything malformed for
+# another reason is still reported.
+#
 # GitHub's self-repository `uses:` form (`$/...`) resolves to the caller's own
 # commit without a checkout, and counts as pinning under the "require actions
 # pinned to a SHA" policy, which the workspace-relative `./...` form does not.
 # actionlint does not recognize the syntax yet (rhysd/actionlint#711), so it
-# reports a format error for every such reference.
+# reports a format error for every such reference. Drop the two `$/` patterns
+# once actionlint accepts the syntax.
 #
-# The two patterns match only `$/`-prefixed refs: a ref that is malformed for
-# any other reason is still reported. Delete this file once actionlint accepts
-# the syntax.
+# actionlint's list of GitHub-hosted runner labels does not include
+# `ubuntu-26.04` yet (rhysd/actionlint#682). Drop that pattern once a release
+# knows the label.
+#
+# Delete this file once no workaround is left.
 paths:
   .github/workflows/**/*.{yaml,yml}:
     ignore:
       - reusable workflow call "\$/.+" at "uses" is not following the format
       - specifying action "\$/.+" in invalid format because ref is missing
+      - label "ubuntu-26\.04" is unknown
