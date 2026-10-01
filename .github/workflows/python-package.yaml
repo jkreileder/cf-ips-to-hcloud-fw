@@ -19,7 +19,7 @@ concurrency:
 jobs:
   test:
     name: Test
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 20
     permissions:
       contents: read
@@ -110,7 +110,7 @@ jobs:
     # artifact once in build-dist, so this job stays read-only and never
     # uploads anything a downstream job could publish.
     if: ${{ github.event_name == 'pull_request' }}
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 20
     permissions:
       contents: read
@@ -166,7 +166,7 @@ jobs:
     if: ${{ !cancelled() }}
     needs:
       - test
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 10
     strategy:
       fail-fast: false
@@ -242,7 +242,7 @@ jobs:
     # here fails a mistaken tag before anything is built or reaches PyPI
     # (irreversible), while main still proceeds to build and attestation.
     if: ${{ github.event_name != 'pull_request' }}
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 5
     permissions:
       contents: read
@@ -321,7 +321,7 @@ jobs:
     if: ${{ github.event_name != 'pull_request' && startsWith(github.ref, 'refs/tags/') }}
     needs:
       - build-and-attest-dist
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 5
     permissions:
       contents: write
@@ -354,7 +354,7 @@ jobs:
     if: ${{ github.event_name != 'pull_request' && startsWith(github.ref, 'refs/tags/') }}
     needs:
       - draft-release
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 15
     environment:
       name: test-pypi
@@ -393,7 +393,7 @@ jobs:
     needs:
       - draft-release
       - publish-to-test-pypi
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 15
     environment:
       name: pypi
@@ -429,7 +429,7 @@ jobs:
     if: ${{ github.event_name != 'pull_request' && startsWith(github.ref, 'refs/tags/') }}
     needs:
       - publish-to-pypi
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 10
     permissions:
       contents: write
