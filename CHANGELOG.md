@@ -2,9 +2,15 @@
 
 <!-- markdownlint-disable MD024 -->
 
-## [v1.4.5] – Unreleased
+## [v1.4.5] – 2026-10-01
 
-- Start new development cycle
+- **Security:** The container image now ships urllib3 2.8.0, fixing three advisories in 2.7.0 —
+  CVE-2026-97687 (high; HTTPS proxy TLS configuration may be ignored), CVE-2026-97689 (high;
+  unbounded memory use reading a chunked response) and CVE-2026-97688 (medium; infinite loop in
+  chunked deflate streaming)
+- Updated the Cloudflare SDK to 5.8.0, hcloud to 2.25.1, anyio to 4.15.1, idna to 3.20 and
+  charset-normalizer to 3.5.2, and refreshed the pinned base images (`astral/uv` 0.12.21 and new
+  `python:3.14.7` digests) and the Dockerfile frontend to 1.27.1
 
 ## [v1.4.4] – 2026-09-06
 
