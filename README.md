@@ -8,7 +8,7 @@
 [![Docker build](https://github.com/jkreileder/cf-ips-to-hcloud-fw/actions/workflows/docker.yaml/badge.svg)](https://github.com/jkreileder/cf-ips-to-hcloud-fw/actions/workflows/docker.yaml)
 [![PyPI - Version](https://img.shields.io/pypi/v/cf-ips-to-hcloud-fw)](https://pypi.org/project/cf-ips-to-hcloud-fw/)
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/cf-ips-to-hcloud-fw?logo=python)](https://pypi.org/project/cf-ips-to-hcloud-fw/)
-[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/jkreileder/cf-ips-to-hcloud-fw)
+[![Ask DeepWiki](https://img.shields.io/badge/Ask-DeepWiki-blue)](https://deepwiki.com/jkreileder/cf-ips-to-hcloud-fw)
 [![SLSA 3](https://slsa.dev/images/gh-badge-level3.svg)](https://slsa.dev)
 
 This tool, `cf-ips-to-hcloud-fw`, helps you keep your Hetzner Cloud firewall
