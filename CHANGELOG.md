@@ -2,9 +2,12 @@
 
 <!-- markdownlint-disable MD024 -->
 
-## [v1.4.6] – Unreleased
+## [v1.4.6] – 2026-10-02
 
-- Start new development cycle
+- **Security:** The container image now runs Python 3.14.8, fixing CVE-2026-17084 (medium;
+  `stringprep`), CVE-2026-15806 (medium; `urllib.request` password managers) and CVE-2026-15310
+  (low; crafted zip decompression) in the v1.4.5 image's 3.14.7 interpreter
+- Refreshed the pinned base images (`python:3.14.8`, `astral/uv` 0.12.22)
 
 ## [v1.4.5] – 2026-10-01
 
