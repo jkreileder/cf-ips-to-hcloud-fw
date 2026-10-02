@@ -2,6 +2,10 @@
 
 <!-- markdownlint-disable MD024 -->
 
+## [v1.4.7] – Unreleased
+
+- Start new development cycle
+
 ## [v1.4.6] – 2026-10-02
 
 - **Security:** The container image now runs Python 3.14.8, fixing CVE-2026-17084 (medium;
