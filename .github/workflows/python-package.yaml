@@ -374,6 +374,7 @@ jobs:
             pkg-containers.githubusercontent.com:443
             rekor.sigstore.dev:443
             test.pypi.org:443
+            timestamp.sigstore.dev:443
             tuf-repo-cdn.sigstore.dev:443
 
       - name: Download all the distribution packages
@@ -412,6 +413,7 @@ jobs:
             ghcr.io:443
             pkg-containers.githubusercontent.com:443
             rekor.sigstore.dev:443
+            timestamp.sigstore.dev:443
             tuf-repo-cdn.sigstore.dev:443
             upload.pypi.org:443
 
