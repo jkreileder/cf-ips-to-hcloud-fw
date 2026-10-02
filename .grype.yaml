@@ -4,51 +4,22 @@
 # their condition.
 #
 # CPython CVEs matched against the interpreter binary in the
-# python:3.14.x-alpine base image. Grype lists them as "fixed" only in the
-# 3.15 stream (3.15.0a6/b3/b4/rc2/3.15.0); the 3.14-branch backports are merged
-# upstream but unreleased, so no base-image bump can clear them yet and
-# only-fixed does not filter them.
-# REMOVE when the Dockerfile base image reaches python >= 3.14.8 (expected to
-# carry the backports) — delete the entries, run the Docker workflow, and
-# confirm the Grype step stays green.
+# python:3.14.x-alpine base image. Grype lists fixes for them only in other
+# release streams, so no 3.14.x base-image bump available today clears them
+# and only-fixed does not filter them.
 ignore:
-  - vulnerability: CVE-2026-15308
+  # tarfile: a filter's None result is ignored for link fallbacks. Fixed on
+  # the 3.14 branch after 3.14.8 was tagged (python/cpython#157307).
+  # REMOVE when the Dockerfile base image reaches python >= 3.14.9.
+  - vulnerability: CVE-2026-87910
     package:
       name: python
       type: binary
-  - vulnerability: CVE-2026-11972
-    package:
-      name: python
-      type: binary
-  - vulnerability: CVE-2026-11940
-    package:
-      name: python
-      type: binary
-  - vulnerability: CVE-2026-12003
-    package:
-      name: python
-      type: binary
-  - vulnerability: CVE-2026-0864
-    package:
-      name: python
-      type: binary
-  - vulnerability: CVE-2025-15366
-    package:
-      name: python
-      type: binary
+  # poplib: newline injection through user-controlled commands. Fixed only on
+  # main (3.15, python/cpython#143924); not backported to 3.14.
+  # REMOVE when the base image moves to python 3.15, or when a 3.14.x release
+  # carries a backport.
   - vulnerability: CVE-2025-15367
-    package:
-      name: python
-      type: binary
-  - vulnerability: CVE-2026-15310
-    package:
-      name: python
-      type: binary
-  - vulnerability: CVE-2026-15806
-    package:
-      name: python
-      type: binary
-  - vulnerability: CVE-2026-17084
     package:
       name: python
       type: binary
