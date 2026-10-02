@@ -59,7 +59,7 @@ jobs:
         uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0 # zizmor: ignore[cache-poisoning]
         with:
           python-version: ${{ matrix.python-version }}
-          version: "0.12.21"
+          version: "0.12.22"
           # No cache restore on tag runs so the release path can't be tainted
           # by a poisoned cache (cache-poisoning audit). zizmor cannot evaluate
           # the expression, hence the ignore on the step.
@@ -140,7 +140,7 @@ jobs:
         uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
         with:
           python-version: "3.11"
-          version: "0.12.21"
+          version: "0.12.22"
           # PR-only feedback build: caching disabled. It gains little for a
           # single build and keeps this job off the cache-poisoning surface.
           enable-cache: false
