@@ -23,3 +23,13 @@ ignore:
     package:
       name: python
       type: binary
+  # tempfile: a race in TemporaryDirectory cleanup lets a swapped-in symlink
+  # redirect deletions and permission resets outside the tree. Fixed on main
+  # and 3.15 (python/cpython#157580); the 3.14 backport
+  # (python/cpython#158430) is not merged yet.
+  # REMOVE when the base image moves to python 3.15, or when a 3.14.x release
+  # carries the backport.
+  - vulnerability: CVE-2026-12345
+    package:
+      name: python
+      type: binary
