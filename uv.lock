@@ -234,7 +234,7 @@ wheels = [
 
 [[package]]
 name = "cloudflare"
-version = "5.8.0"
+version = "5.9.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "anyio" },
@@ -244,9 +244,9 @@ dependencies = [
     { name = "sniffio" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/a2/67/66f7ba0227d7e36cb00008ffae58ce7d8ab1628839b2035ef84e1530edf5/cloudflare-5.8.0.tar.gz", hash = "sha256:d6537b331f0d061ccafd21501741b812d4f458d76f7ea62ce13f080126c4f0a6", size = 3574841, upload-time = "2026-09-25T19:40:00.727Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/4b/52/5e736d63637e79c2381045250dbb6154a1fb4da8f3fd47518bff406c24d2/cloudflare-5.9.0.tar.gz", hash = "sha256:1c9b9e243602c754e03636204272422dc45776f3babdc67f8341ca4d559d49e8", size = 3664424, upload-time = "2026-10-03T02:55:24.989Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/e2/ad/7eb377a890b862c69af9e3a39a485c1d7281405e6ba7eea13903be5a52f6/cloudflare-5.8.0-py3-none-any.whl", hash = "sha256:d7ad46ae33f6641b951c2a385e0e68aa92ecc2c2fc61e3668e739d63e7f30c0f", size = 7517087, upload-time = "2026-09-25T19:40:03.126Z" },
+    { url = "https://files.pythonhosted.org/packages/13/d4/6d3ed77313ce1fbcf209c4aca50407c338114e71d864cbc49b1cd686b966/cloudflare-5.9.0-py3-none-any.whl", hash = "sha256:70f0c966c26802837fe7ebe95a7b4a14c723159e742bc49d34642b21a2dc11b5", size = 7707263, upload-time = "2026-10-03T02:55:22.596Z" },
 ]
 
 [[package]]
@@ -423,15 +423,15 @@ wheels = [
 
 [[package]]
 name = "hcloud"
-version = "2.25.1"
+version = "2.26.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "python-dateutil" },
     { name = "requests" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/e7/e4/0d9c9dc03a309ebedb7df670b878afecac8b997d72063df518601595c7a3/hcloud-2.25.1.tar.gz", hash = "sha256:5e7b3da8810b82f448aa90bb1979e3102fd46eff8847cca655cb33b174995f53", size = 157023, upload-time = "2026-09-17T07:48:08.526Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/04/db/97a96efe24d58867f1cb3d25a4ac585e954ebf26c1acfb01997655db75e2/hcloud-2.26.0.tar.gz", hash = "sha256:c4632c0789db5b3af3dfc927889e596b6907794026aa13a26c46e8158fafbed9", size = 157847, upload-time = "2026-10-02T14:56:55.812Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/80/f0/451a0c5b582f57e80ed24c994fccefe2f06d4253a5b1bcb3d8aeb6813c6e/hcloud-2.25.1-py3-none-any.whl", hash = "sha256:794f885b9f0995501aa6ea08670fdfbe4e7edeb69127c6940b5f97714ab3dd51", size = 112828, upload-time = "2026-09-17T07:48:06.716Z" },
+    { url = "https://files.pythonhosted.org/packages/9b/fd/61d5722cf5cc99aacd858819e143730edf937889aa397a5c8841ca5ff090/hcloud-2.26.0-py3-none-any.whl", hash = "sha256:516e1cf5b81fcfffd71fcf68819757049772a5b33e590b37ff2640bf2f787afa", size = 113032, upload-time = "2026-10-02T14:56:54.067Z" },
 ]
 
 [[package]]
