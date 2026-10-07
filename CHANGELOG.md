@@ -2,9 +2,12 @@
 
 <!-- markdownlint-disable MD024 -->
 
-## [v1.4.7] – Unreleased
+## [v1.4.7] – 2026-10-07
 
-- Start new development cycle
+- **Security:** The container image now ships Alpine's `zlib` 1.3.2-r1, fixing CVE-2026-85091
+  (high) in the v1.4.6 image's 1.3.2-r0
+- Updated the Cloudflare SDK to 5.9.0 and hcloud to 2.27.0, and refreshed the pinned base images
+  (`astral/uv` 0.12.23 and new `python:3.14.8` digests)
 
 ## [v1.4.6] – 2026-10-02
 
