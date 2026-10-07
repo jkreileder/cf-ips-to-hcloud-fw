@@ -2,6 +2,10 @@
 
 <!-- markdownlint-disable MD024 -->
 
+## [v1.4.8] – Unreleased
+
+- Start new development cycle
+
 ## [v1.4.7] – 2026-10-07
 
 - **Security:** The container image now ships Alpine's `zlib` 1.3.2-r1, fixing CVE-2026-85091
