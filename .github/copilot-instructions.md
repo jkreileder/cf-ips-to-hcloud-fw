@@ -4,7 +4,7 @@
 
 - CLI syncs Cloudflare IPv4/IPv6 CIDRs into Hetzner Cloud firewalls through
   official APIs.
-- Python ≥3.10, src-layout package, Pydantic models; released to PyPI and Docker
+- Python ≥3.11, src-layout package, Pydantic models; released to PyPI and Docker
   (linux/amd64 + arm64).
 
 ## Where Things Live
@@ -51,7 +51,7 @@
 ## CI & Quality Gates
 
 - `python-package.yaml` runs the uv sync / lint (ruff, ty) / test /
-  build steps directly on CPython 3.10–3.14, uploads coverage, SBOM, and
+  build steps directly on CPython 3.11–3.15, uploads coverage, SBOM, and
   attestations.
 - `docker.yaml` performs multi-arch builds, security scans (Docker Scout + Grype),
   signing, and SLSA provenance.
