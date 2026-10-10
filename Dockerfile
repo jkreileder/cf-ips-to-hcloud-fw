@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1.27.1@sha256:4edf897a3ffa55b89f906fc8cc78afdb3f1834cc9c7083565e611a8a7d5fe99e
+# syntax=docker/dockerfile:1.28.0@sha256:bb22d9815c728170f72750f4e5b0d672e06176142e1d602c7e66c050100b7e5b
 # check=experimental=all;error=true
 
 FROM --platform=$BUILDPLATFORM docker.io/astral/uv:0.13.0-python3.14-trixie@sha256:6137b94a71de738abe2ca9c2b38e1a5eb946c997dcb23dff3865288ecb21a276 AS uv-tools-trixie
