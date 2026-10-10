@@ -2,9 +2,14 @@
 
 <!-- markdownlint-disable MD024 -->
 
-## [v1.4.8] – Unreleased
+## [v1.5.0] – Unreleased
 
-- Start new development cycle
+- **Breaking:** Dropped Python 3.10 support (end of life in October 2026); the package now requires
+  Python 3.11 or newer
+- Added Python 3.15 support; the tested range now spans CPython 3.11–3.15
+- Moved to uv 0.13 (`uv_build>=0.13,<0.14` and the `astral/uv` 0.13.0 tool images); the container
+  image still runs Python 3.14
+- Updated pydantic to 2.14.0 (pydantic-core 2.50.0, which ships Python 3.15 wheels)
 
 ## [v1.4.7] – 2026-10-07
 
