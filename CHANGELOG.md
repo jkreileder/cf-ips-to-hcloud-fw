@@ -2,6 +2,10 @@
 
 <!-- markdownlint-disable MD024 -->
 
+## [v1.5.1] – Unreleased
+
+- Start new development cycle
+
 ## [v1.5.0] – 2026-10-14
 
 - **Security:** The container image now runs Python 3.15.0, fixing CVE-2026-87910 (medium; `tarfile`
