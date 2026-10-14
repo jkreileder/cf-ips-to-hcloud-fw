@@ -2,34 +2,16 @@
 #
 # Tracking issue for clearing this list: #1412. Do not let entries outlive
 # their condition.
-#
-# CPython CVEs matched against the interpreter binary in the
-# python:3.14.x-alpine base image. Grype lists fixes for them only in other
-# release streams, so no 3.14.x base-image bump available today clears them
-# and only-fixed does not filter them.
 ignore:
-  # tarfile: a filter's None result is ignored for link fallbacks. Fixed on
-  # the 3.14 branch after 3.14.8 was tagged (python/cpython#157307).
-  # REMOVE when the Dockerfile base image reaches python >= 3.14.9.
-  - vulnerability: CVE-2026-87910
-    package:
-      name: python
-      type: binary
-  # poplib: newline injection through user-controlled commands. Fixed only on
-  # main (3.15, python/cpython#143924); not backported to 3.14.
-  # REMOVE when the base image moves to python 3.15, or when a 3.14.x release
-  # carries a backport.
+  # poplib: newline injection through user-controlled commands. Fixed in
+  # 3.15.0 (python/cpython#143924 is in the v3.15.0 tag), but NVD's bound is
+  # `< 3.15.0a6` and grype compares CPython CPE versions with a generic
+  # ordering that puts the 3.15.0 final release before 3.15.0a6. Scoped to
+  # 3.15.0: a later 3.15.x sorts after the bound and is scanned normally.
+  # REMOVE when CI's grype carries anchore/grype#3776 (PEP 440 ordering for
+  # CPython CPEs), or when the base image moves past python 3.15.0.
   - vulnerability: CVE-2025-15367
     package:
       name: python
-      type: binary
-  # tempfile: a race in TemporaryDirectory cleanup lets a swapped-in symlink
-  # redirect deletions and permission resets outside the tree. Fixed on main
-  # and 3.15 (python/cpython#157580); the 3.14 backport
-  # (python/cpython#158430) is not merged yet.
-  # REMOVE when the base image moves to python 3.15, or when a 3.14.x release
-  # carries the backport.
-  - vulnerability: CVE-2026-12345
-    package:
-      name: python
+      version: 3.15.0
       type: binary
