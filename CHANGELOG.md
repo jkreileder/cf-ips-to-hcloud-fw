@@ -11,7 +11,7 @@
   Python 3.11 or newer
 - Added Python 3.15 support; the tested range now spans CPython 3.11–3.15
 - Moved to uv 0.13 (`uv_build>=0.13,<0.14` and the `astral/uv` 0.13 tool images)
-- Updated pydantic to 2.14.0 (pydantic-core 2.50.0, which ships Python 3.15 wheels)
+- Updated pydantic to 2.14.1 (pydantic-core 2.50.1, which ships Python 3.15 wheels)
 
 ## [v1.4.7] – 2026-10-07
 
