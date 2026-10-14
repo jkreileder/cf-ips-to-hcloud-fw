@@ -4,11 +4,13 @@
 
 ## [v1.5.0] – Unreleased
 
+- **Security:** The container image now runs Python 3.15.0, fixing CVE-2026-87910 (medium; `tarfile`
+  link-fallback filter), CVE-2025-15367 (medium; `poplib` command injection) and CVE-2026-12345
+  (medium; `tempfile.TemporaryDirectory` cleanup race) in the v1.4.7 image's 3.14.8 interpreter
 - **Breaking:** Dropped Python 3.10 support (end of life in October 2026); the package now requires
   Python 3.11 or newer
 - Added Python 3.15 support; the tested range now spans CPython 3.11–3.15
-- Moved to uv 0.13 (`uv_build>=0.13,<0.14` and the `astral/uv` 0.13.0 tool images); the container
-  image still runs Python 3.14
+- Moved to uv 0.13 (`uv_build>=0.13,<0.14` and the `astral/uv` 0.13 tool images)
 - Updated pydantic to 2.14.0 (pydantic-core 2.50.0, which ships Python 3.15 wheels)
 
 ## [v1.4.7] – 2026-10-07
