@@ -2,7 +2,7 @@
 
 <!-- markdownlint-disable MD024 -->
 
-## [v1.5.0] – Unreleased
+## [v1.5.0] – 2026-10-14
 
 - **Security:** The container image now runs Python 3.15.0, fixing CVE-2026-87910 (medium; `tarfile`
   link-fallback filter), CVE-2025-15367 (medium; `poplib` command injection) and CVE-2026-12345
@@ -10,7 +10,8 @@
 - **Breaking:** Dropped Python 3.10 support (end of life in October 2026); the package now requires
   Python 3.11 or newer
 - Added Python 3.15 support; the tested range now spans CPython 3.11–3.15
-- Moved to uv 0.13 (`uv_build>=0.13,<0.14` and the `astral/uv` 0.13 tool images)
+- Moved to uv 0.13 (`uv_build>=0.13,<0.14` and the `astral/uv` 0.13 tool images) and the
+  Dockerfile frontend to 1.28.0
 - Updated pydantic to 2.14.1 (pydantic-core 2.50.1, which ships Python 3.15 wheels)
 
 ## [v1.4.7] – 2026-10-07
