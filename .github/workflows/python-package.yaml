@@ -35,7 +35,7 @@ jobs:
 
     steps:
       - name: Harden runner
-        uses: step-security/harden-runner@ccd8616d44fd3846e67624a50d5aad6d37bf2d25 # v2.22.1
+        uses: step-security/harden-runner@dc2769abcc0fcfbadfc1df54081c1608579ef6b2 # v2.22.2
         with:
           disable-sudo: true
           egress-policy: block
@@ -59,7 +59,7 @@ jobs:
         uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0 # zizmor: ignore[cache-poisoning]
         with:
           python-version: ${{ matrix.python-version }}
-          version: "0.13.1"
+          version: "0.13.4"
           # No cache restore on tag runs so the release path can't be tainted
           # by a poisoned cache (cache-poisoning audit). zizmor cannot evaluate
           # the expression, hence the ignore on the step.
@@ -117,7 +117,7 @@ jobs:
 
     steps:
       - name: Harden runner
-        uses: step-security/harden-runner@ccd8616d44fd3846e67624a50d5aad6d37bf2d25 # v2.22.1
+        uses: step-security/harden-runner@dc2769abcc0fcfbadfc1df54081c1608579ef6b2 # v2.22.2
         with:
           disable-sudo: true
           egress-policy: block
@@ -140,7 +140,7 @@ jobs:
         uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         with:
           python-version: "3.11"
-          version: "0.13.1"
+          version: "0.13.4"
           # PR-only feedback build: caching disabled. It gains little for a
           # single build and keeps this job off the cache-poisoning surface.
           enable-cache: false
@@ -180,7 +180,7 @@ jobs:
 
     steps:
       - name: Harden runner
-        uses: step-security/harden-runner@ccd8616d44fd3846e67624a50d5aad6d37bf2d25 # v2.22.1
+        uses: step-security/harden-runner@dc2769abcc0fcfbadfc1df54081c1608579ef6b2 # v2.22.2
         with:
           disable-sudo: true
           egress-policy: block
@@ -249,7 +249,7 @@ jobs:
 
     steps:
       - name: Harden runner
-        uses: step-security/harden-runner@ccd8616d44fd3846e67624a50d5aad6d37bf2d25 # v2.22.1
+        uses: step-security/harden-runner@dc2769abcc0fcfbadfc1df54081c1608579ef6b2 # v2.22.2
         with:
           disable-sudo: true
           egress-policy: block
@@ -328,7 +328,7 @@ jobs:
 
     steps:
       - name: Harden runner
-        uses: step-security/harden-runner@ccd8616d44fd3846e67624a50d5aad6d37bf2d25 # v2.22.1
+        uses: step-security/harden-runner@dc2769abcc0fcfbadfc1df54081c1608579ef6b2 # v2.22.2
         with:
           disable-sudo: true
           egress-policy: block
@@ -364,7 +364,7 @@ jobs:
 
     steps:
       - name: Harden runner
-        uses: step-security/harden-runner@ccd8616d44fd3846e67624a50d5aad6d37bf2d25 # v2.22.1
+        uses: step-security/harden-runner@dc2769abcc0fcfbadfc1df54081c1608579ef6b2 # v2.22.2
         with:
           disable-sudo: true
           egress-policy: block
@@ -384,7 +384,7 @@ jobs:
           path: dist
 
       - name: Publish distribution to TestPyPI
-        uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
+        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
         with:
           repository-url: https://test.pypi.org/legacy/
 
@@ -404,7 +404,7 @@ jobs:
 
     steps:
       - name: Harden runner
-        uses: step-security/harden-runner@ccd8616d44fd3846e67624a50d5aad6d37bf2d25 # v2.22.1
+        uses: step-security/harden-runner@dc2769abcc0fcfbadfc1df54081c1608579ef6b2 # v2.22.2
         with:
           disable-sudo: true
           egress-policy: block
@@ -424,7 +424,7 @@ jobs:
           path: dist
 
       - name: Publish distribution to PyPI
-        uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
+        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
 
   upload-dist-to-github-release:
     name: Upload distribution packages to GitHub Release
@@ -438,7 +438,7 @@ jobs:
 
     steps:
       - name: Harden runner
-        uses: step-security/harden-runner@ccd8616d44fd3846e67624a50d5aad6d37bf2d25 # v2.22.1
+        uses: step-security/harden-runner@dc2769abcc0fcfbadfc1df54081c1608579ef6b2 # v2.22.2
         with:
           disable-sudo: true
           egress-policy: block
