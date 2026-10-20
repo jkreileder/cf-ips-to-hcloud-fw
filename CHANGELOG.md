@@ -2,9 +2,14 @@
 
 <!-- markdownlint-disable MD024 -->
 
-## [v1.5.1] – Unreleased
+## [v1.5.1] – 2026-10-21
 
-- Start new development cycle
+- **Security:** The package now requires certifi 2026.10.19 or newer, and the container image ships
+  it. That bundle drops the `emSign ECC Root CA - G3` root, through which the eight eMudhra
+  intermediate CAs whose private keys were compromised could chain; the v1.5.0 image's certifi
+  2026.7.22 still trusted it, so the Cloudflare and Hetzner API connections would have accepted a
+  certificate those keys issued
+- Refreshed the pinned base images (new `python:3.15.0` digests, `astral/uv` 0.13.4)
 
 ## [v1.5.0] – 2026-10-14
 
