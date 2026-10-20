@@ -2,6 +2,10 @@
 
 <!-- markdownlint-disable MD024 -->
 
+## [v1.5.2] – Unreleased
+
+- Start new development cycle
+
 ## [v1.5.1] – 2026-10-21
 
 - **Security:** The package now requires certifi 2026.10.19 or newer, and the container image ships
