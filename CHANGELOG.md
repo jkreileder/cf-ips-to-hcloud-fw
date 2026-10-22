@@ -2,6 +2,10 @@
 
 <!-- markdownlint-disable MD024 -->
 
+## [v1.5.3] – Unreleased
+
+- Start new development cycle
+
 ## [v1.5.2] – 2026-10-22
 
 - **Security:** The container image now ships Alpine's `musl` 1.2.6-r3, fixing CVE-2026-107891
