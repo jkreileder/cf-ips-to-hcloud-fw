@@ -34,16 +34,22 @@ release you want out before the next daily run.
   Check `git config --get commit.gpgsign`; tags are signed with `git tag -s`.
 - `gh` CLI authenticated (used to open the PR and view/publish the draft release).
 - **No automated release in flight.** Both paths would claim the same next version.
-  Check for an open release PR from the automation:
+  Check for an open release or dev-cycle PR from the automation:
 
   ```bash
   gh pr list --state open --json number,headRefName,url \
-    --jq '.[] | select(.headRefName | startswith("auto-release/"))'
+    --jq '.[] | select(.headRefName | startswith("auto-release/")
+      or startswith("auto-dev-cycle/"))'
   ```
 
   If one is open, let it finish, or ask the user before closing it.
-  Also make sure no `Auto-release publish` run is still in progress
-  (`gh run list --workflow auto-release-publish.yaml --limit 1`).
+  Also make sure no publish run is active. Every closed PR starts a (skipped) run of that
+  workflow, so filter by status instead of looking at the latest run:
+
+  ```bash
+  gh run list --workflow auto-release-publish.yaml --limit 100 --json status,url \
+    --jq '.[] | select(.status != "completed")'
+  ```
 
 ## Procedure
 

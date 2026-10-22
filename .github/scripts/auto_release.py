@@ -13,6 +13,7 @@ Subcommands:
 - ``notes``: print a version's CHANGELOG entry (the GitHub release body).
 - ``commit``: create a branch and a single GitHub-signed commit through the
   GraphQL API (``createCommitOnBranch``), so no signing key is needed.
+- ``await-merge``: wait for an auto-merge PR, keeping it current with main.
 """
 
 from __future__ import annotations
@@ -26,6 +27,7 @@ import re
 import subprocess  # ruff: ignore[suspicious-subprocess-import]
 import sys
 import textwrap
+import time
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import NoReturn
@@ -206,7 +208,7 @@ def unreleased_entries(text: str) -> str:
     return body.replace(DEV_CYCLE_BULLET, "").strip()
 
 
-FindingKey = tuple[str, str, str]
+FindingKey = tuple[str, str]
 
 
 @dataclass(frozen=True)
@@ -228,9 +230,11 @@ class Report:
 def load_report(path: Path) -> Report:
     """Load a Grype JSON report.
 
-    Findings are keyed by (vulnerability, package, location), so two copies of
-    a package in different places stay separate, while an upgrade in place
-    that is still vulnerable keeps its key and does not count as fixed.
+    Findings are keyed by (vulnerability, package), and matches for several
+    copies or versions of a package merge into one finding. A vulnerability
+    counts as fixed only when no copy of the package has it any more: neither
+    versions nor locations identify a copy reliably (a Python package's path
+    contains its version, so an in-place upgrade moves it).
 
     Returns:
         Report: The scanned image's labels and its findings.
@@ -242,16 +246,19 @@ def load_report(path: Path) -> Report:
         vulnerability = match["vulnerability"]
         artifact = match["artifact"]
         fix = vulnerability.get("fix") or {}
-        locations = artifact.get("locations") or [{}]
-        finding = Finding(
-            vulnerability=vulnerability["id"],
+        key = (vulnerability["id"], artifact["name"])
+        installed: set[str] = {artifact["version"]}
+        fixed_in: set[str] = set(fix.get("versions") or ())
+        if key in findings:
+            installed |= set(findings[key].installed.split(", "))
+            fixed_in |= set(findings[key].fixed_in)
+        findings[key] = Finding(
+            vulnerability=key[0],
             severity=str(vulnerability.get("severity") or "Unknown"),
-            package=artifact["name"],
-            installed=artifact["version"],
-            fixed_in=tuple(fix.get("versions") or ()),
+            package=key[1],
+            installed=", ".join(sorted(installed)),
+            fixed_in=tuple(sorted(fixed_in)),
         )
-        location = str(locations[0].get("path", ""))
-        findings[finding.vulnerability, finding.package, location] = finding
     return Report(labels={k: str(v) for k, v in labels.items()}, findings=findings)
 
 
@@ -539,20 +546,30 @@ def cmd_notes(args: argparse.Namespace) -> None:
     sys.stdout.write(text[heading.end() : end].strip() + "\n")
 
 
-def gh_api(*args: str, payload: object = None) -> dict[str, object]:
-    """Call ``gh api``, sending ``payload`` as the JSON request body.
+def run_gh_api(*args: str, payload: object = None) -> subprocess.CompletedProcess[str]:
+    """Run ``gh api``, sending ``payload`` as the JSON request body.
 
     Returns:
-        dict[str, object]: The decoded JSON response.
+        subprocess.CompletedProcess[str]: The finished process, which may
+        have failed.
     """
     stdin_args = ["--input", "-"] if payload is not None else []
-    result = subprocess.run(  # ruff: ignore[subprocess-without-shell-equals-true]
+    return subprocess.run(  # ruff: ignore[subprocess-without-shell-equals-true]
         ["gh", "api", *args, *stdin_args],  # ruff: ignore[start-process-with-partial-path]
         check=False,
         capture_output=True,
         text=True,
         input=json.dumps(payload) if payload is not None else None,
     )
+
+
+def gh_api(*args: str, payload: object = None) -> dict[str, object]:
+    """Call ``gh api`` and fail the run if the call fails.
+
+    Returns:
+        dict[str, object]: The decoded JSON response.
+    """
+    result = run_gh_api(*args, payload=payload)
     if result.returncode != 0:
         # gh prints the API's error (including GraphQL errors) here.
         details = " ".join((result.stderr + result.stdout).split())
@@ -573,12 +590,7 @@ def branch_exists(repo: str, branch: str) -> bool:
     Returns:
         bool: True if ``refs/heads/<branch>`` exists.
     """
-    result = subprocess.run(  # ruff: ignore[subprocess-without-shell-equals-true]
-        ["gh", "api", f"repos/{repo}/git/ref/heads/{branch}"],  # ruff: ignore[start-process-with-partial-path]
-        check=False,
-        capture_output=True,
-    )
-    return result.returncode == 0
+    return run_gh_api(f"repos/{repo}/git/ref/heads/{branch}").returncode == 0
 
 
 def bot_signoff(app_slug: str) -> str:
@@ -643,6 +655,54 @@ def cmd_commit(args: argparse.Namespace) -> None:
     write_outputs(sha=data["createCommitOnBranch"]["commit"]["oid"], signoff=signoff)
 
 
+def gh(*args: str) -> str:
+    """Run a gh command and fail the run if it fails.
+
+    Returns:
+        str: The command's standard output, stripped.
+    """
+    result = subprocess.run(  # ruff: ignore[subprocess-without-shell-equals-true]
+        ["gh", *args],  # ruff: ignore[start-process-with-partial-path]
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        details = " ".join((result.stderr + result.stdout).split())
+        fail(f"gh {args[0]} {args[1]} failed: {details}")
+    return result.stdout.strip()
+
+
+def cmd_await_merge(args: argparse.Namespace) -> None:
+    """Wait for an auto-merge PR to merge, keeping it current with main.
+
+    Strict up-to-date checks block auto-merge whenever main moves, and GitHub
+    does not update the branch by itself. Updating by rebase keeps the PR's
+    one signed-off commit (a merge update would add a commit without a DCO
+    sign-off). A conflict cannot resolve itself, so it fails right away.
+    """
+    deadline = time.monotonic() + args.minutes * 60
+    last = ""
+    while time.monotonic() < deadline:
+        time.sleep(30)
+        state, merge_state = gh(
+            "pr", "view", args.url, "--json", "state,mergeStateStatus",
+            "--jq", '"\\(.state) \\(.mergeStateStatus)"',
+        ).split()  # fmt: skip
+        if f"{state} {merge_state}" != last:
+            last = f"{state} {merge_state}"
+            sys.stdout.write(f"{args.url}: {last}\n")
+        if state == "MERGED":
+            return
+        if state == "CLOSED":
+            fail(f"{args.url} was closed without merging")
+        if merge_state == "DIRTY":
+            fail(f"{args.url} conflicts with main; resolve it by hand")
+        if merge_state == "BEHIND":
+            gh("pr", "update-branch", args.url, "--rebase")
+    fail(f"{args.url} did not merge within {args.minutes} minutes (last: {last})")
+
+
 def cmd_version(args: argparse.Namespace) -> None:
     """Print the project version, optionally requiring a final release."""
     version = project_version()
@@ -685,6 +745,11 @@ def main() -> None:
     commit.add_argument("--headline", required=True)
     commit.add_argument("--app-slug", required=True, help="signs off as its bot")
     commit.set_defaults(func=cmd_commit)
+
+    await_merge = sub.add_parser("await-merge", help="wait for a PR to merge")
+    await_merge.add_argument("url")
+    await_merge.add_argument("--minutes", type=int, default=45)
+    await_merge.set_defaults(func=cmd_await_merge)
 
     version = sub.add_parser("version", help="print the project version")
     version.add_argument("--require-final", action="store_true")

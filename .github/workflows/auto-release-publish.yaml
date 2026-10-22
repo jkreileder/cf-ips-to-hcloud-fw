@@ -40,7 +40,7 @@ jobs:
       group: ${{ github.workflow }}
       cancel-in-progress: false
     runs-on: ubuntu-26.04
-    timeout-minutes: 90
+    timeout-minutes: 150
     permissions:
       contents: read
       # Find and watch the publish runs on the tag.
@@ -192,3 +192,5 @@ jobs:
           gh pr merge "$url" --auto --squash \
             --subject "chore: start new development cycle" --body "$SIGNOFF"
           echo "::notice::Opened $url with auto-merge enabled."
+          # Same as the release PR: keep it current with main until it merges.
+          python3 .github/scripts/auto_release.py await-merge "$url" --minutes 45

@@ -97,16 +97,27 @@ jobs:
             registry-1.docker.io:443
             release-assets.githubusercontent.com:443
 
+      # One full checkout of main serves the whole job: Grype picks up
+      # .grype.yaml from the workspace (as in rescan.yaml), the guard and the
+      # plan read the tags, and the release edits start from main's head.
+      - name: Checkout main
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+
       # Never start a release while another is unfinished:
-      # - The highest tag's GitHub release stays a draft until
-      #   auto-release-publish.yaml (or a person) publishes it, so a draft or
-      #   missing release means a publish is running or failed. A failed one
-      #   needs a person (cut-release step 8b), not a new version on top.
-      # - An open release PR, automated or cut by hand, or an automated
-      #   dev-cycle PR is in flight. Once an automated one is open for hours
-      #   it is stuck (strict up-to-date checks: GitHub does not update the
-      #   branch by itself); a hand-cut one gets a day. Past that, fail
-      #   instead of quietly skipping every day.
+      # - A publish run (auto-release-publish.yaml) is active: skip. It can
+      #   take over an hour, and main is ahead of the tags until it is done.
+      # - The highest tag's GitHub release stays a draft until it is published,
+      #   so with no publish running, a draft or missing release means one
+      #   failed. That needs a person (cut-release step 8b), not a new version
+      #   on top.
+      # - An open release or dev-cycle PR, automated or cut by hand, is in
+      #   flight: skip. Once an automated one is open for hours it is stuck; a
+      #   hand-cut one gets a day. Past that, fail instead of quietly skipping
+      #   every day.
       - name: Check for an unfinished release
         id: guard
         env:
@@ -114,13 +125,28 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          skip() {
+            echo "::notice::$1"
+            echo "proceed=false" >>"$GITHUB_OUTPUT"
+            exit 0
+          }
           if [ -n "$RELEASED_IMAGE_OVERRIDE" ] && [ "$DRY_RUN" != true ]; then
             echo "::error::released-image is only allowed in dry runs."
             exit 1
           fi
-          latest_tag="$(gh api "repos/$GH_REPO/git/matching-refs/tags/v" \
-            --jq '.[].ref | ltrimstr("refs/tags/")' \
-            | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n 1)"
+          # Every closed PR starts a (skipped) run of the publish workflow, so
+          # filter by status rather than looking at the latest runs only.
+          publishing="$(gh run list --workflow auto-release-publish.yaml --limit 100 \
+            --json status --jq '[.[] | select(.status != "completed")] | length')"
+          if [ "$publishing" != 0 ]; then
+            skip "A release is publishing; nothing to do."
+          fi
+          latest_tag="$(git tag --list 'v*' --sort=-v:refname \
+            | grep -E -m 1 '^v[0-9]+\.[0-9]+\.[0-9]+$' || true)"
+          if [ -z "$latest_tag" ]; then
+            echo "::error::No vX.Y.Z release tag found."
+            exit 1
+          fi
           draft="$(gh release view "$latest_tag" --json isDraft --jq .isDraft \
             2>/dev/null || echo missing)"
           if [ "$draft" != false ]; then
@@ -129,15 +155,14 @@ jobs:
             exit 1
           fi
           # Same-repository PRs only: opening one needs write access, so a
-          # fork PR titled "chore(release): ..." cannot suppress releases.
-          # A hand-cut release PR open for over a day also fails the run, so
-          # a forgotten one is noticed instead of blocking quietly.
+          # fork PR with a release title cannot suppress releases.
           prs="$(gh pr list --state open \
             --json headRefName,title,createdAt,url,isCrossRepository \
             --jq '[.[] | select((.isCrossRepository | not)
               and ((.headRefName | startswith("auto-release/"))
                 or (.headRefName | startswith("auto-dev-cycle/"))
-                or (.title | startswith("chore(release):"))))]')"
+                or (.title | startswith("chore(release):"))
+                or (.title == "chore: start new development cycle")))]')"
           auto_before="$(date -u -d '2 hours ago' +%Y-%m-%dT%H:%M:%SZ)"
           manual_before="$(date -u -d '24 hours ago' +%Y-%m-%dT%H:%M:%SZ)"
           stale="$(jq -r --arg auto "$auto_before" --arg manual "$manual_before" '.[]
@@ -149,19 +174,7 @@ jobs:
             exit 1
           fi
           if [ "$(jq length <<<"$prs")" != 0 ]; then
-            echo "::notice::A release PR is in flight; nothing to do:" \
-              "$(jq -r '[.[].url] | join(" ")' <<<"$prs")"
-            echo "proceed=false" >>"$GITHUB_OUTPUT"
-            exit 0
-          fi
-          # A merged release PR is tagged and published by a run that can take
-          # over an hour; until it finishes, main is ahead of the tags.
-          publishing="$(gh run list --workflow auto-release-publish.yaml --limit 5 \
-            --json status --jq '[.[] | select(.status != "completed")] | length')"
-          if [ "$publishing" != 0 ]; then
-            echo "::notice::A release is publishing; nothing to do."
-            echo "proceed=false" >>"$GITHUB_OUTPUT"
-            exit 0
+            skip "A release PR is in flight; nothing to do: $(jq -r '[.[].url] | join(" ")' <<<"$prs")"
           fi
           # The floating major tag follows the latest release (:1 for 1.x).
           major="${latest_tag#v}"
@@ -169,13 +182,6 @@ jobs:
           echo "released-image=${RELEASED_IMAGE_OVERRIDE:-docker.io/$IMAGE_REPO:$major}" \
             >>"$GITHUB_OUTPUT"
           echo "proceed=true" >>"$GITHUB_OUTPUT"
-
-      # Grype picks up .grype.yaml from the workspace, as in rescan.yaml.
-      - name: Checkout repository
-        if: ${{ steps.guard.outputs.proceed == 'true' }}
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
 
       - name: Scan released image
         if: ${{ steps.guard.outputs.proceed == 'true' }}
@@ -285,16 +291,8 @@ jobs:
       # merged since (typically Renovate updates) goes through the release
       # PR's checks and the tag build's scans. Starting from an older commit
       # would leave the PR behind main, which strict up-to-date checks block.
-      # fetch-depth 0 brings the tags for version planning.
-      - name: Checkout main
-        if: ${{ steps.released.outputs.fixable == 'true' }}
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: main
-          fetch-depth: 0
-          persist-credentials: false
-
-      - name: Check that main contains the scanned commit
+      # main may have moved during the rebuild, so fetch it again.
+      - name: Update to main's head
         if: ${{ steps.released.outputs.fixable == 'true' }}
         id: base
         env:
@@ -302,6 +300,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          git fetch --no-tags origin main
+          git checkout --detach FETCH_HEAD
           if ! git merge-base --is-ancestor "$SCANNED_SHA" HEAD; then
             echo "::error::main does not contain the scanned commit $SCANNED_SHA."
             exit 1
@@ -414,9 +414,9 @@ jobs:
 
       # Strict up-to-date checks block auto-merge whenever main moves (daily
       # Renovate automerges, for one), and GitHub does not update the branch
-      # by itself. Update it while waiting. The App token lives an hour, so
-      # stop well before that; a PR that still hasn't merged is reported as
-      # stuck by the next run's guard.
+      # by itself; await-merge keeps it current. The App token lives an hour,
+      # so stop well before that; a PR that still hasn't merged is reported
+      # as stuck by the next run's guard.
       - name: Keep release PR current until it merges
         if: ${{ steps.plan.outputs.release == 'true' && env.DRY_RUN != 'true' }}
         timeout-minutes: 50
@@ -424,18 +424,4 @@ jobs:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           URL: ${{ steps.open.outputs.url }}
         shell: bash
-        run: |
-          set -euo pipefail
-          while :; do
-            sleep 60
-            read -r state merge_state <<<"$(gh pr view "$URL" \
-              --json state,mergeStateStatus --jq '"\(.state) \(.mergeStateStatus)"')"
-            case "$state" in
-              MERGED) echo "::notice::$URL merged."; exit 0 ;;
-              CLOSED) echo "::error::$URL was closed without merging."; exit 1 ;;
-            esac
-            if [ "$merge_state" = BEHIND ]; then
-              echo "Updating $URL with main."
-              gh pr update-branch "$URL" || true
-            fi
-          done
+        run: python3 .github/scripts/auto_release.py await-merge "$URL" --minutes 45
