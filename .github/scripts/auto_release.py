@@ -30,6 +30,7 @@ import subprocess  # ruff: ignore[suspicious-subprocess-import]
 import sys
 import textwrap
 import time
+import tomllib
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import NoReturn
@@ -357,25 +358,95 @@ def dockerfile_stages(dockerfile: str) -> dict[str, tuple[str, str, str]]:
 def base_image_bullet(previous_tag: str) -> str | None:
     """Summarize Dockerfile FROM changes since the previous release.
 
+    Each image is named once with its version change, e.g. ``python`` 3.15.0
+    → 3.15.1 for both its alpine and trixie stages. The full tags appear only
+    when more than the version moved (say, a new Alpine release). An image
+    whose tags kept their version reads as new digests.
+
     Returns:
         str | None: A CHANGELOG bullet, or None when no pinned image changed.
     """
     old = dockerfile_stages(git("show", f"{previous_tag}:{DOCKERFILE}"))
     new = dockerfile_stages(DOCKERFILE.read_text(encoding="utf-8"))
-    changes: list[str] = []
+    moved: dict[str, list[str]] = {}
+    redigested: dict[str, list[str]] = {}
     for alias, (name, tag, digest) in new.items():
         if alias not in old or old[alias] == (name, tag, digest):
             continue
-        old_name, old_tag, _ = old[alias]
-        if (old_name, old_tag) != (name, tag):
-            change = f"`{name}` {old_tag} → {tag}"
+        old_tag = old[alias][1]
+        old_version, _, old_rest = old_tag.partition("-")
+        version, _, rest = tag.partition("-")
+        if old_tag == tag:
+            target, change = redigested, version
+        elif old_rest == rest:
+            target, change = moved, f"{old_version} → {version}"
         else:
-            change = f"new `{name}:{tag}` digest"
+            target, change = moved, f"{old_tag} → {tag}"
+        changes = target.setdefault(name, [])
         if change not in changes:
             changes.append(change)
-    if not changes:
+    parts = [f"`{name}` {' and '.join(changes)}" for name, changes in moved.items()]
+    parts += [
+        f"new `{name}:{version}` digests"
+        for name, versions in redigested.items()
+        if name not in moved
+        for version in versions
+    ]
+    if not parts:
         return None
-    return bullet(f"Refreshed the pinned base images ({'; '.join(changes)})")
+    return bullet(f"Refreshed the pinned base images ({', '.join(parts)})")
+
+
+def runtime_packages(lock: str) -> dict[str, str]:
+    """Resolve the project's runtime dependency closure from a uv.lock.
+
+    Follows each package's ``dependencies`` from the project entry, leaving
+    out dev dependencies, which never ship in the image or the wheel.
+
+    Returns:
+        dict[str, str]: Package name to version (several versions joined).
+    """
+    entries: dict[str, list[dict[str, object]]] = {}
+    for package in tomllib.loads(lock).get("package", []):
+        entries.setdefault(str(package["name"]), []).append(package)
+    found: dict[str, str] = {}
+    pending = [PROJECT_NAME]
+    while pending:
+        name = pending.pop()
+        if name in found or name not in entries:
+            continue
+        versions = sorted({str(entry.get("version", "")) for entry in entries[name]})
+        found[name] = ", ".join(versions)
+        for entry in entries[name]:
+            dependencies = entry.get("dependencies") or []
+            assert isinstance(dependencies, list)  # ruff: ignore[assert]
+            pending.extend(str(dependency["name"]) for dependency in dependencies)
+    found.pop(PROJECT_NAME, None)
+    return found
+
+
+def dependency_bullet(previous_tag: str) -> str | None:
+    """Summarize runtime dependency changes since the previous release.
+
+    Returns:
+        str | None: A CHANGELOG bullet, or None when nothing changed.
+    """
+    old = runtime_packages(git("show", f"{previous_tag}:{UV_LOCK}"))
+    new = runtime_packages(UV_LOCK.read_text(encoding="utf-8"))
+    parts = [
+        f"`{name}` {old[name]} → {version}"
+        for name, version in sorted(new.items())
+        if name in old and old[name] != version
+    ]
+    parts += [
+        f"`{name}` {version} (new)"
+        for name, version in sorted(new.items())
+        if name not in old
+    ]
+    parts += [f"`{name}` (removed)" for name in sorted(old) if name not in new]
+    if not parts:
+        return None
+    return bullet(f"Updated the runtime dependencies ({', '.join(parts)})")
 
 
 def write_outputs(**values: str) -> None:
@@ -510,9 +581,9 @@ def cmd_apply_release(args: argparse.Namespace) -> None:
     # release over hand-written entries), so the release entry replaces it.
     text = CHANGELOG.read_text(encoding="utf-8")
     start, end = unreleased_span(text)
-    images = base_image_bullet(f"v{previous}")
-    if images:
-        bullets.append(images)
+    for extra in (dependency_bullet(f"v{previous}"), base_image_bullet(f"v{previous}")):
+        if extra:
+            bullets.append(extra)
     section = f"## [v{version}] {DASH} {args.date}\n\n" + "\n".join(bullets) + "\n\n"
     CHANGELOG.write_text(text[:start] + section + text[end:], encoding="utf-8")
 
