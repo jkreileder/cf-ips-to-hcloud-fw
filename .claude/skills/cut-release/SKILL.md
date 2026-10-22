@@ -11,6 +11,14 @@ Releases are **tag-driven**: pushing a `v*` tag triggers CI
 PyPI + TestPyPI, build multi-arch Docker images, and **draft** a GitHub release.
 Your job here is the local prep (via a PR, since `main` is protected) + the tag.
 
+Security-only releases normally happen without this skill.
+`auto-release.yaml` opens a release PR as the release App when a rebuilt `:main` image fixes
+Grype findings that the released `:1` image still has.
+`auto-release-publish.yaml` then tags the merge, publishes, and opens the dev-cycle PR.
+Both make the same edits as the steps below, through `.github/scripts/auto_release.py`.
+Use this skill for releases the automation doesn't cover: features, majors/minors, or a security
+release you want out before the next daily run.
+
 ## When to Use
 
 - "Release 1.3.0", "cut a release", "bump the version and tag"
@@ -25,6 +33,17 @@ Your job here is the local prep (via a PR, since `main` is protected) + the tag.
 - Commit/tag signing configured (this repo requires verified signatures + DCO).
   Check `git config --get commit.gpgsign`; tags are signed with `git tag -s`.
 - `gh` CLI authenticated (used to open the PR and view/publish the draft release).
+- **No automated release in flight.** Both paths would claim the same next version.
+  Check for an open release PR from the automation:
+
+  ```bash
+  gh pr list --state open --json number,headRefName,url \
+    --jq '.[] | select(.headRefName | startswith("auto-release/"))'
+  ```
+
+  If one is open, let it finish, or ask the user before closing it.
+  Also make sure no `Auto-release publish` run is still in progress
+  (`gh run list --workflow auto-release-publish.yaml --limit 1`).
 
 ## Procedure
 
@@ -38,6 +57,10 @@ grep '^version = ' pyproject.toml
 
 - The dev version looks like `1.3.0.dev1` → the release version is `1.3.0`.
 - Otherwise apply the requested bump (`major`/`minor`/`patch`) per SemVer.
+- The version must sort after the highest existing `v*` tag
+  (`git tag --list 'v*' --sort=-v:refname | head -1`, after `git fetch --tags`).
+  An automated release may have tagged past `pyproject.toml`'s dev version, and a version whose
+  publish failed is burned (step 8b).
 - Confirm the chosen version with the user if it isn't explicit.
 
 ### 2. Pre-flight checks
@@ -198,7 +221,12 @@ Pushing the tag starts the publish pipeline. Report the Actions URL:
 
 Docker Hub has immutable tags enabled for `^\d+\.\d+\.\d+$`, so once `docker.yaml`
 has pushed `X.Y.Z` that tag can never be overwritten **or deleted**. How you retry
-matters. First find out whether the image was already pushed:
+matters.
+This applies to automated releases too: `auto-release-publish.yaml` never retries, and its
+failure message points here.
+After recovering an automated release by hand, finish the steps that run never reached:
+publish the draft release (step 9) and start the dev cycle (step 10).
+First find out whether the image was already pushed:
 
 ```bash
 run_id="$(gh run list --branch vX.Y.Z --workflow docker.yaml --limit 1 --json databaseId --jq '.[0].databaseId')"
