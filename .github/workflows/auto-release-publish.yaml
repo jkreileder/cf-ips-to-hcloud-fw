@@ -24,10 +24,6 @@ on:
 permissions:
   contents: read
 
-concurrency:
-  group: ${{ github.workflow }}
-  cancel-in-progress: false
-
 jobs:
   publish:
     name: Tag and publish release
@@ -37,6 +33,12 @@ jobs:
       && startsWith(github.event.pull_request.head.ref, 'auto-release/')
       && github.event.pull_request.head.repo.full_name == github.repository
       && github.event.pull_request.user.login == format('{0}[bot]', vars.RELEASE_APP_SLUG) }}
+    # Job-level, below the `if`: every closed PR starts this workflow, and a
+    # workflow-level group would let those no-op runs cancel a pending
+    # publish (a group keeps only one pending run).
+    concurrency:
+      group: ${{ github.workflow }}
+      cancel-in-progress: false
     runs-on: ubuntu-26.04
     timeout-minutes: 90
     permissions:
@@ -150,13 +152,17 @@ jobs:
           git fetch --no-tags origin main
           git checkout --detach FETCH_HEAD
           python3 .github/scripts/auto_release.py apply-dev-cycle --version "$VERSION"
+          if git diff --quiet; then
+            echo "::notice::main already started the next development cycle."
+            exit 0
+          fi
           python3 .github/scripts/auto_release.py commit \
             --repo "$GH_REPO" --branch "auto-dev-cycle/v$VERSION" \
             --base-sha "$(git rev-parse HEAD)" --app-slug "$APP_SLUG" \
-            --headline "chore: start new development cycle" \
-            pyproject.toml uv.lock CHANGELOG.md
+            --headline "chore: start new development cycle"
 
       - name: Open dev-cycle PR
+        if: ${{ steps.commit.outputs.sha != '' }}
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           SIGNOFF: ${{ steps.commit.outputs.signoff }}

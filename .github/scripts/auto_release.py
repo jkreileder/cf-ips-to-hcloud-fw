@@ -56,6 +56,9 @@ CHANGELOG_UNRELEASED_RE = re.compile(
 )
 CHANGELOG_HEADING_RE = re.compile(r"^## \[v", re.MULTILINE)
 PIN_RE = re.compile(rf"\b{re.escape(PROJECT_NAME)}:(\d+\.\d+\.\d+)\b")
+MINOR_TAG_RE = re.compile(
+    r"`\d+\.\d+`(: This tag always points to the latest )`\d+\.\d+\.x`"
+)
 FROM_RE = re.compile(
     r"^FROM\s+(?:--platform=\S+\s+)?(\S+?):([^@\s]+)@(sha256:[0-9a-f]+)\s+AS\s+(\S+)",
     re.MULTILINE | re.IGNORECASE,
@@ -147,23 +150,60 @@ def project_version() -> str:
 
 
 def next_release(last: Version, current: str) -> Version:
-    """Choose the release version.
+    """Choose the patch release that follows the highest tag.
 
-    A ``.devN`` version on main names the release it leads to; otherwise the
-    release is the next patch after the highest tag. Either way the result must
-    sort after every existing tag: a version whose publish failed is burned
-    (Docker Hub tags are immutable) and must never be reused.
+    Automated releases are security patches only. A dev version heading for a
+    new minor or major means feature work is on main, and a final version above
+    the highest tag means a release merged but was never tagged; both need a
+    person. The result always sorts after every existing tag: a version whose
+    publish failed is burned (Docker Hub tags are immutable).
 
     Returns:
         Version: The version to release.
     """
+    following = (last[0], last[1], last[2] + 1)
     dev = DEV_VERSION_RE.match(current)
     if dev is not None:
-        major, minor, patch = dev.groups()
-        candidate = (int(major), int(minor), int(patch))
-        if candidate > last:
-            return candidate
-    return last[0], last[1], last[2] + 1
+        major, minor, patch = (int(part) for part in dev.groups())
+        if (major, minor) != last[:2]:
+            fail(
+                f"main is heading for {major}.{minor}.{patch} (from {current}), "
+                "not a patch release; cut this one by hand"
+            )
+        return max((major, minor, patch), following)
+    if parse_final(current) > last:
+        fail(
+            f"main is at {current}, which is not tagged yet; finish that "
+            "release (cut-release steps 7-10) before another one"
+        )
+    return following
+
+
+def unreleased_span(text: str) -> tuple[int, int]:
+    """Locate the CHANGELOG's Unreleased section.
+
+    Returns:
+        tuple[int, int]: Start and end offsets of the section, or an empty span
+        before the first release heading when there is none.
+    """
+    unreleased = CHANGELOG_UNRELEASED_RE.search(text)
+    if unreleased is None:
+        first = CHANGELOG_HEADING_RE.search(text)
+        position = first.start() if first else len(text)
+        return position, position
+    following = CHANGELOG_HEADING_RE.search(text, unreleased.end())
+    return unreleased.start(), following.start() if following else len(text)
+
+
+def unreleased_entries(text: str) -> str:
+    """Read the hand-written part of the CHANGELOG's Unreleased section.
+
+    Returns:
+        str: The section's entries other than the dev-cycle bullet.
+    """
+    start, end = unreleased_span(text)
+    body = CHANGELOG_UNRELEASED_RE.sub("", text[start:end], count=1)
+    return body.replace(DEV_CYCLE_BULLET, "").strip()
 
 
 def image_label(path: Path, name: str) -> str:
@@ -352,6 +392,12 @@ def cmd_plan(args: argparse.Namespace) -> None:
         write_outputs(release="false", previous=shipped)
         return
     version = next_release(versions[-1], project_version())
+    hand_written = unreleased_entries(CHANGELOG.read_text(encoding="utf-8"))
+    if hand_written:
+        fail(
+            "the CHANGELOG's Unreleased section has hand-written entries; "
+            "automated releases only ship security fixes, so cut this one by hand"
+        )
     args.fixed_out.write_text(
         json.dumps([asdict(finding) for finding in fixed], indent=2) + "\n",
         encoding="utf-8",
@@ -382,6 +428,13 @@ def replace_version_pins(new: str) -> None:
         if count == 0:
             fail(f"no version pins to update in {path}")
         path.write_text(text, encoding="utf-8")
+    # The README also describes the floating major.minor tag.
+    major, minor, _ = parse_final(new)
+    readme = PINNED_VERSION_FILES[0].read_text(encoding="utf-8")
+    PINNED_VERSION_FILES[0].write_text(
+        MINOR_TAG_RE.sub(f"`{major}.{minor}`\\g<1>`{major}.{minor}.x`", readme),
+        encoding="utf-8",
+    )
 
 
 def set_project_version(version: str) -> None:
@@ -422,19 +475,10 @@ def cmd_apply_release(args: argparse.Namespace) -> None:
     version, previous = args.version, args.previous
     bullets = security_bullets(read_fixed(args.fixed), previous)
 
+    # The Unreleased section holds only the dev-cycle bullet (plan refuses to
+    # release over hand-written entries), so the release entry replaces it.
     text = CHANGELOG.read_text(encoding="utf-8")
-    unreleased = CHANGELOG_UNRELEASED_RE.search(text)
-    if unreleased is not None:
-        # Keep hand-written bullets from the Unreleased section.
-        following = CHANGELOG_HEADING_RE.search(text, unreleased.end())
-        end = following.start() if following else len(text)
-        kept = text[unreleased.end() : end].replace(DEV_CYCLE_BULLET, "").strip()
-        if kept:
-            bullets.append(kept)
-        start = unreleased.start()
-    else:
-        first = CHANGELOG_HEADING_RE.search(text)
-        start = end = first.start() if first else len(text)
+    start, end = unreleased_span(text)
     images = base_image_bullet(f"v{previous}")
     if images:
         bullets.append(images)
@@ -446,15 +490,23 @@ def cmd_apply_release(args: argparse.Namespace) -> None:
 
 
 def cmd_apply_dev_cycle(args: argparse.Namespace) -> None:
-    """Start the next patch's development cycle after a release."""
+    """Start the next patch's development cycle after a release.
+
+    Does nothing if main already started one (a dev version or an Unreleased
+    section), for example by hand while the release was publishing.
+    """
+    text = CHANGELOG.read_text(encoding="utf-8")
+    if DEV_VERSION_RE.match(project_version()) or CHANGELOG_UNRELEASED_RE.search(text):
+        write_outputs(changed="false")
+        return
     major, minor, patch = parse_final(args.version)
     upcoming = format_version((major, minor, patch + 1))
     set_project_version(f"{upcoming}.dev1")
-    text = CHANGELOG.read_text(encoding="utf-8")
     first = CHANGELOG_HEADING_RE.search(text)
     position = first.start() if first else len(text)
     section = f"## [v{upcoming}] {DASH} Unreleased\n\n{DEV_CYCLE_BULLET}\n\n"
     CHANGELOG.write_text(text[:position] + section + text[position:], encoding="utf-8")
+    write_outputs(changed="true")
 
 
 def cmd_notes(args: argparse.Namespace) -> None:
@@ -522,8 +574,10 @@ def bot_signoff(app_slug: str) -> str:
 def cmd_commit(args: argparse.Namespace) -> None:
     """Point a branch at the base commit and add one signed commit to it.
 
-    A branch left over from an earlier failed or abandoned attempt is reset:
-    the workflows only get here when no PR from these branches is open.
+    The commit holds every file the ``apply-*`` subcommands edited in the
+    working tree (``git diff``), so callers don't repeat the file list. A
+    branch left over from an earlier failed or abandoned attempt is reset: the
+    workflows only get here when no PR from these branches is open.
     """
     ref = f"refs/heads/{args.branch}"
     if branch_exists(args.repo, args.branch):
@@ -546,8 +600,10 @@ def cmd_commit(args: argparse.Namespace) -> None:
             "path": path,
             "contents": base64.b64encode(Path(path).read_bytes()).decode("ascii"),
         }
-        for path in args.paths
+        for path in git("diff", "--name-only").splitlines()
     ]
+    if not additions:
+        fail("no edited files to commit")
     message = {"headline": args.headline, "body": signoff}
     commit_input = {
         "branch": {"repositoryNameWithOwner": args.repo, "branchName": args.branch},
@@ -607,7 +663,6 @@ def main() -> None:
     commit.add_argument("--base-sha", required=True)
     commit.add_argument("--headline", required=True)
     commit.add_argument("--app-slug", required=True, help="signs off as its bot")
-    commit.add_argument("paths", nargs="+")
     commit.set_defaults(func=cmd_commit)
 
     version = sub.add_parser("version", help="print the project version")
