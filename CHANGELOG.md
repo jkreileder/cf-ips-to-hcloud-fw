@@ -2,9 +2,13 @@
 
 <!-- markdownlint-disable MD024 -->
 
-## [v1.5.2] – Unreleased
+## [v1.5.2] – 2026-10-22
 
-- Start new development cycle
+- **Security:** The container image now ships Alpine's `musl` 1.2.6-r3, fixing CVE-2026-107891
+  (low) in the v1.5.1 image's 1.2.6-r2
+- The container image now runs Python 3.15.1, and hcloud's `python-dateutil` dependency moves to
+  3.0.0 (which adds `tzdata`)
+- Refreshed the pinned base images (`astral/uv` 0.13.5)
 
 ## [v1.5.1] – 2026-10-21
 
