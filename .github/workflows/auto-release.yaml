@@ -105,7 +105,8 @@ jobs:
       # - An open release PR, automated or cut by hand, or an automated
       #   dev-cycle PR is in flight. Once an automated one is open for hours
       #   it is stuck (strict up-to-date checks: GitHub does not update the
-      #   branch by itself), so fail instead of quietly skipping every day.
+      #   branch by itself); a hand-cut one gets a day. Past that, fail
+      #   instead of quietly skipping every day.
       - name: Check for an unfinished release
         id: guard
         env:
@@ -127,16 +128,24 @@ jobs:
               "($draft). Finish or recover it first (cut-release steps 8b-10)."
             exit 1
           fi
-          prs="$(gh pr list --state open --json headRefName,title,createdAt,url \
-            --jq '[.[] | select((.headRefName | startswith("auto-release/"))
-              or (.headRefName | startswith("auto-dev-cycle/"))
-              or (.title | startswith("chore(release):")))]')"
-          stale_before="$(date -u -d '2 hours ago' +%Y-%m-%dT%H:%M:%SZ)"
-          stale="$(jq -r --arg t "$stale_before" '.[]
-            | select((.headRefName | startswith("auto-")) and .createdAt < $t)
+          # Same-repository PRs only: opening one needs write access, so a
+          # fork PR titled "chore(release): ..." cannot suppress releases.
+          # A hand-cut release PR open for over a day also fails the run, so
+          # a forgotten one is noticed instead of blocking quietly.
+          prs="$(gh pr list --state open \
+            --json headRefName,title,createdAt,url,isCrossRepository \
+            --jq '[.[] | select((.isCrossRepository | not)
+              and ((.headRefName | startswith("auto-release/"))
+                or (.headRefName | startswith("auto-dev-cycle/"))
+                or (.title | startswith("chore(release):"))))]')"
+          auto_before="$(date -u -d '2 hours ago' +%Y-%m-%dT%H:%M:%SZ)"
+          manual_before="$(date -u -d '24 hours ago' +%Y-%m-%dT%H:%M:%SZ)"
+          stale="$(jq -r --arg auto "$auto_before" --arg manual "$manual_before" '.[]
+            | select(if (.headRefName | startswith("auto-"))
+                then .createdAt < $auto else .createdAt < $manual end)
             | .url' <<<"$prs")"
           if [ -n "$stale" ]; then
-            echo "::error::Automated PR stuck for over 2 hours: $stale"
+            echo "::error::Release PR stuck open, blocking security releases: $stale"
             exit 1
           fi
           if [ "$(jq length <<<"$prs")" != 0 ]; then
