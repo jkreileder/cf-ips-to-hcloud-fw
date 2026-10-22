@@ -28,7 +28,9 @@ on:
   workflow_dispatch:
     inputs:
       dry-run:
-        description: Plan and show the release edits without opening a PR
+        description: >-
+          Plan and show the release edits without opening a PR (still rebuilds
+          and pushes :main, as any push to main does)
         type: boolean
         default: true
       released-image:
@@ -89,10 +91,15 @@ jobs:
             registry-1.docker.io:443
             release-assets.githubusercontent.com:443
 
-      # An open release PR means a release is in flight. Once it has been open
-      # for hours it is stuck (strict up-to-date checks: GitHub does not update
-      # the branch by itself), so fail instead of quietly skipping every day.
-      - name: Check for an open release PR
+      # Never start a release while another is unfinished:
+      # - The highest tag's GitHub release stays a draft until
+      #   auto-release-publish.yaml (or a person) publishes it, so a draft or
+      #   missing release means a publish is running or failed. A failed one
+      #   needs a person (cut-release step 8b), not a new version on top.
+      # - An open release or dev-cycle PR is in flight. Once open for hours it
+      #   is stuck (strict up-to-date checks: GitHub does not update the
+      #   branch by itself), so fail instead of quietly skipping every day.
+      - name: Check for an unfinished release
         id: guard
         env:
           GH_TOKEN: ${{ github.token }}
@@ -103,17 +110,28 @@ jobs:
             echo "::error::released-image is only allowed in dry runs."
             exit 1
           fi
+          latest_tag="$(gh api "repos/$GH_REPO/git/matching-refs/tags/v" \
+            --jq '.[].ref | ltrimstr("refs/tags/")' \
+            | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n 1)"
+          draft="$(gh release view "$latest_tag" --json isDraft --jq .isDraft \
+            2>/dev/null || echo missing)"
+          if [ "$draft" != false ]; then
+            echo "::error::$latest_tag is tagged but its release is not published" \
+              "($draft). Finish or recover it first (cut-release steps 8b-10)."
+            exit 1
+          fi
           stale_before="$(date -u -d '2 hours ago' +%Y-%m-%dT%H:%M:%SZ)"
           prs="$(gh pr list --state open --json headRefName,createdAt,url \
-            --jq '[.[] | select(.headRefName | startswith("auto-release/"))]')"
+            --jq '[.[] | select(.headRefName
+              | startswith("auto-release/") or startswith("auto-dev-cycle/"))]')"
           stale="$(jq -r --arg t "$stale_before" \
             '.[] | select(.createdAt < $t) | .url' <<<"$prs")"
           if [ -n "$stale" ]; then
-            echo "::error::Release PR stuck for over 2 hours: $stale"
+            echo "::error::Automated PR stuck for over 2 hours: $stale"
             exit 1
           fi
           if [ "$(jq length <<<"$prs")" != 0 ]; then
-            echo "::notice::A release PR is in flight; nothing to do."
+            echo "::notice::An automated release PR is in flight; nothing to do."
             echo "proceed=false" >>"$GITHUB_OUTPUT"
           else
             echo "proceed=true" >>"$GITHUB_OUTPUT"
@@ -156,6 +174,9 @@ jobs:
 
       # docker.yaml cancels superseded main runs, so a push to main during the
       # rebuild cancels this one; the job then fails and the next day retries.
+      # The run is found by creation time with a minute of slack for clock
+      # skew. Picking up a different main rebuild is harmless: the plan only
+      # accepts a :main image whose revision label is the commit it releases.
       - name: Rebuild :main
         if: ${{ steps.released.outputs.fixable == 'true' }}
         id: rebuild
@@ -164,7 +185,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          started="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          started="$(date -u -d '1 minute ago' +%Y-%m-%dT%H:%M:%SZ)"
           gh workflow run docker.yaml --ref main
           run_id=""
           for _ in $(seq 30); do
@@ -172,7 +193,7 @@ jobs:
             run_id="$(gh run list --workflow docker.yaml --event workflow_dispatch \
               --branch main --limit 5 --json databaseId,createdAt \
               | jq -r --arg t "$started" \
-                '[.[] | select(.createdAt >= $t)] | last | .databaseId // empty')"
+                '[.[] | select(.createdAt >= $t)] | first | .databaseId // empty')"
             [ -n "$run_id" ] && break
           done
           if [ -z "$run_id" ]; then
@@ -212,11 +233,13 @@ jobs:
         env:
           RELEASED: ${{ steps.scan-released.outputs.json }}
           CANDIDATE: ${{ steps.scan-candidate.outputs.json }}
+          REBUILT_SHA: ${{ steps.rebuild.outputs.sha }}
         shell: bash
         run: |
           set -euo pipefail
           python3 .github/scripts/auto_release.py plan \
             --released "$RELEASED" --candidate "$CANDIDATE" \
+            --expect-revision "$REBUILT_SHA" \
             --fixed-out "$RUNNER_TEMP/fixed.json"
 
       - name: Skip if the version is already tagged
@@ -264,25 +287,42 @@ jobs:
           permission-contents: write
           permission-pull-requests: write
 
-      - name: Open release PR
+      # auto-release-publish.yaml only acts on PRs from RELEASE_APP_SLUG's bot.
+      # A mismatch would merge the release PR and then never tag it.
+      - name: Commit release edits
         if: ${{ steps.plan.outputs.release == 'true' && env.DRY_RUN != 'true' }}
+        id: commit
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           APP_SLUG: ${{ steps.app-token.outputs.app-slug }}
+          EXPECTED_SLUG: ${{ vars.RELEASE_APP_SLUG }}
           VERSION: ${{ steps.plan.outputs.version }}
           BASE_SHA: ${{ steps.rebuild.outputs.sha }}
         shell: bash
         run: |
           set -euo pipefail
-          bot="${APP_SLUG}[bot]"
-          bot_id="$(gh api "users/${APP_SLUG}%5Bbot%5D" --jq .id)"
-          signoff="Signed-off-by: $bot <${bot_id}+${bot}@users.noreply.github.com>"
-          branch="auto-release/v$VERSION"
+          if [ "$APP_SLUG" != "$EXPECTED_SLUG" ]; then
+            echo "::error::RELEASE_APP_SLUG is '$EXPECTED_SLUG' but the App is '$APP_SLUG'."
+            exit 1
+          fi
           python3 .github/scripts/auto_release.py commit \
-            --repo "$GH_REPO" --branch "$branch" --base-sha "$BASE_SHA" \
-            --headline "chore(release): v$VERSION" --body "$signoff" \
+            --repo "$GH_REPO" --branch "auto-release/v$VERSION" \
+            --base-sha "$BASE_SHA" --app-slug "$APP_SLUG" \
+            --headline "chore(release): v$VERSION" \
             pyproject.toml uv.lock CHANGELOG.md README.md \
             .github/ISSUE_TEMPLATE/bug_report.md
+
+      - name: Open release PR
+        if: ${{ steps.plan.outputs.release == 'true' && env.DRY_RUN != 'true' }}
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          SIGNOFF: ${{ steps.commit.outputs.signoff }}
+          VERSION: ${{ steps.plan.outputs.version }}
+          BASE_SHA: ${{ steps.rebuild.outputs.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          branch="auto-release/v$VERSION"
           {
             echo "Automated security release v$VERSION."
             echo
@@ -299,5 +339,5 @@ jobs:
           url="$(gh pr create --base main --head "$branch" \
             --title "chore(release): v$VERSION" --body-file "$RUNNER_TEMP/pr.md")"
           gh pr merge "$url" --auto --squash \
-            --subject "chore(release): v$VERSION" --body "$signoff"
+            --subject "chore(release): v$VERSION" --body "$SIGNOFF"
           echo "::notice::Opened $url with auto-merge enabled."

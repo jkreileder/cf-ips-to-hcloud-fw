@@ -55,6 +55,7 @@ CHANGELOG_UNRELEASED_RE = re.compile(
     rf"^## \[v([^\]]+)\] {DASH} Unreleased$", re.MULTILINE
 )
 CHANGELOG_HEADING_RE = re.compile(r"^## \[v", re.MULTILINE)
+PIN_RE = re.compile(rf"\b{re.escape(PROJECT_NAME)}:(\d+\.\d+\.\d+)\b")
 FROM_RE = re.compile(
     r"^FROM\s+(?:--platform=\S+\s+)?(\S+?):([^@\s]+)@(sha256:[0-9a-f]+)\s+AS\s+(\S+)",
     re.MULTILINE | re.IGNORECASE,
@@ -163,6 +164,17 @@ def next_release(last: Version, current: str) -> Version:
         if candidate > last:
             return candidate
     return last[0], last[1], last[2] + 1
+
+
+def image_label(path: Path, name: str) -> str:
+    """Read an OCI label of the image a Grype JSON report scanned.
+
+    Returns:
+        str: The label's value, or an empty string when it is missing.
+    """
+    report = json.loads(path.read_text(encoding="utf-8"))
+    labels = (report.get("source") or {}).get("target", {}).get("labels") or {}
+    return str(labels.get(name, ""))
 
 
 def load_findings(path: Path) -> dict[tuple[str, str], Finding]:
@@ -309,7 +321,21 @@ def write_outputs(**values: str) -> None:
 
 
 def cmd_plan(args: argparse.Namespace) -> None:
-    """Decide whether main fixes findings that the released image still has."""
+    """Decide whether main fixes findings that the released image still has.
+
+    The ``previous`` output is the version inside the scanned release image,
+    which can trail the highest tag (a burned version, or a rehearsal against
+    an older image). The CHANGELOG names that image and diffs against it.
+    """
+    revision = image_label(args.candidate, "org.opencontainers.image.revision")
+    if args.expect_revision and revision != args.expect_revision:
+        fail(
+            f"the scanned :main image was built from {revision or 'an unknown commit'},"
+            f" not {args.expect_revision}; another push replaced it, retry later"
+        )
+    shipped = image_label(args.released, "org.opencontainers.image.version")
+    if not FINAL_VERSION_RE.match(shipped):
+        fail(f"the released image has no final version label (got {shipped!r})")
     released = load_findings(args.released)
     candidate = load_findings(args.candidate)
     fixed = [finding for key, finding in released.items() if key not in candidate]
@@ -322,26 +348,40 @@ def cmd_plan(args: argparse.Namespace) -> None:
     versions = released_versions()
     if not versions:
         fail("no vX.Y.Z tags found; fetch tags before planning")
-    last = versions[-1]
     if not fixed:
-        write_outputs(release="false", previous=format_version(last))
+        write_outputs(release="false", previous=shipped)
         return
-    version = next_release(last, project_version())
+    version = next_release(versions[-1], project_version())
     args.fixed_out.write_text(
         json.dumps([asdict(finding) for finding in fixed], indent=2) + "\n",
         encoding="utf-8",
     )
-    write_outputs(
-        release="true", version=format_version(version), previous=format_version(last)
+    write_outputs(release="true", version=format_version(version), previous=shipped)
+
+
+def replace_version_pins(new: str) -> None:
+    """Point the documented example version at the new release.
+
+    The old version is whatever the README pins now, which need not be the
+    previous release. Only pin-shaped occurrences change, so prose that
+    mentions an old version stays as written.
+    """
+    readme = PINNED_VERSION_FILES[0].read_text(encoding="utf-8")
+    current = PIN_RE.search(readme)
+    if current is None:
+        fail(f"no `{PROJECT_NAME}:X.Y.Z` pin found in {PINNED_VERSION_FILES[0]}")
+    old = re.escape(current.group(1))
+    pattern = re.compile(
+        rf"(?<=\b{re.escape(PROJECT_NAME)}:){old}(?!\d)"
+        rf"|(?<=\bVERSION=){old}(?!\d)"
+        rf"|(?<=`){old}(?=`)"
+        rf"|(?<=\[e\.g\. ){old}(?=\])"
     )
-
-
-def replace_version_pins(old: str, new: str) -> None:
-    """Point the documented example version at the new release."""
-    pattern = re.compile(rf"(?<![\d.]){re.escape(old)}(?!\d)")
     for path in PINNED_VERSION_FILES:
-        text = path.read_text(encoding="utf-8")
-        path.write_text(pattern.sub(new, text), encoding="utf-8")
+        text, count = pattern.subn(new, path.read_text(encoding="utf-8"))
+        if count == 0:
+            fail(f"no version pins to update in {path}")
+        path.write_text(text, encoding="utf-8")
 
 
 def set_project_version(version: str) -> None:
@@ -402,7 +442,7 @@ def cmd_apply_release(args: argparse.Namespace) -> None:
     CHANGELOG.write_text(text[:start] + section + text[end:], encoding="utf-8")
 
     set_project_version(version)
-    replace_version_pins(previous, version)
+    replace_version_pins(version)
 
 
 def cmd_apply_dev_cycle(args: argparse.Namespace) -> None:
@@ -454,14 +494,53 @@ mutation($input: CreateCommitOnBranchInput!) {
 """
 
 
-def cmd_commit(args: argparse.Namespace) -> None:
-    """Create a branch at the base commit and add one signed commit to it."""
-    gh_api(
-        f"repos/{args.repo}/git/refs",
-        "--method",
-        "POST",
-        payload={"ref": f"refs/heads/{args.branch}", "sha": args.base_sha},
+def branch_exists(repo: str, branch: str) -> bool:
+    """Check whether a branch exists on GitHub.
+
+    Returns:
+        bool: True if ``refs/heads/<branch>`` exists.
+    """
+    result = subprocess.run(  # ruff: ignore[subprocess-without-shell-equals-true]
+        ["gh", "api", f"repos/{repo}/git/ref/heads/{branch}"],  # ruff: ignore[start-process-with-partial-path]
+        check=False,
+        capture_output=True,
     )
+    return result.returncode == 0
+
+
+def bot_signoff(app_slug: str) -> str:
+    """Build the DCO sign-off for the App's bot account.
+
+    Returns:
+        str: A ``Signed-off-by:`` trailer with the bot's noreply address.
+    """
+    bot = f"{app_slug}[bot]"
+    user = gh_api(f"users/{app_slug}%5Bbot%5D")
+    return f"Signed-off-by: {bot} <{user['id']}+{bot}@users.noreply.github.com>"
+
+
+def cmd_commit(args: argparse.Namespace) -> None:
+    """Point a branch at the base commit and add one signed commit to it.
+
+    A branch left over from an earlier failed or abandoned attempt is reset:
+    the workflows only get here when no PR from these branches is open.
+    """
+    ref = f"refs/heads/{args.branch}"
+    if branch_exists(args.repo, args.branch):
+        gh_api(
+            f"repos/{args.repo}/git/{ref}",
+            "--method",
+            "PATCH",
+            payload={"sha": args.base_sha, "force": True},
+        )
+    else:
+        gh_api(
+            f"repos/{args.repo}/git/refs",
+            "--method",
+            "POST",
+            payload={"ref": ref, "sha": args.base_sha},
+        )
+    signoff = bot_signoff(args.app_slug)
     additions = [
         {
             "path": path,
@@ -469,9 +548,7 @@ def cmd_commit(args: argparse.Namespace) -> None:
         }
         for path in args.paths
     ]
-    message = {"headline": args.headline}
-    if args.body:
-        message["body"] = args.body
+    message = {"headline": args.headline, "body": signoff}
     commit_input = {
         "branch": {"repositoryNameWithOwner": args.repo, "branchName": args.branch},
         # Fails the mutation if the branch moved since it was created.
@@ -486,7 +563,15 @@ def cmd_commit(args: argparse.Namespace) -> None:
     data = response.get("data")
     if response.get("errors") or not isinstance(data, dict):
         fail(f"createCommitOnBranch failed: {response.get('errors')}")
-    write_outputs(sha=data["createCommitOnBranch"]["commit"]["oid"])
+    write_outputs(sha=data["createCommitOnBranch"]["commit"]["oid"], signoff=signoff)
+
+
+def cmd_version(args: argparse.Namespace) -> None:
+    """Print the project version, optionally requiring a final release."""
+    version = project_version()
+    if args.require_final and not FINAL_VERSION_RE.match(version):
+        fail(f"pyproject.toml has non-final version {version!r}")
+    sys.stdout.write(version + "\n")
 
 
 def main() -> None:
@@ -498,6 +583,7 @@ def main() -> None:
     plan.add_argument("--released", type=Path, required=True)
     plan.add_argument("--candidate", type=Path, required=True)
     plan.add_argument("--fixed-out", type=Path, required=True)
+    plan.add_argument("--expect-revision", default="", help="commit :main must be")
     plan.set_defaults(func=cmd_plan)
 
     release = sub.add_parser("apply-release", help="edit files for a release")
@@ -520,9 +606,13 @@ def main() -> None:
     commit.add_argument("--branch", required=True)
     commit.add_argument("--base-sha", required=True)
     commit.add_argument("--headline", required=True)
-    commit.add_argument("--body", default="")
+    commit.add_argument("--app-slug", required=True, help="signs off as its bot")
     commit.add_argument("paths", nargs="+")
     commit.set_defaults(func=cmd_commit)
+
+    version = sub.add_parser("version", help="print the project version")
+    version.add_argument("--require-final", action="store_true")
+    version.set_defaults(func=cmd_version)
 
     args = parser.parse_args()
     args.func(args)

@@ -69,11 +69,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          version="$(sed -nE 's/^version = "([^"]+)"$/\1/p' pyproject.toml)"
-          if ! printf '%s' "$version" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
-            echo "::error::Merged release PR has non-final version '$version'"
-            exit 1
-          fi
+          version="$(python3 .github/scripts/auto_release.py version --require-final)"
           if git rev-parse -q --verify "refs/tags/v$version" >/dev/null; then
             echo "::error::v$version is already tagged"
             exit 1
@@ -142,7 +138,8 @@ jobs:
 
       # Starts from the current main, not the merge commit, so updates merged
       # while the release was publishing are kept.
-      - name: Open dev-cycle PR
+      - name: Commit dev-cycle edits
+        id: commit
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           APP_SLUG: ${{ steps.app-token.outputs.app-slug }}
@@ -152,19 +149,24 @@ jobs:
           set -euo pipefail
           git fetch --no-tags origin main
           git checkout --detach FETCH_HEAD
-          base_sha="$(git rev-parse HEAD)"
           python3 .github/scripts/auto_release.py apply-dev-cycle --version "$VERSION"
-          bot="${APP_SLUG}[bot]"
-          bot_id="$(gh api "users/${APP_SLUG}%5Bbot%5D" --jq .id)"
-          signoff="Signed-off-by: $bot <${bot_id}+${bot}@users.noreply.github.com>"
-          branch="auto-dev-cycle/v$VERSION"
           python3 .github/scripts/auto_release.py commit \
-            --repo "$GH_REPO" --branch "$branch" --base-sha "$base_sha" \
-            --headline "chore: start new development cycle" --body "$signoff" \
+            --repo "$GH_REPO" --branch "auto-dev-cycle/v$VERSION" \
+            --base-sha "$(git rev-parse HEAD)" --app-slug "$APP_SLUG" \
+            --headline "chore: start new development cycle" \
             pyproject.toml uv.lock CHANGELOG.md
-          url="$(gh pr create --base main --head "$branch" \
+
+      - name: Open dev-cycle PR
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          SIGNOFF: ${{ steps.commit.outputs.signoff }}
+          VERSION: ${{ steps.version.outputs.version }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          url="$(gh pr create --base main --head "auto-dev-cycle/v$VERSION" \
             --title "chore: start new development cycle" \
             --body "Begin the next development cycle after v$VERSION.")"
           gh pr merge "$url" --auto --squash \
-            --subject "chore: start new development cycle" --body "$signoff"
+            --subject "chore: start new development cycle" --body "$SIGNOFF"
           echo "::notice::Opened $url with auto-merge enabled."
