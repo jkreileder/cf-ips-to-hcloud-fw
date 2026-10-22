@@ -92,6 +92,34 @@
             ]
         },
         {
+            "description": "Check container images daily instead of only on Mondays: base-image fixes (CPython, Alpine packages) are not vulnerability alerts, so they would otherwise wait for the weekly window on top of minimumReleaseAge. astral/uv version bumps are excluded because the uv group also holds the setup-uv action and uv-pre-commit hook, which stay weekly.",
+            "matchManagers": [
+                "dockerfile",
+                "custom.regex"
+            ],
+            "matchPackageNames": [
+                "!astral/uv",
+                "!docker.io/astral/uv"
+            ],
+            "schedule": [
+                "* 0-3 * * *"
+            ]
+        },
+        {
+            "description": "Image digest refreshes, astral/uv included, all land in the digests group (the digests rule below overrides the uv group name), so they share the daily schedule to keep that group on one schedule.",
+            "matchManagers": [
+                "dockerfile",
+                "custom.regex"
+            ],
+            "matchUpdateTypes": [
+                "digest",
+                "pin"
+            ],
+            "schedule": [
+                "* 0-3 * * *"
+            ]
+        },
+        {
             "automerge": true,
             "description": "Group all pre-commit hook updates into one automerged PR - lint/validate-only tooling that never ships and is fully CI-gated (ruff/ty are local hooks managed via uv.lock, not here; uv-pre-commit rides with the uv group).",
             "groupName": "pre-commit",
