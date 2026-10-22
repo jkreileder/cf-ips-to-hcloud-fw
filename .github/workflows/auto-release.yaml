@@ -1,0 +1,439 @@
+name: Auto-release security fixes
+
+# Opens a release PR when main fixes vulnerabilities that the released image
+# still has. Runs after the daily rescan (rescan.yaml, 05:17 UTC):
+#
+# 1. Scan the released image (the floating major tag, e.g. :1) with Grype,
+#    only-fixed. Nothing to fix, done.
+# 2. Make sure :main is fresh: if it was last pushed more than 20 hours ago,
+#    rebuild it through docker.yaml. The final stage runs `apk upgrade`, so a
+#    rebuild picks up Alpine fixes even without a base-image bump.
+# 3. Scan :main and compare. Release only if main clears findings that the
+#    release has. Gating on Grype alone keeps scanner disagreements (Scout
+#    reporting a fix version that does not exist) from triggering releases.
+# 4. Edit the version files the way the cut-release procedure does, commit
+#    them through the GitHub API as the release App (GitHub signs the commit),
+#    open the PR and enable auto-merge. auto-release-publish.yaml tags the
+#    merge commit and publishes.
+#
+# Automated releases are security patches only: auto_release.py refuses (and
+# the run fails, notifying a person) when main carries feature work, i.e. a
+# dev version for a new minor/major or hand-written CHANGELOG entries.
+#
+# Writes use the App token, not GITHUB_TOKEN: events caused by GITHUB_TOKEN do
+# not trigger workflows, so its PR would never get the required checks.
+#
+# Inert until configured: scheduled runs need the AUTO_RELEASE variable set to
+# "enabled", and manual runs default to a dry run that stops before writing.
+# Setup: vars RELEASE_APP_CLIENT_ID and RELEASE_APP_SLUG, secret
+# RELEASE_APP_PRIVATE_KEY.
+
+on:
+  schedule:
+    - cron: "47 5 * * *"
+  workflow_dispatch:
+    inputs:
+      dry-run:
+        description: >-
+          Plan and show the release edits without opening a PR (may still
+          rebuild and push :main, as any push to main does)
+        type: boolean
+        default: true
+      released-image:
+        description: >-
+          Image to treat as released (dry runs only), e.g. an older version tag
+          to rehearse the full path while the release is clean
+        type: string
+        default: ""
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Detect fixes and open release PR
+    if: ${{ github.event_name == 'workflow_dispatch' || vars.AUTO_RELEASE == 'enabled' }}
+    runs-on: ubuntu-26.04
+    # The :main rebuild and waiting for the release PR to merge.
+    timeout-minutes: 150
+    permissions:
+      contents: read
+      # Dispatch and watch the docker.yaml rebuild of :main.
+      actions: write
+      # Look for open release PRs.
+      pull-requests: read
+    env:
+      DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry-run || false }}
+      GH_REPO: ${{ github.repository }}
+      IMAGE_REPO: ${{ vars.DOCKERHUB_USERNAME }}/cf-ips-to-hcloud-fw
+      RELEASED_IMAGE_OVERRIDE: ${{ inputs.released-image }}
+
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@dc2769abcc0fcfbadfc1df54081c1608579ef6b2 # v2.22.2
+        with:
+          disable-sudo: true
+          egress-policy: block
+          # Docker Hub pulls, tag metadata, and the Grype installer, binary and
+          # DB (as in rescan.yaml), plus the GitHub API for the dispatch and
+          # the PR.
+          allowed-endpoints: >
+            api.github.com:443
+            auth.docker.io:443
+            docker-images-prod.6aa30f8b08e16409b46e0173d6de2f56.r2.cloudflarestorage.com:443
+            get.anchore.io:443
+            github.com:443
+            grype.anchore.io:443
+            hub.docker.com:443
+            index.docker.io:443
+            objects.githubusercontent.com:443
+            production.cloudflare.docker.com:443
+            production.cloudfront.docker.com:443
+            raw.githubusercontent.com:443
+            registry-1.docker.io:443
+            release-assets.githubusercontent.com:443
+
+      # One full checkout of main serves the whole job: Grype picks up
+      # .grype.yaml from the workspace (as in rescan.yaml), the guard and the
+      # plan read the tags, and the release edits start from main's head.
+      - name: Checkout main
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+
+      # Never start a release while another is unfinished:
+      # - A publish run (auto-release-publish.yaml) is active: skip. It can
+      #   take over an hour, and main is ahead of the tags until it is done.
+      # - The highest tag's GitHub release stays a draft until it is published,
+      #   so with no publish running, a draft or missing release means one
+      #   failed. That needs a person (cut-release step 8b), not a new version
+      #   on top.
+      # - An open release or dev-cycle PR, automated or cut by hand, is in
+      #   flight: skip. Once an automated one is open for hours it is stuck; a
+      #   hand-cut one gets a day. Past that, fail instead of quietly skipping
+      #   every day.
+      - name: Check for an unfinished release
+        id: guard
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          skip() {
+            echo "::notice::$1"
+            echo "proceed=false" >>"$GITHUB_OUTPUT"
+            exit 0
+          }
+          if [ -n "$RELEASED_IMAGE_OVERRIDE" ] && [ "$DRY_RUN" != true ]; then
+            echo "::error::released-image is only allowed in dry runs."
+            exit 1
+          fi
+          # Every closed PR starts a (skipped) run of the publish workflow, so
+          # filter by status rather than looking at the latest runs only.
+          publishing="$(gh run list --workflow auto-release-publish.yaml --limit 100 \
+            --json status --jq '[.[] | select(.status != "completed")] | length')"
+          if [ "$publishing" != 0 ]; then
+            skip "A release is publishing; nothing to do."
+          fi
+          latest_tag="$(git tag --list 'v*' --sort=-v:refname \
+            | grep -E -m 1 '^v[0-9]+\.[0-9]+\.[0-9]+$' || true)"
+          if [ -z "$latest_tag" ]; then
+            echo "::error::No vX.Y.Z release tag found."
+            exit 1
+          fi
+          # A read-only token cannot see draft releases, so a draft and a
+          # missing release look the same here: both mean "not published".
+          if ! gh release view "$latest_tag" --json isDraft --jq .isDraft 2>/dev/null \
+            | grep -qx false; then
+            echo "::error::$latest_tag is tagged but its GitHub release is not" \
+              "published (a draft, or missing). Finish or recover it first" \
+              "(cut-release steps 8b-10)."
+            exit 1
+          fi
+          # Same-repository PRs only: opening one needs write access, so a
+          # fork PR with a release title cannot suppress releases.
+          # gh lists 30 PRs by default; open Renovate PRs could push a stuck
+          # release PR out of that window.
+          prs="$(gh pr list --state open --limit 500 \
+            --json headRefName,title,createdAt,url,isCrossRepository \
+            --jq '[.[] | select((.isCrossRepository | not)
+              and ((.headRefName | startswith("auto-release/"))
+                or (.headRefName | startswith("auto-dev-cycle/"))
+                or (.title | startswith("chore(release):"))
+                or (.title == "chore: start new development cycle")))]')"
+          auto_before="$(date -u -d '2 hours ago' +%Y-%m-%dT%H:%M:%SZ)"
+          manual_before="$(date -u -d '24 hours ago' +%Y-%m-%dT%H:%M:%SZ)"
+          stale="$(jq -r --arg auto "$auto_before" --arg manual "$manual_before" '.[]
+            | select(if (.headRefName | startswith("auto-"))
+                then .createdAt < $auto else .createdAt < $manual end)
+            | .url' <<<"$prs")"
+          if [ -n "$stale" ]; then
+            echo "::error::Release PR stuck open, blocking security releases: $stale"
+            exit 1
+          fi
+          if [ "$(jq length <<<"$prs")" != 0 ]; then
+            skip "A release PR is in flight; nothing to do: $(jq -r '[.[].url] | join(" ")' <<<"$prs")"
+          fi
+          # The floating major tag follows the latest release (:1 for 1.x).
+          major="${latest_tag#v}"
+          major="${major%%.*}"
+          echo "released-image=${RELEASED_IMAGE_OVERRIDE:-docker.io/$IMAGE_REPO:$major}" \
+            >>"$GITHUB_OUTPUT"
+          echo "proceed=true" >>"$GITHUB_OUTPUT"
+
+      - name: Scan released image
+        if: ${{ steps.guard.outputs.proceed == 'true' }}
+        id: scan-released
+        uses: anchore/scan-action@27805bf3b4e84b4a5c980df22ed233c00390a439 # v7.4.2
+        with:
+          image: ${{ steps.guard.outputs.released-image }}
+          only-fixed: true
+          add-cpes-if-none: true
+          fail-build: false
+          output-format: json
+          output-file: ${{ runner.temp }}/released.json
+
+      - name: Check released image for fixable findings
+        if: ${{ steps.guard.outputs.proceed == 'true' }}
+        id: released
+        env:
+          REPORT: ${{ steps.scan-released.outputs.json }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          count="$(jq '.matches | length' "$REPORT")"
+          echo "Fixable findings in the released image: $count"
+          if [ "$count" = 0 ]; then
+            echo "fixable=false" >>"$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "fixable=true" >>"$GITHUB_OUTPUT"
+          # A :main pushed within the last 20 hours already carries the
+          # Alpine packages a rebuild would pull; skip the rebuild then.
+          pushed="$(curl -fsS "https://hub.docker.com/v2/repositories/$IMAGE_REPO/tags/main" \
+            | jq -r .tag_last_pushed)"
+          if [ "$(date -u -d "$pushed" +%s)" -gt "$(date -u -d '20 hours ago' +%s)" ]; then
+            echo ":main was pushed at $pushed; using it as is."
+            echo "rebuild=false" >>"$GITHUB_OUTPUT"
+          else
+            echo ":main was pushed at $pushed; rebuilding it."
+            echo "rebuild=true" >>"$GITHUB_OUTPUT"
+          fi
+
+      # docker.yaml cancels superseded main runs in both directions: a push to
+      # main during the rebuild cancels it (the job then fails and the next
+      # day retries), and the rebuild cancels a push build already running on
+      # main, which it supersedes with the same or a newer commit.
+      # The run is found by creation time with a minute of slack for clock
+      # skew. Picking up a different main rebuild is harmless: only a :main
+      # built from the rebuilt commit or a later one is accepted below.
+      - name: Rebuild :main
+        if: ${{ steps.released.outputs.rebuild == 'true' }}
+        id: rebuild
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          started="$(date -u -d '1 minute ago' +%Y-%m-%dT%H:%M:%SZ)"
+          gh workflow run docker.yaml --ref main
+          run_id=""
+          for _ in $(seq 30); do
+            sleep 10
+            run_id="$(gh run list --workflow docker.yaml --event workflow_dispatch \
+              --branch main --limit 5 --json databaseId,createdAt \
+              | jq -r --arg t "$started" \
+                '[.[] | select(.createdAt >= $t)] | first | .databaseId // empty')"
+            [ -n "$run_id" ] && break
+          done
+          if [ -z "$run_id" ]; then
+            echo "::error::The docker.yaml run dispatched at $started did not appear."
+            exit 1
+          fi
+          gh run watch "$run_id" --exit-status --interval 30 >/dev/null
+          sha="$(gh run view "$run_id" --json headSha --jq .headSha)"
+          echo "Rebuilt :main from $sha in run $run_id"
+          echo "sha=$sha" >>"$GITHUB_OUTPUT"
+
+      # All findings, not only fixable ones: a vulnerability main still has
+      # without a published fix must not look fixed.
+      - name: Scan :main
+        if: ${{ steps.released.outputs.fixable == 'true' }}
+        id: scan-candidate
+        uses: anchore/scan-action@27805bf3b4e84b4a5c980df22ed233c00390a439 # v7.4.2
+        with:
+          image: docker.io/${{ env.IMAGE_REPO }}:main
+          only-fixed: false
+          add-cpes-if-none: true
+          fail-build: false
+          output-format: json
+          output-file: ${{ runner.temp }}/candidate.json
+
+      # The scanned :main image names its commit in its OCI revision label.
+      - name: Read scanned commit
+        if: ${{ steps.released.outputs.fixable == 'true' }}
+        id: candidate
+        env:
+          REPORT: ${{ steps.scan-candidate.outputs.json }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          sha="$(jq -r '.source.target.labels["org.opencontainers.image.revision"] // empty' \
+            "$REPORT")"
+          if ! printf '%s' "$sha" | grep -Eq '^[0-9a-f]{40}$'; then
+            echo "::error::The :main image has no commit revision label."
+            exit 1
+          fi
+          echo "sha=$sha" >>"$GITHUB_OUTPUT"
+
+      # The release edits start from the current head of main, not the
+      # scanned commit: main must contain the scanned commit, and anything
+      # merged since (typically Renovate updates) goes through the release
+      # PR's checks and the tag build's scans. Starting from an older commit
+      # would leave the PR behind main, which strict up-to-date checks block.
+      # main may have moved during the rebuild, so fetch it again. A push to
+      # main can also replace :main after the rebuild; any :main built from
+      # the rebuilt commit or a later one is as good.
+      - name: Update to main's head
+        if: ${{ steps.released.outputs.fixable == 'true' }}
+        id: base
+        env:
+          SCANNED_SHA: ${{ steps.candidate.outputs.sha }}
+          REBUILT_SHA: ${{ steps.rebuild.outputs.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin main
+          git checkout --detach FETCH_HEAD
+          if ! git merge-base --is-ancestor "$SCANNED_SHA" HEAD; then
+            echo "::error::main does not contain the scanned commit $SCANNED_SHA."
+            exit 1
+          fi
+          if [ -n "$REBUILT_SHA" ] \
+            && ! git merge-base --is-ancestor "$REBUILT_SHA" "$SCANNED_SHA"; then
+            echo "::error:::main ($SCANNED_SHA) predates the rebuilt $REBUILT_SHA."
+            exit 1
+          fi
+          echo "sha=$(git rev-parse HEAD)" >>"$GITHUB_OUTPUT"
+
+      - name: Plan release
+        if: ${{ steps.released.outputs.fixable == 'true' }}
+        id: plan
+        env:
+          RELEASED: ${{ steps.scan-released.outputs.json }}
+          CANDIDATE: ${{ steps.scan-candidate.outputs.json }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 .github/scripts/auto_release.py plan \
+            --released "$RELEASED" --candidate "$CANDIDATE" \
+            --fixed-out "$RUNNER_TEMP/fixed.json"
+
+      - name: Apply release edits
+        if: ${{ steps.plan.outputs.release == 'true' }}
+        env:
+          VERSION: ${{ steps.plan.outputs.version }}
+          PREVIOUS: ${{ steps.plan.outputs.previous }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 .github/scripts/auto_release.py apply-release \
+            --version "$VERSION" --previous "$PREVIOUS" \
+            --fixed "$RUNNER_TEMP/fixed.json"
+          python3 .github/scripts/auto_release.py notes --version "$VERSION" \
+            >"$RUNNER_TEMP/notes.md"
+          {
+            echo "## Release v$VERSION (dry run: $DRY_RUN)"
+            echo
+            cat "$RUNNER_TEMP/notes.md"
+            echo
+            echo '```diff'
+            git diff
+            echo '```'
+          } >>"$GITHUB_STEP_SUMMARY"
+
+      - name: Create App token
+        if: ${{ steps.plan.outputs.release == 'true' && env.DRY_RUN != 'true' }}
+        id: app-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          client-id: ${{ vars.RELEASE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+          permission-contents: write
+          permission-pull-requests: write
+
+      # auto-release-publish.yaml only acts on PRs from RELEASE_APP_SLUG's bot.
+      # A mismatch would merge the release PR and then never tag it.
+      - name: Commit release edits
+        if: ${{ steps.plan.outputs.release == 'true' && env.DRY_RUN != 'true' }}
+        id: commit
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          APP_SLUG: ${{ steps.app-token.outputs.app-slug }}
+          EXPECTED_SLUG: ${{ vars.RELEASE_APP_SLUG }}
+          VERSION: ${{ steps.plan.outputs.version }}
+          BASE_SHA: ${{ steps.base.outputs.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "$APP_SLUG" != "$EXPECTED_SLUG" ]; then
+            echo "::error::RELEASE_APP_SLUG is '$EXPECTED_SLUG' but the App is '$APP_SLUG'."
+            exit 1
+          fi
+          python3 .github/scripts/auto_release.py commit \
+            --repo "$GH_REPO" --branch "auto-release/v$VERSION" \
+            --base-sha "$BASE_SHA" --app-slug "$APP_SLUG" \
+            --headline "chore(release): v$VERSION"
+
+      - name: Open release PR
+        if: ${{ steps.plan.outputs.release == 'true' && env.DRY_RUN != 'true' }}
+        id: open
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          SIGNOFF: ${{ steps.commit.outputs.signoff }}
+          VERSION: ${{ steps.plan.outputs.version }}
+          SCANNED_SHA: ${{ steps.candidate.outputs.sha }}
+          RELEASED_IMAGE: ${{ steps.guard.outputs.released-image }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          branch="auto-release/v$VERSION"
+          {
+            echo "Automated security release v$VERSION."
+            echo
+            echo "## Summary"
+            echo
+            cat "$RUNNER_TEMP/notes.md"
+            echo
+            echo "## Testing"
+            echo
+            echo "Grype (only-fixed) finds these in \`$RELEASED_IMAGE\` but not in"
+            echo "\`:main\` built from $SCANNED_SHA. Merging tags the merge commit and"
+            echo "publishes through auto-release-publish.yaml."
+          } >"$RUNNER_TEMP/pr.md"
+          url="$(gh pr create --base main --head "$branch" \
+            --title "chore(release): v$VERSION" --body-file "$RUNNER_TEMP/pr.md")"
+          gh pr merge "$url" --auto --squash \
+            --subject "chore(release): v$VERSION" --body "$SIGNOFF"
+          echo "::notice::Opened $url with auto-merge enabled."
+          echo "url=$url" >>"$GITHUB_OUTPUT"
+
+      # Strict up-to-date checks block auto-merge whenever main moves (daily
+      # Renovate automerges, for one), and GitHub does not update the branch
+      # by itself; await-merge keeps it current. The App token lives an hour,
+      # so stop well before that; a PR that still hasn't merged is reported
+      # as stuck by the next run's guard.
+      - name: Keep release PR current until it merges
+        if: ${{ steps.plan.outputs.release == 'true' && env.DRY_RUN != 'true' }}
+        timeout-minutes: 50
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          URL: ${{ steps.open.outputs.url }}
+        shell: bash
+        run: python3 .github/scripts/auto_release.py await-merge "$URL" --minutes 45

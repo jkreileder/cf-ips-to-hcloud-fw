@@ -57,6 +57,12 @@
   signing, and SLSA provenance.
 - Additional workflows cover CodeQL, dependency review, scorecard, and pytest
   result publication.
+- `auto-release.yaml` opens a release PR (as a GitHub App, auto-merge on) when
+  a rebuilt `:main` image fixes Grype findings that the released `:1` image
+  still has; `auto-release-publish.yaml` tags the merged commit, waits for the
+  publish runs, publishes the GitHub release, and opens the dev-cycle PR. The
+  edits come from `.github/scripts/auto_release.py`. Before cutting a release
+  by hand, check for an open `auto-release/*` PR.
 
 ### Additional repo maintenance tools
 
