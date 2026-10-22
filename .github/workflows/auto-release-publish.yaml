@@ -1,0 +1,170 @@
+name: Auto-release publish
+
+# Finishes a release whose PR auto-release.yaml opened, once that PR merges:
+#
+# 1. Tag the merge commit as the release App. The App is a bypass actor on the
+#    "Tag v*" ruleset; a tag pushed with GITHUB_TOKEN would not start the
+#    publish workflows.
+# 2. Wait for docker.yaml and python-package.yaml on the tag.
+# 3. Publish the draft GitHub release with the CHANGELOG entry as its notes.
+# 4. Open the next development cycle's PR with auto-merge.
+#
+# A failed publish run is never retried here. Docker Hub tags are immutable,
+# so the recovery depends on how far the run got (re-run only the failed jobs,
+# or cut the next patch). That decision is left to a person; see the
+# cut-release skill, step 8b.
+
+on:
+  pull_request:
+    types:
+      - closed
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Tag and publish release
+    # Only merged PRs that the release App opened from its own branch prefix.
+    if: >-
+      ${{ github.event.pull_request.merged
+      && startsWith(github.event.pull_request.head.ref, 'auto-release/')
+      && github.event.pull_request.head.repo.full_name == github.repository
+      && github.event.pull_request.user.login == format('{0}[bot]', vars.RELEASE_APP_SLUG) }}
+    runs-on: ubuntu-26.04
+    timeout-minutes: 90
+    permissions:
+      contents: read
+      # Find and watch the publish runs on the tag.
+      actions: read
+    env:
+      GH_REPO: ${{ github.repository }}
+      MERGE_SHA: ${{ github.event.pull_request.merge_commit_sha }}
+
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@dc2769abcc0fcfbadfc1df54081c1608579ef6b2 # v2.22.2
+        with:
+          disable-sudo: true
+          egress-policy: block
+          allowed-endpoints: >
+            api.github.com:443
+            github.com:443
+
+      - name: Checkout merge commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Read release version
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="$(sed -nE 's/^version = "([^"]+)"$/\1/p' pyproject.toml)"
+          if ! printf '%s' "$version" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::error::Merged release PR has non-final version '$version'"
+            exit 1
+          fi
+          if git rev-parse -q --verify "refs/tags/v$version" >/dev/null; then
+            echo "::error::v$version is already tagged"
+            exit 1
+          fi
+          python3 .github/scripts/auto_release.py notes --version "$version" \
+            >"$RUNNER_TEMP/notes.md"
+          echo "version=$version" >>"$GITHUB_OUTPUT"
+
+      - name: Create App token
+        id: app-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          client-id: ${{ vars.RELEASE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+          permission-contents: write
+          permission-pull-requests: write
+
+      - name: Tag merge commit
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          TAG: v${{ steps.version.outputs.version }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh api "repos/$GH_REPO/git/refs" --method POST \
+            -f ref="refs/tags/$TAG" -f sha="$MERGE_SHA" >/dev/null
+          echo "::notice::Tagged $MERGE_SHA as $TAG"
+
+      - name: Wait for publish runs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: v${{ steps.version.outputs.version }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          for workflow in docker.yaml python-package.yaml; do
+            run_id=""
+            for _ in $(seq 30); do
+              run_id="$(gh run list --workflow "$workflow" --branch "$TAG" \
+                --limit 1 --json databaseId --jq '.[0].databaseId // empty')"
+              [ -n "$run_id" ] && break
+              sleep 10
+            done
+            if [ -z "$run_id" ]; then
+              echo "::error::No $workflow run started for $TAG."
+              exit 1
+            fi
+            if ! gh run watch "$run_id" --exit-status --interval 30 >/dev/null; then
+              echo "::error::$workflow failed for $TAG (run $run_id). Do not re-run the" \
+                "whole workflow or re-push the tag; follow cut-release step 8b."
+              exit 1
+            fi
+            echo "$workflow succeeded for $TAG (run $run_id)"
+          done
+
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          TAG: v${{ steps.version.outputs.version }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh release edit "$TAG" --notes-file "$RUNNER_TEMP/notes.md" \
+            --draft=false --latest
+          echo "::notice::Published $(gh release view "$TAG" --json url --jq .url)"
+
+      # Starts from the current main, not the merge commit, so updates merged
+      # while the release was publishing are kept.
+      - name: Open dev-cycle PR
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          APP_SLUG: ${{ steps.app-token.outputs.app-slug }}
+          VERSION: ${{ steps.version.outputs.version }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin main
+          git checkout --detach FETCH_HEAD
+          base_sha="$(git rev-parse HEAD)"
+          python3 .github/scripts/auto_release.py apply-dev-cycle --version "$VERSION"
+          bot="${APP_SLUG}[bot]"
+          bot_id="$(gh api "users/${APP_SLUG}%5Bbot%5D" --jq .id)"
+          signoff="Signed-off-by: $bot <${bot_id}+${bot}@users.noreply.github.com>"
+          branch="auto-dev-cycle/v$VERSION"
+          python3 .github/scripts/auto_release.py commit \
+            --repo "$GH_REPO" --branch "$branch" --base-sha "$base_sha" \
+            --headline "chore: start new development cycle" --body "$signoff" \
+            pyproject.toml uv.lock CHANGELOG.md
+          url="$(gh pr create --base main --head "$branch" \
+            --title "chore: start new development cycle" \
+            --body "Begin the next development cycle after v$VERSION.")"
+          gh pr merge "$url" --auto --squash \
+            --subject "chore: start new development cycle" --body "$signoff"
+          echo "::notice::Opened $url with auto-merge enabled."

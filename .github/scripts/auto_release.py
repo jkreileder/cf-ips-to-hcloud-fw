@@ -1,0 +1,532 @@
+"""Plan and prepare automated security releases.
+
+Used by the auto-release workflows. The version, changelog and pinned-version
+edits mirror the manual cut-release procedure, so a release made here looks the
+same as one cut by hand. Standard library only: the workflows run it with the
+runner's system Python, without syncing the project environment.
+
+Subcommands:
+
+- ``plan``: compare Grype JSON reports of the released image and a fresh
+  ``main`` image, and decide whether ``main`` fixes anything worth releasing.
+- ``apply-release`` / ``apply-dev-cycle``: edit the version files in place.
+- ``notes``: print a version's CHANGELOG entry (the GitHub release body).
+- ``commit``: create a branch and a single GitHub-signed commit through the
+  GraphQL API (``createCommitOnBranch``), so no signing key is needed.
+"""
+
+from __future__ import annotations
+
+import argparse
+import base64
+import datetime as dt
+import json
+import os
+import re
+import subprocess  # ruff: ignore[suspicious-subprocess-import]
+import sys
+import textwrap
+from dataclasses import asdict, dataclass
+from pathlib import Path
+from typing import NoReturn
+
+PYPROJECT = Path("pyproject.toml")
+UV_LOCK = Path("uv.lock")
+CHANGELOG = Path("CHANGELOG.md")
+DOCKERFILE = Path("Dockerfile")
+# Files that pin the latest released version in examples.
+PINNED_VERSION_FILES = (
+    Path("README.md"),
+    Path(".github/ISSUE_TEMPLATE/bug_report.md"),
+)
+PROJECT_NAME = "cf-ips-to-hcloud-fw"
+WRAP_WIDTH = 100
+DEV_CYCLE_BULLET = "- Start new development cycle"
+# CHANGELOG headings separate the version and the date with an en dash.
+DASH = "\N{EN DASH}"
+
+FINAL_VERSION_RE = re.compile(r"^(\d+)\.(\d+)\.(\d+)$")
+DEV_VERSION_RE = re.compile(r"^(\d+)\.(\d+)\.(\d+)\.dev\d+$")
+PYPROJECT_VERSION_RE = re.compile(r'^version = "([^"]+)"$', re.MULTILINE)
+UV_LOCK_VERSION_RE = re.compile(
+    rf'(^name = "{re.escape(PROJECT_NAME)}"\nversion = ")[^"]+(")', re.MULTILINE
+)
+CHANGELOG_UNRELEASED_RE = re.compile(
+    rf"^## \[v([^\]]+)\] {DASH} Unreleased$", re.MULTILINE
+)
+CHANGELOG_HEADING_RE = re.compile(r"^## \[v", re.MULTILINE)
+FROM_RE = re.compile(
+    r"^FROM\s+(?:--platform=\S+\s+)?(\S+?):([^@\s]+)@(sha256:[0-9a-f]+)\s+AS\s+(\S+)",
+    re.MULTILINE | re.IGNORECASE,
+)
+
+Version = tuple[int, int, int]
+
+
+@dataclass(frozen=True)
+class Finding:
+    """One fixable vulnerability match in one package."""
+
+    vulnerability: str
+    severity: str
+    package: str
+    installed: str
+    fixed_in: tuple[str, ...]
+
+
+def fail(message: str) -> NoReturn:
+    """Exit with a GitHub Actions error annotation.
+
+    Raises:
+        SystemExit: Always, with status 1.
+    """
+    sys.stderr.write(f"::error::{message}\n")
+    raise SystemExit(1)
+
+
+def parse_final(version: str) -> Version:
+    """Parse ``X.Y.Z`` into a comparable tuple.
+
+    Returns:
+        Version: The major, minor and patch numbers.
+    """
+    match = FINAL_VERSION_RE.match(version)
+    if match is None:
+        fail(f"not a final X.Y.Z version: {version!r}")
+    major, minor, patch = match.groups()
+    return int(major), int(minor), int(patch)
+
+
+def format_version(version: Version) -> str:
+    """Format a version tuple.
+
+    Returns:
+        str: The version as ``X.Y.Z``.
+    """
+    return ".".join(str(part) for part in version)
+
+
+def git(*args: str) -> str:
+    """Run git in the current directory.
+
+    Returns:
+        str: The command's standard output, stripped.
+    """
+    result = subprocess.run(  # ruff: ignore[subprocess-without-shell-equals-true]
+        ["git", *args],  # ruff: ignore[start-process-with-partial-path]
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return result.stdout.strip()
+
+
+def released_versions() -> list[Version]:
+    """List the repository's final release tags.
+
+    Returns:
+        list[Version]: Every ``vX.Y.Z`` tag, ascending.
+    """
+    tags = git("tag", "--list", "v*").splitlines()
+    return sorted(
+        parse_final(tag[1:]) for tag in tags if FINAL_VERSION_RE.match(tag[1:])
+    )
+
+
+def project_version() -> str:
+    """Read the project version.
+
+    Returns:
+        str: The ``version`` from pyproject.toml.
+    """
+    match = PYPROJECT_VERSION_RE.search(PYPROJECT.read_text(encoding="utf-8"))
+    if match is None:
+        fail("could not read the version from pyproject.toml")
+    return match.group(1)
+
+
+def next_release(last: Version, current: str) -> Version:
+    """Choose the release version.
+
+    A ``.devN`` version on main names the release it leads to; otherwise the
+    release is the next patch after the highest tag. Either way the result must
+    sort after every existing tag: a version whose publish failed is burned
+    (Docker Hub tags are immutable) and must never be reused.
+
+    Returns:
+        Version: The version to release.
+    """
+    dev = DEV_VERSION_RE.match(current)
+    if dev is not None:
+        major, minor, patch = dev.groups()
+        candidate = (int(major), int(minor), int(patch))
+        if candidate > last:
+            return candidate
+    return last[0], last[1], last[2] + 1
+
+
+def load_findings(path: Path) -> dict[tuple[str, str], Finding]:
+    """Load a Grype JSON report.
+
+    Returns:
+        dict[tuple[str, str], Finding]: Findings keyed by (vulnerability,
+        package).
+    """
+    report = json.loads(path.read_text(encoding="utf-8"))
+    findings: dict[tuple[str, str], Finding] = {}
+    for match in report.get("matches") or []:
+        vulnerability = match["vulnerability"]
+        artifact = match["artifact"]
+        fix = vulnerability.get("fix") or {}
+        finding = Finding(
+            vulnerability=vulnerability["id"],
+            severity=str(vulnerability.get("severity") or "Unknown"),
+            package=artifact["name"],
+            installed=artifact["version"],
+            fixed_in=tuple(fix.get("versions") or ()),
+        )
+        findings[finding.vulnerability, finding.package] = finding
+    return findings
+
+
+def code_list(items: list[str]) -> str:
+    """Join names as inline code in prose.
+
+    Returns:
+        str: ``a``, ``a` and `b``, or ``a`, `b` and `c``.
+    """
+    quoted = [f"`{item}`" for item in items]
+    if len(quoted) == 1:
+        return quoted[0]
+    return f"{', '.join(quoted[:-1])} and {quoted[-1]}"
+
+
+def bullet(text: str) -> str:
+    """Wrap a CHANGELOG bullet at the repository's Markdown width.
+
+    Returns:
+        str: The bullet, with continuation lines indented by two spaces.
+    """
+    return textwrap.fill(
+        text,
+        width=WRAP_WIDTH,
+        initial_indent="- ",
+        subsequent_indent="  ",
+        break_long_words=False,
+        break_on_hyphens=False,
+    )
+
+
+def security_bullets(fixed: list[Finding], previous: str) -> list[str]:
+    """Describe fixed findings, one bullet per vulnerability.
+
+    Returns:
+        list[str]: CHANGELOG bullets marked ``**Security:**``.
+    """
+    by_id: dict[str, list[Finding]] = {}
+    for finding in fixed:
+        by_id.setdefault(finding.vulnerability, []).append(finding)
+    bullets = []
+    for vulnerability, findings in sorted(by_id.items()):
+        severity = findings[0].severity.lower()
+        label = (
+            vulnerability if severity == "unknown" else f"{vulnerability} ({severity})"
+        )
+        packages = code_list(sorted({finding.package for finding in findings}))
+        installed = ", ".join(sorted({finding.installed for finding in findings}))
+        fixed_in = ", ".join(
+            sorted({version for finding in findings for version in finding.fixed_in})
+        )
+        text = (
+            f"**Security:** Fixed {label} in {packages}, "
+            f"which the v{previous} image shipped at {installed}"
+        )
+        if fixed_in:
+            text += f" (fixed in {fixed_in})"
+        bullets.append(bullet(text))
+    return bullets
+
+
+def short_image(name: str) -> str:
+    """Drop the Docker Hub registry and library prefixes from an image name.
+
+    Returns:
+        str: ``python`` for ``docker.io/library/python``, and so on.
+    """
+    for prefix in ("docker.io/library/", "docker.io/"):
+        if name.startswith(prefix):
+            return name.removeprefix(prefix)
+    return name
+
+
+def dockerfile_stages(dockerfile: str) -> dict[str, tuple[str, str, str]]:
+    """Map each pinned ``FROM ... AS stage`` to its image.
+
+    Stages are keyed by their ``AS`` name because one image (``python``) can
+    back several stages with different tags.
+
+    Returns:
+        dict[str, tuple[str, str, str]]: Stage name to (image, tag, digest).
+    """
+    return {
+        alias: (short_image(name), tag, digest)
+        for name, tag, digest, alias in FROM_RE.findall(dockerfile)
+    }
+
+
+def base_image_bullet(previous_tag: str) -> str | None:
+    """Summarize Dockerfile FROM changes since the previous release.
+
+    Returns:
+        str | None: A CHANGELOG bullet, or None when no pinned image changed.
+    """
+    old = dockerfile_stages(git("show", f"{previous_tag}:{DOCKERFILE}"))
+    new = dockerfile_stages(DOCKERFILE.read_text(encoding="utf-8"))
+    changes: list[str] = []
+    for alias, (name, tag, digest) in new.items():
+        if alias not in old or old[alias] == (name, tag, digest):
+            continue
+        old_name, old_tag, _ = old[alias]
+        if (old_name, old_tag) != (name, tag):
+            change = f"`{name}` {old_tag} → {tag}"
+        else:
+            change = f"new `{name}:{tag}` digest"
+        if change not in changes:
+            changes.append(change)
+    if not changes:
+        return None
+    return bullet(f"Refreshed the pinned base images ({'; '.join(changes)})")
+
+
+def write_outputs(**values: str) -> None:
+    """Append step outputs for later workflow steps and echo them."""
+    lines = "".join(f"{key}={value}\n" for key, value in values.items())
+    output = os.environ.get("GITHUB_OUTPUT")
+    if output:
+        with Path(output).open("a", encoding="utf-8") as handle:
+            handle.write(lines)
+    sys.stdout.write(lines)
+
+
+def cmd_plan(args: argparse.Namespace) -> None:
+    """Decide whether main fixes findings that the released image still has."""
+    released = load_findings(args.released)
+    candidate = load_findings(args.candidate)
+    fixed = [finding for key, finding in released.items() if key not in candidate]
+    for key, finding in candidate.items():
+        if key not in released:
+            sys.stderr.write(
+                "::warning::main has a fixable finding the release does not: "
+                f"{finding.vulnerability} in {finding.package} {finding.installed}\n"
+            )
+    versions = released_versions()
+    if not versions:
+        fail("no vX.Y.Z tags found; fetch tags before planning")
+    last = versions[-1]
+    if not fixed:
+        write_outputs(release="false", previous=format_version(last))
+        return
+    version = next_release(last, project_version())
+    args.fixed_out.write_text(
+        json.dumps([asdict(finding) for finding in fixed], indent=2) + "\n",
+        encoding="utf-8",
+    )
+    write_outputs(
+        release="true", version=format_version(version), previous=format_version(last)
+    )
+
+
+def replace_version_pins(old: str, new: str) -> None:
+    """Point the documented example version at the new release."""
+    pattern = re.compile(rf"(?<![\d.]){re.escape(old)}(?!\d)")
+    for path in PINNED_VERSION_FILES:
+        text = path.read_text(encoding="utf-8")
+        path.write_text(pattern.sub(new, text), encoding="utf-8")
+
+
+def set_project_version(version: str) -> None:
+    """Set the version in pyproject.toml and the project's uv.lock entry."""
+    pyproject = PYPROJECT.read_text(encoding="utf-8")
+    PYPROJECT.write_text(
+        PYPROJECT_VERSION_RE.sub(f'version = "{version}"', pyproject, count=1),
+        encoding="utf-8",
+    )
+    lock, count = UV_LOCK_VERSION_RE.subn(
+        rf"\g<1>{version}\g<2>", UV_LOCK.read_text(encoding="utf-8")
+    )
+    if count != 1:
+        fail(f"expected one {PROJECT_NAME} entry in uv.lock, found {count}")
+    UV_LOCK.write_text(lock, encoding="utf-8")
+
+
+def read_fixed(path: Path) -> list[Finding]:
+    """Read the findings written by ``plan``.
+
+    Returns:
+        list[Finding]: The findings the release fixes.
+    """
+    return [
+        Finding(
+            vulnerability=item["vulnerability"],
+            severity=item["severity"],
+            package=item["package"],
+            installed=item["installed"],
+            fixed_in=tuple(item["fixed_in"]),
+        )
+        for item in json.loads(path.read_text(encoding="utf-8"))
+    ]
+
+
+def cmd_apply_release(args: argparse.Namespace) -> None:
+    """Edit the version files for a release."""
+    version, previous = args.version, args.previous
+    bullets = security_bullets(read_fixed(args.fixed), previous)
+
+    text = CHANGELOG.read_text(encoding="utf-8")
+    unreleased = CHANGELOG_UNRELEASED_RE.search(text)
+    if unreleased is not None:
+        # Keep hand-written bullets from the Unreleased section.
+        following = CHANGELOG_HEADING_RE.search(text, unreleased.end())
+        end = following.start() if following else len(text)
+        kept = text[unreleased.end() : end].replace(DEV_CYCLE_BULLET, "").strip()
+        if kept:
+            bullets.append(kept)
+        start = unreleased.start()
+    else:
+        first = CHANGELOG_HEADING_RE.search(text)
+        start = end = first.start() if first else len(text)
+    images = base_image_bullet(f"v{previous}")
+    if images:
+        bullets.append(images)
+    section = f"## [v{version}] {DASH} {args.date}\n\n" + "\n".join(bullets) + "\n\n"
+    CHANGELOG.write_text(text[:start] + section + text[end:], encoding="utf-8")
+
+    set_project_version(version)
+    replace_version_pins(previous, version)
+
+
+def cmd_apply_dev_cycle(args: argparse.Namespace) -> None:
+    """Start the next patch's development cycle after a release."""
+    major, minor, patch = parse_final(args.version)
+    upcoming = format_version((major, minor, patch + 1))
+    set_project_version(f"{upcoming}.dev1")
+    text = CHANGELOG.read_text(encoding="utf-8")
+    first = CHANGELOG_HEADING_RE.search(text)
+    position = first.start() if first else len(text)
+    section = f"## [v{upcoming}] {DASH} Unreleased\n\n{DEV_CYCLE_BULLET}\n\n"
+    CHANGELOG.write_text(text[:position] + section + text[position:], encoding="utf-8")
+
+
+def cmd_notes(args: argparse.Namespace) -> None:
+    """Print a version's CHANGELOG entry without its heading."""
+    text = CHANGELOG.read_text(encoding="utf-8")
+    heading = re.search(
+        rf"^## \[v{re.escape(args.version)}\] {DASH} .*$", text, re.MULTILINE
+    )
+    if heading is None:
+        fail(f"no CHANGELOG entry for v{args.version}")
+    following = CHANGELOG_HEADING_RE.search(text, heading.end())
+    end = following.start() if following else len(text)
+    sys.stdout.write(text[heading.end() : end].strip() + "\n")
+
+
+def gh_api(*args: str, payload: object = None) -> dict[str, object]:
+    """Call ``gh api``, sending ``payload`` as the JSON request body.
+
+    Returns:
+        dict[str, object]: The decoded JSON response.
+    """
+    stdin_args = ["--input", "-"] if payload is not None else []
+    result = subprocess.run(  # ruff: ignore[subprocess-without-shell-equals-true]
+        ["gh", "api", *args, *stdin_args],  # ruff: ignore[start-process-with-partial-path]
+        check=True,
+        capture_output=True,
+        text=True,
+        input=json.dumps(payload) if payload is not None else None,
+    )
+    return json.loads(result.stdout)
+
+
+COMMIT_MUTATION = """
+mutation($input: CreateCommitOnBranchInput!) {
+  createCommitOnBranch(input: $input) { commit { oid } }
+}
+"""
+
+
+def cmd_commit(args: argparse.Namespace) -> None:
+    """Create a branch at the base commit and add one signed commit to it."""
+    gh_api(
+        f"repos/{args.repo}/git/refs",
+        "--method",
+        "POST",
+        payload={"ref": f"refs/heads/{args.branch}", "sha": args.base_sha},
+    )
+    additions = [
+        {
+            "path": path,
+            "contents": base64.b64encode(Path(path).read_bytes()).decode("ascii"),
+        }
+        for path in args.paths
+    ]
+    message = {"headline": args.headline}
+    if args.body:
+        message["body"] = args.body
+    commit_input = {
+        "branch": {"repositoryNameWithOwner": args.repo, "branchName": args.branch},
+        # Fails the mutation if the branch moved since it was created.
+        "expectedHeadOid": args.base_sha,
+        "message": message,
+        "fileChanges": {"additions": additions},
+    }
+    response = gh_api(
+        "graphql",
+        payload={"query": COMMIT_MUTATION, "variables": {"input": commit_input}},
+    )
+    data = response.get("data")
+    if response.get("errors") or not isinstance(data, dict):
+        fail(f"createCommitOnBranch failed: {response.get('errors')}")
+    write_outputs(sha=data["createCommitOnBranch"]["commit"]["oid"])
+
+
+def main() -> None:
+    """Dispatch to a subcommand."""
+    parser = argparse.ArgumentParser(description="Plan and prepare releases.")
+    sub = parser.add_subparsers(required=True)
+
+    plan = sub.add_parser("plan", help="decide whether to release")
+    plan.add_argument("--released", type=Path, required=True)
+    plan.add_argument("--candidate", type=Path, required=True)
+    plan.add_argument("--fixed-out", type=Path, required=True)
+    plan.set_defaults(func=cmd_plan)
+
+    release = sub.add_parser("apply-release", help="edit files for a release")
+    release.add_argument("--version", required=True)
+    release.add_argument("--previous", required=True)
+    release.add_argument("--fixed", type=Path, required=True)
+    release.add_argument("--date", default=dt.datetime.now(dt.UTC).date().isoformat())
+    release.set_defaults(func=cmd_apply_release)
+
+    dev = sub.add_parser("apply-dev-cycle", help="start the next dev cycle")
+    dev.add_argument("--version", required=True, help="the version just released")
+    dev.set_defaults(func=cmd_apply_dev_cycle)
+
+    notes = sub.add_parser("notes", help="print a CHANGELOG entry")
+    notes.add_argument("--version", required=True)
+    notes.set_defaults(func=cmd_notes)
+
+    commit = sub.add_parser("commit", help="create a branch with one signed commit")
+    commit.add_argument("--repo", required=True)
+    commit.add_argument("--branch", required=True)
+    commit.add_argument("--base-sha", required=True)
+    commit.add_argument("--headline", required=True)
+    commit.add_argument("--body", default="")
+    commit.add_argument("paths", nargs="+")
+    commit.set_defaults(func=cmd_commit)
+
+    args = parser.parse_args()
+    args.func(args)
+
+
+if __name__ == "__main__":
+    main()

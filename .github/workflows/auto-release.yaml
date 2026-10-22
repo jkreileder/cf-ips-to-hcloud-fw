@@ -1,0 +1,303 @@
+name: Auto-release security fixes
+
+# Opens a release PR when main fixes vulnerabilities that the released image
+# still has. Runs after the daily rescan (rescan.yaml, 05:17 UTC):
+#
+# 1. Scan the released image (:1) with Grype, only-fixed. Nothing to fix, done.
+# 2. Rebuild :main through docker.yaml. The final stage runs `apk upgrade`, so
+#    a rebuild picks up Alpine fixes even without a base-image bump.
+# 3. Scan :main and compare. Release only if main clears findings that :1
+#    has. Gating on Grype alone keeps scanner disagreements (Scout reporting a
+#    fix version that does not exist) from triggering releases.
+# 4. Edit the version files the way the cut-release procedure does, commit
+#    them through the GitHub API as the release App (GitHub signs the commit),
+#    open the PR and enable auto-merge. auto-release-publish.yaml tags the
+#    merge commit and publishes.
+#
+# Writes use the App token, not GITHUB_TOKEN: events caused by GITHUB_TOKEN do
+# not trigger workflows, so its PR would never get the required checks.
+#
+# Inert until configured: scheduled runs need the AUTO_RELEASE variable set to
+# "enabled", and manual runs default to a dry run that stops before writing.
+# Setup: vars RELEASE_APP_CLIENT_ID and RELEASE_APP_SLUG, secret
+# RELEASE_APP_PRIVATE_KEY.
+
+on:
+  schedule:
+    - cron: "47 5 * * *"
+  workflow_dispatch:
+    inputs:
+      dry-run:
+        description: Plan and show the release edits without opening a PR
+        type: boolean
+        default: true
+      released-image:
+        description: >-
+          Image to treat as released (dry runs only), e.g. an older version tag
+          to rehearse the full path while :1 is clean
+        type: string
+        default: ""
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Detect fixes and open release PR
+    if: ${{ github.event_name == 'workflow_dispatch' || vars.AUTO_RELEASE == 'enabled' }}
+    runs-on: ubuntu-26.04
+    # Most of the time is the :main rebuild.
+    timeout-minutes: 60
+    permissions:
+      contents: read
+      # Dispatch and watch the docker.yaml rebuild of :main.
+      actions: write
+      # Look for an open release PR.
+      pull-requests: read
+    env:
+      DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry-run || false }}
+      GH_REPO: ${{ github.repository }}
+      RELEASED_IMAGE_OVERRIDE: ${{ inputs.released-image }}
+      RELEASED_IMAGE: ${{ inputs.released-image || format('docker.io/{0}/cf-ips-to-hcloud-fw:1', vars.DOCKERHUB_USERNAME) }}
+      CANDIDATE_IMAGE: docker.io/${{ vars.DOCKERHUB_USERNAME }}/cf-ips-to-hcloud-fw:main
+
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@dc2769abcc0fcfbadfc1df54081c1608579ef6b2 # v2.22.2
+        with:
+          disable-sudo: true
+          egress-policy: block
+          # Docker Hub pulls and the Grype installer, binary and DB (as in
+          # rescan.yaml), plus the GitHub API for the dispatch and the PR.
+          allowed-endpoints: >
+            api.github.com:443
+            auth.docker.io:443
+            docker-images-prod.6aa30f8b08e16409b46e0173d6de2f56.r2.cloudflarestorage.com:443
+            get.anchore.io:443
+            github.com:443
+            grype.anchore.io:443
+            hub.docker.com:443
+            index.docker.io:443
+            objects.githubusercontent.com:443
+            production.cloudflare.docker.com:443
+            production.cloudfront.docker.com:443
+            raw.githubusercontent.com:443
+            registry-1.docker.io:443
+            release-assets.githubusercontent.com:443
+
+      # An open release PR means a release is in flight. Once it has been open
+      # for hours it is stuck (strict up-to-date checks: GitHub does not update
+      # the branch by itself), so fail instead of quietly skipping every day.
+      - name: Check for an open release PR
+        id: guard
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -n "$RELEASED_IMAGE_OVERRIDE" ] && [ "$DRY_RUN" != true ]; then
+            echo "::error::released-image is only allowed in dry runs."
+            exit 1
+          fi
+          stale_before="$(date -u -d '2 hours ago' +%Y-%m-%dT%H:%M:%SZ)"
+          prs="$(gh pr list --state open --json headRefName,createdAt,url \
+            --jq '[.[] | select(.headRefName | startswith("auto-release/"))]')"
+          stale="$(jq -r --arg t "$stale_before" \
+            '.[] | select(.createdAt < $t) | .url' <<<"$prs")"
+          if [ -n "$stale" ]; then
+            echo "::error::Release PR stuck for over 2 hours: $stale"
+            exit 1
+          fi
+          if [ "$(jq length <<<"$prs")" != 0 ]; then
+            echo "::notice::A release PR is in flight; nothing to do."
+            echo "proceed=false" >>"$GITHUB_OUTPUT"
+          else
+            echo "proceed=true" >>"$GITHUB_OUTPUT"
+          fi
+
+      # Grype picks up .grype.yaml from the workspace, as in rescan.yaml.
+      - name: Checkout repository
+        if: ${{ steps.guard.outputs.proceed == 'true' }}
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Scan released image
+        if: ${{ steps.guard.outputs.proceed == 'true' }}
+        id: scan-released
+        uses: anchore/scan-action@27805bf3b4e84b4a5c980df22ed233c00390a439 # v7.4.2
+        with:
+          image: ${{ env.RELEASED_IMAGE }}
+          only-fixed: true
+          add-cpes-if-none: true
+          fail-build: false
+          output-format: json
+          output-file: ${{ runner.temp }}/released.json
+
+      - name: Check released image for fixable findings
+        if: ${{ steps.guard.outputs.proceed == 'true' }}
+        id: released
+        env:
+          REPORT: ${{ steps.scan-released.outputs.json }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          count="$(jq '.matches | length' "$REPORT")"
+          echo "Fixable findings in the released image: $count"
+          if [ "$count" = 0 ]; then
+            echo "fixable=false" >>"$GITHUB_OUTPUT"
+          else
+            echo "fixable=true" >>"$GITHUB_OUTPUT"
+          fi
+
+      # docker.yaml cancels superseded main runs, so a push to main during the
+      # rebuild cancels this one; the job then fails and the next day retries.
+      - name: Rebuild :main
+        if: ${{ steps.released.outputs.fixable == 'true' }}
+        id: rebuild
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          started="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          gh workflow run docker.yaml --ref main
+          run_id=""
+          for _ in $(seq 30); do
+            sleep 10
+            run_id="$(gh run list --workflow docker.yaml --event workflow_dispatch \
+              --branch main --limit 5 --json databaseId,createdAt \
+              | jq -r --arg t "$started" \
+                '[.[] | select(.createdAt >= $t)] | last | .databaseId // empty')"
+            [ -n "$run_id" ] && break
+          done
+          if [ -z "$run_id" ]; then
+            echo "::error::The docker.yaml run dispatched at $started did not appear."
+            exit 1
+          fi
+          gh run watch "$run_id" --exit-status --interval 30 >/dev/null
+          sha="$(gh run view "$run_id" --json headSha --jq .headSha)"
+          echo "Rebuilt :main from $sha in run $run_id"
+          echo "sha=$sha" >>"$GITHUB_OUTPUT"
+
+      - name: Scan rebuilt :main
+        if: ${{ steps.released.outputs.fixable == 'true' }}
+        id: scan-candidate
+        uses: anchore/scan-action@27805bf3b4e84b4a5c980df22ed233c00390a439 # v7.4.2
+        with:
+          image: ${{ env.CANDIDATE_IMAGE }}
+          only-fixed: true
+          add-cpes-if-none: true
+          fail-build: false
+          output-format: json
+          output-file: ${{ runner.temp }}/candidate.json
+
+      # The release edits start from the exact commit the scanned :main image
+      # was built from. fetch-depth 0 brings the tags for version planning.
+      - name: Checkout scanned commit
+        if: ${{ steps.released.outputs.fixable == 'true' }}
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ steps.rebuild.outputs.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Plan release
+        if: ${{ steps.released.outputs.fixable == 'true' }}
+        id: plan
+        env:
+          RELEASED: ${{ steps.scan-released.outputs.json }}
+          CANDIDATE: ${{ steps.scan-candidate.outputs.json }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 .github/scripts/auto_release.py plan \
+            --released "$RELEASED" --candidate "$CANDIDATE" \
+            --fixed-out "$RUNNER_TEMP/fixed.json"
+
+      - name: Skip if the version is already tagged
+        if: ${{ steps.plan.outputs.release == 'true' }}
+        env:
+          TAG: v${{ steps.plan.outputs.version }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git rev-parse -q --verify "refs/tags/$TAG" >/dev/null; then
+            echo "::error::$TAG already exists; refusing to plan over it."
+            exit 1
+          fi
+
+      - name: Apply release edits
+        if: ${{ steps.plan.outputs.release == 'true' }}
+        env:
+          VERSION: ${{ steps.plan.outputs.version }}
+          PREVIOUS: ${{ steps.plan.outputs.previous }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 .github/scripts/auto_release.py apply-release \
+            --version "$VERSION" --previous "$PREVIOUS" \
+            --fixed "$RUNNER_TEMP/fixed.json"
+          python3 .github/scripts/auto_release.py notes --version "$VERSION" \
+            >"$RUNNER_TEMP/notes.md"
+          {
+            echo "## Release v$VERSION (dry run: $DRY_RUN)"
+            echo
+            cat "$RUNNER_TEMP/notes.md"
+            echo
+            echo '```diff'
+            git diff
+            echo '```'
+          } >>"$GITHUB_STEP_SUMMARY"
+
+      - name: Create App token
+        if: ${{ steps.plan.outputs.release == 'true' && env.DRY_RUN != 'true' }}
+        id: app-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          client-id: ${{ vars.RELEASE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+          permission-contents: write
+          permission-pull-requests: write
+
+      - name: Open release PR
+        if: ${{ steps.plan.outputs.release == 'true' && env.DRY_RUN != 'true' }}
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          APP_SLUG: ${{ steps.app-token.outputs.app-slug }}
+          VERSION: ${{ steps.plan.outputs.version }}
+          BASE_SHA: ${{ steps.rebuild.outputs.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          bot="${APP_SLUG}[bot]"
+          bot_id="$(gh api "users/${APP_SLUG}%5Bbot%5D" --jq .id)"
+          signoff="Signed-off-by: $bot <${bot_id}+${bot}@users.noreply.github.com>"
+          branch="auto-release/v$VERSION"
+          python3 .github/scripts/auto_release.py commit \
+            --repo "$GH_REPO" --branch "$branch" --base-sha "$BASE_SHA" \
+            --headline "chore(release): v$VERSION" --body "$signoff" \
+            pyproject.toml uv.lock CHANGELOG.md README.md \
+            .github/ISSUE_TEMPLATE/bug_report.md
+          {
+            echo "Automated security release v$VERSION."
+            echo
+            echo "## Summary"
+            echo
+            cat "$RUNNER_TEMP/notes.md"
+            echo
+            echo "## Testing"
+            echo
+            echo "Grype (only-fixed) finds these in the released \`:1\` image but not in"
+            echo "\`:main\` rebuilt from $BASE_SHA. Merging tags the merge commit and"
+            echo "publishes through auto-release-publish.yaml."
+          } >"$RUNNER_TEMP/pr.md"
+          url="$(gh pr create --base main --head "$branch" \
+            --title "chore(release): v$VERSION" --body-file "$RUNNER_TEMP/pr.md")"
+          gh pr merge "$url" --auto --squash \
+            --subject "chore(release): v$VERSION" --body "$signoff"
+          echo "::notice::Opened $url with auto-merge enabled."
