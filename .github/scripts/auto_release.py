@@ -384,18 +384,16 @@ def write_outputs(**values: str) -> None:
 def cmd_plan(args: argparse.Namespace) -> None:
     """Decide whether main fixes findings that the released image still has.
 
+    The released report holds only fixable findings, the candidate report all
+    of them: a vulnerability that main still has without a published fix must
+    not count as fixed just because an only-fixed scan leaves it out.
+
     The ``previous`` output is the version inside the scanned release image,
     which can trail the highest tag (a burned version, or a rehearsal against
     an older image). The CHANGELOG names that image and diffs against it.
     """
     released_report = load_report(args.released)
     candidate_report = load_report(args.candidate)
-    revision = candidate_report.label("org.opencontainers.image.revision")
-    if args.expect_revision and revision != args.expect_revision:
-        fail(
-            f"the scanned :main image was built from {revision or 'an unknown commit'},"
-            f" not {args.expect_revision}; another push replaced it, retry later"
-        )
     shipped = released_report.label("org.opencontainers.image.version")
     if not FINAL_VERSION_RE.match(shipped):
         fail(f"the released image has no final version label (got {shipped!r})")
@@ -403,7 +401,7 @@ def cmd_plan(args: argparse.Namespace) -> None:
     candidate = candidate_report.findings
     fixed = [finding for key, finding in released.items() if key not in candidate]
     for key, finding in candidate.items():
-        if key not in released:
+        if key not in released and finding.fixed_in:
             sys.stderr.write(
                 "::warning::main has a fixable finding the release does not: "
                 f"{finding.vulnerability} in {finding.package} {finding.installed}\n"
@@ -518,11 +516,12 @@ def cmd_apply_release(args: argparse.Namespace) -> None:
 def cmd_apply_dev_cycle(args: argparse.Namespace) -> None:
     """Start the next patch's development cycle after a release.
 
-    Does nothing if main already started one (a dev version or an Unreleased
-    section), for example by hand while the release was publishing.
+    Does nothing unless main is still at the version just released: a person
+    may have started the next cycle, or cut another release, while this one
+    was publishing.
     """
     text = CHANGELOG.read_text(encoding="utf-8")
-    if DEV_VERSION_RE.match(project_version()) or CHANGELOG_UNRELEASED_RE.search(text):
+    if project_version() != args.version or CHANGELOG_UNRELEASED_RE.search(text):
         return
     major, minor, patch = parse_final(args.version)
     upcoming = format_version((major, minor, patch + 1))
@@ -546,21 +545,42 @@ def cmd_notes(args: argparse.Namespace) -> None:
     sys.stdout.write(text[heading.end() : end].strip() + "\n")
 
 
-def run_gh_api(*args: str, payload: object = None) -> subprocess.CompletedProcess[str]:
-    """Run ``gh api``, sending ``payload`` as the JSON request body.
+def run_gh(*args: str, payload: object = None) -> subprocess.CompletedProcess[str]:
+    """Run gh, sending ``payload`` as JSON on standard input.
 
     Returns:
         subprocess.CompletedProcess[str]: The finished process, which may
         have failed.
     """
-    stdin_args = ["--input", "-"] if payload is not None else []
     return subprocess.run(  # ruff: ignore[subprocess-without-shell-equals-true]
-        ["gh", "api", *args, *stdin_args],  # ruff: ignore[start-process-with-partial-path]
+        ["gh", *args],  # ruff: ignore[start-process-with-partial-path]
         check=False,
         capture_output=True,
         text=True,
         input=json.dumps(payload) if payload is not None else None,
     )
+
+
+def gh_error(args: tuple[str, ...], result: subprocess.CompletedProcess[str]) -> str:
+    """Describe a failed gh call; gh prints the API's error (GraphQL too).
+
+    Returns:
+        str: The command and its collapsed error output.
+    """
+    details = " ".join((result.stderr + result.stdout).split())
+    return f"gh {' '.join(args[:2])} failed: {details}"
+
+
+def gh(*args: str) -> str:
+    """Run a gh command and fail the run if it fails.
+
+    Returns:
+        str: The command's standard output, stripped.
+    """
+    result = run_gh(*args)
+    if result.returncode != 0:
+        fail(gh_error(args, result))
+    return result.stdout.strip()
 
 
 def gh_api(*args: str, payload: object = None) -> dict[str, object]:
@@ -569,11 +589,11 @@ def gh_api(*args: str, payload: object = None) -> dict[str, object]:
     Returns:
         dict[str, object]: The decoded JSON response.
     """
-    result = run_gh_api(*args, payload=payload)
+    stdin_args = ("--input", "-") if payload is not None else ()
+    command = ("api", *args, *stdin_args)
+    result = run_gh(*command, payload=payload)
     if result.returncode != 0:
-        # gh prints the API's error (including GraphQL errors) here.
-        details = " ".join((result.stderr + result.stdout).split())
-        fail(f"gh api {args[0]} failed: {details}")
+        fail(gh_error(command, result))
     return json.loads(result.stdout)
 
 
@@ -590,7 +610,7 @@ def branch_exists(repo: str, branch: str) -> bool:
     Returns:
         bool: True if ``refs/heads/<branch>`` exists.
     """
-    return run_gh_api(f"repos/{repo}/git/ref/heads/{branch}").returncode == 0
+    return run_gh("api", f"repos/{repo}/git/ref/heads/{branch}").returncode == 0
 
 
 def bot_signoff(app_slug: str) -> str:
@@ -655,24 +675,6 @@ def cmd_commit(args: argparse.Namespace) -> None:
     write_outputs(sha=data["createCommitOnBranch"]["commit"]["oid"], signoff=signoff)
 
 
-def gh(*args: str) -> str:
-    """Run a gh command and fail the run if it fails.
-
-    Returns:
-        str: The command's standard output, stripped.
-    """
-    result = subprocess.run(  # ruff: ignore[subprocess-without-shell-equals-true]
-        ["gh", *args],  # ruff: ignore[start-process-with-partial-path]
-        check=False,
-        capture_output=True,
-        text=True,
-    )
-    if result.returncode != 0:
-        details = " ".join((result.stderr + result.stdout).split())
-        fail(f"gh {args[0]} {args[1]} failed: {details}")
-    return result.stdout.strip()
-
-
 def cmd_await_merge(args: argparse.Namespace) -> None:
     """Wait for an auto-merge PR to merge, keeping it current with main.
 
@@ -680,14 +682,17 @@ def cmd_await_merge(args: argparse.Namespace) -> None:
     does not update the branch by itself. Updating by rebase keeps the PR's
     one signed-off commit (a merge update would add a commit without a DCO
     sign-off). A conflict cannot resolve itself, so it fails right away.
+
+    The merge state lags behind an update, so the branch is updated at most
+    once per head commit.
     """
     deadline = time.monotonic() + args.minutes * 60
-    last = ""
+    last = updated_head = ""
     while time.monotonic() < deadline:
         time.sleep(30)
-        state, merge_state = gh(
-            "pr", "view", args.url, "--json", "state,mergeStateStatus",
-            "--jq", '"\\(.state) \\(.mergeStateStatus)"',
+        state, merge_state, head = gh(
+            "pr", "view", args.url, "--json", "state,mergeStateStatus,headRefOid",
+            "--jq", '"\\(.state) \\(.mergeStateStatus) \\(.headRefOid)"',
         ).split()  # fmt: skip
         if f"{state} {merge_state}" != last:
             last = f"{state} {merge_state}"
@@ -698,8 +703,16 @@ def cmd_await_merge(args: argparse.Namespace) -> None:
             fail(f"{args.url} was closed without merging")
         if merge_state == "DIRTY":
             fail(f"{args.url} conflicts with main; resolve it by hand")
-        if merge_state == "BEHIND":
-            gh("pr", "update-branch", args.url, "--rebase")
+        if merge_state == "BEHIND" and head != updated_head:
+            updated_head = head
+            result = run_gh("pr", "update-branch", args.url, "--rebase")
+            if result.returncode != 0:
+                # A GitHub App cannot move a branch across commits that
+                # change workflow files without the Workflows permission.
+                fail(
+                    f"could not update {args.url} with main "
+                    f"({gh_error(('pr', 'update-branch'), result)}); update it by hand"
+                )
     fail(f"{args.url} did not merge within {args.minutes} minutes (last: {last})")
 
 
@@ -720,7 +733,6 @@ def main() -> None:
     plan.add_argument("--released", type=Path, required=True)
     plan.add_argument("--candidate", type=Path, required=True)
     plan.add_argument("--fixed-out", type=Path, required=True)
-    plan.add_argument("--expect-revision", default="", help="commit :main must be")
     plan.set_defaults(func=cmd_plan)
 
     release = sub.add_parser("apply-release", help="edit files for a release")

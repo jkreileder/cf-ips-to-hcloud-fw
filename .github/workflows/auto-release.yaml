@@ -147,11 +147,13 @@ jobs:
             echo "::error::No vX.Y.Z release tag found."
             exit 1
           fi
-          draft="$(gh release view "$latest_tag" --json isDraft --jq .isDraft \
-            2>/dev/null || echo missing)"
-          if [ "$draft" != false ]; then
-            echo "::error::$latest_tag is tagged but its release is not published" \
-              "($draft). Finish or recover it first (cut-release steps 8b-10)."
+          # A read-only token cannot see draft releases, so a draft and a
+          # missing release look the same here: both mean "not published".
+          if ! gh release view "$latest_tag" --json isDraft --jq .isDraft 2>/dev/null \
+            | grep -qx false; then
+            echo "::error::$latest_tag is tagged but its GitHub release is not" \
+              "published (a draft, or missing). Finish or recover it first" \
+              "(cut-release steps 8b-10)."
             exit 1
           fi
           # Same-repository PRs only: opening one needs write access, so a
@@ -227,8 +229,8 @@ jobs:
       # day retries), and the rebuild cancels a push build already running on
       # main, which it supersedes with the same or a newer commit.
       # The run is found by creation time with a minute of slack for clock
-      # skew. Picking up a different main rebuild is harmless: the plan only
-      # accepts a :main image whose revision label is the rebuilt commit.
+      # skew. Picking up a different main rebuild is harmless: only a :main
+      # built from the rebuilt commit or a later one is accepted below.
       - name: Rebuild :main
         if: ${{ steps.released.outputs.rebuild == 'true' }}
         id: rebuild
@@ -257,13 +259,15 @@ jobs:
           echo "Rebuilt :main from $sha in run $run_id"
           echo "sha=$sha" >>"$GITHUB_OUTPUT"
 
+      # All findings, not only fixable ones: a vulnerability main still has
+      # without a published fix must not look fixed.
       - name: Scan :main
         if: ${{ steps.released.outputs.fixable == 'true' }}
         id: scan-candidate
         uses: anchore/scan-action@27805bf3b4e84b4a5c980df22ed233c00390a439 # v7.4.2
         with:
           image: docker.io/${{ env.IMAGE_REPO }}:main
-          only-fixed: true
+          only-fixed: false
           add-cpes-if-none: true
           fail-build: false
           output-format: json
@@ -291,12 +295,15 @@ jobs:
       # merged since (typically Renovate updates) goes through the release
       # PR's checks and the tag build's scans. Starting from an older commit
       # would leave the PR behind main, which strict up-to-date checks block.
-      # main may have moved during the rebuild, so fetch it again.
+      # main may have moved during the rebuild, so fetch it again. A push to
+      # main can also replace :main after the rebuild; any :main built from
+      # the rebuilt commit or a later one is as good.
       - name: Update to main's head
         if: ${{ steps.released.outputs.fixable == 'true' }}
         id: base
         env:
           SCANNED_SHA: ${{ steps.candidate.outputs.sha }}
+          REBUILT_SHA: ${{ steps.rebuild.outputs.sha }}
         shell: bash
         run: |
           set -euo pipefail
@@ -304,6 +311,11 @@ jobs:
           git checkout --detach FETCH_HEAD
           if ! git merge-base --is-ancestor "$SCANNED_SHA" HEAD; then
             echo "::error::main does not contain the scanned commit $SCANNED_SHA."
+            exit 1
+          fi
+          if [ -n "$REBUILT_SHA" ] \
+            && ! git merge-base --is-ancestor "$REBUILT_SHA" "$SCANNED_SHA"; then
+            echo "::error:::main ($SCANNED_SHA) predates the rebuilt $REBUILT_SHA."
             exit 1
           fi
           echo "sha=$(git rev-parse HEAD)" >>"$GITHUB_OUTPUT"
@@ -314,13 +326,11 @@ jobs:
         env:
           RELEASED: ${{ steps.scan-released.outputs.json }}
           CANDIDATE: ${{ steps.scan-candidate.outputs.json }}
-          REBUILT_SHA: ${{ steps.rebuild.outputs.sha }}
         shell: bash
         run: |
           set -euo pipefail
           python3 .github/scripts/auto_release.py plan \
             --released "$RELEASED" --candidate "$CANDIDATE" \
-            --expect-revision "$REBUILT_SHA" \
             --fixed-out "$RUNNER_TEMP/fixed.json"
 
       - name: Apply release edits
