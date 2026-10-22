@@ -76,7 +76,7 @@ jobs:
       # docker.yaml). exit-code makes fixable findings fail the step.
       - name: Rescan with Docker Scout
         id: docker-scout-cves
-        uses: docker/scout-action@221e7f4860634eeb1579e3bd7ca232e577bd1864 # v1.26.0
+        uses: docker/scout-action@a4119c5a8c5076236a54e4ce99531f7e4dd2ef84 # v1.27.0
         with:
           dockerhub-user: ${{ vars.DOCKERHUB_USERNAME }}
           dockerhub-password: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -91,7 +91,7 @@ jobs:
       # build-time scans, which upload under the default tool category.
       - name: Upload Docker Scout scan result to GitHub Security tab
         if: ${{ !cancelled() }}
-        uses: github/codeql-action/upload-sarif@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee # v4.39.0
+        uses: github/codeql-action/upload-sarif@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
         with:
           sarif_file: sarif.output.json
           category: rescan-scout
@@ -107,7 +107,7 @@ jobs:
 
       - name: Upload Grype scan result to GitHub Security tab
         if: ${{ !cancelled() && steps.grype-scan.outputs.sarif != '' }}
-        uses: github/codeql-action/upload-sarif@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee # v4.39.0
+        uses: github/codeql-action/upload-sarif@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
         with:
           sarif_file: ${{ steps.grype-scan.outputs.sarif }}
           category: rescan-grype
