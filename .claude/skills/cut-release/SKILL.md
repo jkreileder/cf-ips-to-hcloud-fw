@@ -37,7 +37,7 @@ release you want out before the next daily run.
   Check for an open release or dev-cycle PR from the automation:
 
   ```bash
-  gh pr list --state open --json number,headRefName,url \
+  gh pr list --state open --limit 500 --json number,headRefName,url \
     --jq '.[] | select(.headRefName | startswith("auto-release/")
       or startswith("auto-dev-cycle/"))'
   ```

@@ -14,6 +14,8 @@ Subcommands:
 - ``commit``: create a branch and a single GitHub-signed commit through the
   GraphQL API (``createCommitOnBranch``), so no signing key is needed.
 - ``await-merge``: wait for an auto-merge PR, keeping it current with main.
+- ``verify``: check the image built for a release tag against the fixes its
+  CHANGELOG entry claims.
 """
 
 from __future__ import annotations
@@ -60,6 +62,11 @@ CHANGELOG_HEADING_RE = re.compile(r"^## \[v", re.MULTILINE)
 PIN_RE = re.compile(rf"\b{re.escape(PROJECT_NAME)}:(\d+\.\d+\.\d+)\b")
 MINOR_TAG_RE = re.compile(
     r"`\d+\.\d+`(: This tag always points to the latest )`\d+\.\d+\.x`"
+)
+# A "**Security:** Fixed <id> (<severity>) in `a` and `b`, ..." bullet,
+# matched on unwrapped text.
+SECURITY_BULLET_RE = re.compile(
+    r"\*\*Security:\*\* Fixed (\S+?)(?: \([a-z]+\))? in ((?:`[^`]+`(?:, | and )?)+),"
 )
 FROM_RE = re.compile(
     r"^FROM\s+(?:--platform=\S+\s+)?(\S+?):([^@\s]+)@(sha256:[0-9a-f]+)\s+AS\s+(\S+)",
@@ -532,17 +539,67 @@ def cmd_apply_dev_cycle(args: argparse.Namespace) -> None:
     CHANGELOG.write_text(text[:position] + section + text[position:], encoding="utf-8")
 
 
-def cmd_notes(args: argparse.Namespace) -> None:
-    """Print a version's CHANGELOG entry without its heading."""
+def changelog_entry(version: str) -> str:
+    """Read a version's CHANGELOG entry without its heading.
+
+    Returns:
+        str: The entry's bullets.
+    """
     text = CHANGELOG.read_text(encoding="utf-8")
     heading = re.search(
-        rf"^## \[v{re.escape(args.version)}\] {DASH} .*$", text, re.MULTILINE
+        rf"^## \[v{re.escape(version)}\] {DASH} .*$", text, re.MULTILINE
     )
     if heading is None:
-        fail(f"no CHANGELOG entry for v{args.version}")
+        fail(f"no CHANGELOG entry for v{version}")
     following = CHANGELOG_HEADING_RE.search(text, heading.end())
     end = following.start() if following else len(text)
-    sys.stdout.write(text[heading.end() : end].strip() + "\n")
+    return text[heading.end() : end].strip()
+
+
+def cmd_notes(args: argparse.Namespace) -> None:
+    """Print a version's CHANGELOG entry without its heading."""
+    sys.stdout.write(changelog_entry(args.version) + "\n")
+
+
+def claimed_fixes(entry: str) -> list[FindingKey]:
+    """List the (vulnerability, package) pairs a CHANGELOG entry says it fixes.
+
+    Reads the ``**Security:** Fixed ...`` bullets ``security_bullets`` writes.
+
+    Returns:
+        list[FindingKey]: One pair per vulnerability and package.
+    """
+    claims: list[FindingKey] = []
+    for match in SECURITY_BULLET_RE.finditer(" ".join(entry.split())):
+        packages = re.findall(r"`([^`]+)`", match.group(2))
+        claims.extend((match.group(1), package) for package in packages)
+    return claims
+
+
+def cmd_verify(args: argparse.Namespace) -> None:
+    """Check that the built release image has none of the fixes it claims.
+
+    The release can include commits merged after the scan that planned it,
+    so the claims are checked against the image actually built for the tag
+    before the release is published.
+    """
+    claims = claimed_fixes(changelog_entry(args.version))
+    if not claims:
+        fail(f"the v{args.version} CHANGELOG entry claims no security fixes")
+    findings = load_report(args.report).findings
+    still_there = [
+        f"{vuln} in {package}"
+        for vuln, package in claims
+        if (vuln, package) in findings
+    ]
+    if still_there:
+        fail(
+            f"the v{args.version} image still has vulnerabilities its CHANGELOG "
+            f"claims as fixed: {', '.join(still_there)}"
+        )
+    sys.stdout.write(
+        f"v{args.version} image verified: {len(claims)} claimed fixes absent\n"
+    )
 
 
 def run_gh(*args: str, payload: object = None) -> subprocess.CompletedProcess[str]:
@@ -762,6 +819,11 @@ def main() -> None:
     await_merge.add_argument("url")
     await_merge.add_argument("--minutes", type=int, default=45)
     await_merge.set_defaults(func=cmd_await_merge)
+
+    verify = sub.add_parser("verify", help="check a built image for claimed fixes")
+    verify.add_argument("--version", required=True)
+    verify.add_argument("--report", type=Path, required=True, help="Grype JSON")
+    verify.set_defaults(func=cmd_verify)
 
     version = sub.add_parser("version", help="print the project version")
     version.add_argument("--require-final", action="store_true")

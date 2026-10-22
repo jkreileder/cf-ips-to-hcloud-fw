@@ -6,8 +6,10 @@ name: Auto-release publish
 #    "Tag v*" ruleset; a tag pushed with GITHUB_TOKEN would not start the
 #    publish workflows.
 # 2. Wait for docker.yaml and python-package.yaml on the tag.
-# 3. Publish the draft GitHub release with the CHANGELOG entry as its notes.
-# 4. Open the next development cycle's PR with auto-merge.
+# 3. Scan the built image and check that the fixes the CHANGELOG claims are
+#    really there.
+# 4. Publish the draft GitHub release with the CHANGELOG entry as its notes.
+# 5. Open the next development cycle's PR with auto-merge.
 #
 # A failed publish run is never retried here. Docker Hub tags are immutable,
 # so the recovery depends on how far the run got (re-run only the failed jobs,
@@ -55,9 +57,22 @@ jobs:
         with:
           disable-sudo: true
           egress-policy: block
+          # The GitHub API, plus Docker Hub pulls and the Grype installer,
+          # binary and DB (as in rescan.yaml) for verifying the built image.
           allowed-endpoints: >
             api.github.com:443
+            auth.docker.io:443
+            docker-images-prod.6aa30f8b08e16409b46e0173d6de2f56.r2.cloudflarestorage.com:443
+            get.anchore.io:443
             github.com:443
+            grype.anchore.io:443
+            index.docker.io:443
+            objects.githubusercontent.com:443
+            production.cloudflare.docker.com:443
+            production.cloudfront.docker.com:443
+            raw.githubusercontent.com:443
+            registry-1.docker.io:443
+            release-assets.githubusercontent.com:443
 
       - name: Checkout merge commit
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -131,6 +146,33 @@ jobs:
             fi
             echo "$workflow succeeded for $TAG (run $run_id)"
           done
+
+      # The release can contain commits merged after the scan that planned it,
+      # so check the image actually built for the tag before publishing: none
+      # of the fixes its CHANGELOG entry claims may still be there. The
+      # images are already pushed by now (no worse than the last release),
+      # but the release stays a draft and the run fails for a person to look.
+      # Grype reads .grype.yaml from the checkout of the merge commit.
+      - name: Scan the release image
+        id: scan
+        uses: anchore/scan-action@27805bf3b4e84b4a5c980df22ed233c00390a439 # v7.4.2
+        with:
+          image: docker.io/${{ vars.DOCKERHUB_USERNAME }}/cf-ips-to-hcloud-fw:${{ steps.version.outputs.version }}
+          only-fixed: false
+          add-cpes-if-none: true
+          fail-build: false
+          output-format: json
+          output-file: ${{ runner.temp }}/release-scan.json
+
+      - name: Verify the claimed fixes
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          REPORT: ${{ steps.scan.outputs.json }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 .github/scripts/auto_release.py verify --version "$VERSION" \
+            --report "$REPORT"
 
       # App installation tokens expire after an hour, which the wait above can
       # exceed; the remaining steps get a fresh one.

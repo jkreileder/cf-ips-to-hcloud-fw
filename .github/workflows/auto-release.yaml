@@ -158,7 +158,9 @@ jobs:
           fi
           # Same-repository PRs only: opening one needs write access, so a
           # fork PR with a release title cannot suppress releases.
-          prs="$(gh pr list --state open \
+          # gh lists 30 PRs by default; open Renovate PRs could push a stuck
+          # release PR out of that window.
+          prs="$(gh pr list --state open --limit 500 \
             --json headRefName,title,createdAt,url,isCrossRepository \
             --jq '[.[] | select((.isCrossRepository | not)
               and ((.headRefName | startswith("auto-release/"))
