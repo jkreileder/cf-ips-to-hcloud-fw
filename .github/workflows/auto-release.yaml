@@ -58,8 +58,8 @@ jobs:
     name: Detect fixes and open release PR
     if: ${{ github.event_name == 'workflow_dispatch' || vars.AUTO_RELEASE == 'enabled' }}
     runs-on: ubuntu-26.04
-    # Most of the time is the :main rebuild.
-    timeout-minutes: 60
+    # The :main rebuild and waiting for the release PR to merge.
+    timeout-minutes: 150
     permissions:
       contents: read
       # Dispatch and watch the docker.yaml rebuild of :main.
@@ -154,6 +154,15 @@ jobs:
             echo "proceed=false" >>"$GITHUB_OUTPUT"
             exit 0
           fi
+          # A merged release PR is tagged and published by a run that can take
+          # over an hour; until it finishes, main is ahead of the tags.
+          publishing="$(gh run list --workflow auto-release-publish.yaml --limit 5 \
+            --json status --jq '[.[] | select(.status != "completed")] | length')"
+          if [ "$publishing" != 0 ]; then
+            echo "::notice::A release is publishing; nothing to do."
+            echo "proceed=false" >>"$GITHUB_OUTPUT"
+            exit 0
+          fi
           # The floating major tag follows the latest release (:1 for 1.x).
           major="${latest_tag#v}"
           major="${major%%.*}"
@@ -207,8 +216,10 @@ jobs:
             echo "rebuild=true" >>"$GITHUB_OUTPUT"
           fi
 
-      # docker.yaml cancels superseded main runs, so a push to main during the
-      # rebuild cancels this one; the job then fails and the next day retries.
+      # docker.yaml cancels superseded main runs in both directions: a push to
+      # main during the rebuild cancels it (the job then fails and the next
+      # day retries), and the rebuild cancels a push build already running on
+      # main, which it supersedes with the same or a newer commit.
       # The run is found by creation time with a minute of slack for clock
       # skew. Picking up a different main rebuild is harmless: the plan only
       # accepts a :main image whose revision label is the rebuilt commit.
@@ -252,8 +263,7 @@ jobs:
           output-format: json
           output-file: ${{ runner.temp }}/candidate.json
 
-      # The release edits start from the commit the scanned :main image was
-      # built from (its OCI revision label).
+      # The scanned :main image names its commit in its OCI revision label.
       - name: Read scanned commit
         if: ${{ steps.released.outputs.fixable == 'true' }}
         id: candidate
@@ -270,14 +280,33 @@ jobs:
           fi
           echo "sha=$sha" >>"$GITHUB_OUTPUT"
 
+      # The release edits start from the current head of main, not the
+      # scanned commit: main must contain the scanned commit, and anything
+      # merged since (typically Renovate updates) goes through the release
+      # PR's checks and the tag build's scans. Starting from an older commit
+      # would leave the PR behind main, which strict up-to-date checks block.
       # fetch-depth 0 brings the tags for version planning.
-      - name: Checkout scanned commit
+      - name: Checkout main
         if: ${{ steps.released.outputs.fixable == 'true' }}
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ steps.candidate.outputs.sha }}
+          ref: main
           fetch-depth: 0
           persist-credentials: false
+
+      - name: Check that main contains the scanned commit
+        if: ${{ steps.released.outputs.fixable == 'true' }}
+        id: base
+        env:
+          SCANNED_SHA: ${{ steps.candidate.outputs.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! git merge-base --is-ancestor "$SCANNED_SHA" HEAD; then
+            echo "::error::main does not contain the scanned commit $SCANNED_SHA."
+            exit 1
+          fi
+          echo "sha=$(git rev-parse HEAD)" >>"$GITHUB_OUTPUT"
 
       - name: Plan release
         if: ${{ steps.released.outputs.fixable == 'true' }}
@@ -337,7 +366,7 @@ jobs:
           APP_SLUG: ${{ steps.app-token.outputs.app-slug }}
           EXPECTED_SLUG: ${{ vars.RELEASE_APP_SLUG }}
           VERSION: ${{ steps.plan.outputs.version }}
-          BASE_SHA: ${{ steps.candidate.outputs.sha }}
+          BASE_SHA: ${{ steps.base.outputs.sha }}
         shell: bash
         run: |
           set -euo pipefail
@@ -352,11 +381,12 @@ jobs:
 
       - name: Open release PR
         if: ${{ steps.plan.outputs.release == 'true' && env.DRY_RUN != 'true' }}
+        id: open
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           SIGNOFF: ${{ steps.commit.outputs.signoff }}
           VERSION: ${{ steps.plan.outputs.version }}
-          BASE_SHA: ${{ steps.candidate.outputs.sha }}
+          SCANNED_SHA: ${{ steps.candidate.outputs.sha }}
           RELEASED_IMAGE: ${{ steps.guard.outputs.released-image }}
         shell: bash
         run: |
@@ -372,7 +402,7 @@ jobs:
             echo "## Testing"
             echo
             echo "Grype (only-fixed) finds these in \`$RELEASED_IMAGE\` but not in"
-            echo "\`:main\` built from $BASE_SHA. Merging tags the merge commit and"
+            echo "\`:main\` built from $SCANNED_SHA. Merging tags the merge commit and"
             echo "publishes through auto-release-publish.yaml."
           } >"$RUNNER_TEMP/pr.md"
           url="$(gh pr create --base main --head "$branch" \
@@ -380,3 +410,32 @@ jobs:
           gh pr merge "$url" --auto --squash \
             --subject "chore(release): v$VERSION" --body "$SIGNOFF"
           echo "::notice::Opened $url with auto-merge enabled."
+          echo "url=$url" >>"$GITHUB_OUTPUT"
+
+      # Strict up-to-date checks block auto-merge whenever main moves (daily
+      # Renovate automerges, for one), and GitHub does not update the branch
+      # by itself. Update it while waiting. The App token lives an hour, so
+      # stop well before that; a PR that still hasn't merged is reported as
+      # stuck by the next run's guard.
+      - name: Keep release PR current until it merges
+        if: ${{ steps.plan.outputs.release == 'true' && env.DRY_RUN != 'true' }}
+        timeout-minutes: 50
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          URL: ${{ steps.open.outputs.url }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          while :; do
+            sleep 60
+            read -r state merge_state <<<"$(gh pr view "$URL" \
+              --json state,mergeStateStatus --jq '"\(.state) \(.mergeStateStatus)"')"
+            case "$state" in
+              MERGED) echo "::notice::$URL merged."; exit 0 ;;
+              CLOSED) echo "::error::$URL was closed without merging."; exit 1 ;;
+            esac
+            if [ "$merge_state" = BEHIND ]; then
+              echo "Updating $URL with main."
+              gh pr update-branch "$URL" || true
+            fi
+          done

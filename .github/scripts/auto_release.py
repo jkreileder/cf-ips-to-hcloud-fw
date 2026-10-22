@@ -206,30 +206,43 @@ def unreleased_entries(text: str) -> str:
     return body.replace(DEV_CYCLE_BULLET, "").strip()
 
 
-def image_label(path: Path, name: str) -> str:
-    """Read an OCI label of the image a Grype JSON report scanned.
+FindingKey = tuple[str, str, str]
+
+
+@dataclass(frozen=True)
+class Report:
+    """The parts of a Grype JSON report the plan needs."""
+
+    labels: dict[str, str]
+    findings: dict[FindingKey, Finding]
+
+    def label(self, name: str) -> str:
+        """Read an OCI label of the scanned image.
+
+        Returns:
+            str: The label's value, or an empty string when it is missing.
+        """
+        return self.labels.get(name, "")
+
+
+def load_report(path: Path) -> Report:
+    """Load a Grype JSON report.
+
+    Findings are keyed by (vulnerability, package, location), so two copies of
+    a package in different places stay separate, while an upgrade in place
+    that is still vulnerable keeps its key and does not count as fixed.
 
     Returns:
-        str: The label's value, or an empty string when it is missing.
+        Report: The scanned image's labels and its findings.
     """
     report = json.loads(path.read_text(encoding="utf-8"))
     labels = (report.get("source") or {}).get("target", {}).get("labels") or {}
-    return str(labels.get(name, ""))
-
-
-def load_findings(path: Path) -> dict[tuple[str, str], Finding]:
-    """Load a Grype JSON report.
-
-    Returns:
-        dict[tuple[str, str], Finding]: Findings keyed by (vulnerability,
-        package).
-    """
-    report = json.loads(path.read_text(encoding="utf-8"))
-    findings: dict[tuple[str, str], Finding] = {}
+    findings: dict[FindingKey, Finding] = {}
     for match in report.get("matches") or []:
         vulnerability = match["vulnerability"]
         artifact = match["artifact"]
         fix = vulnerability.get("fix") or {}
+        locations = artifact.get("locations") or [{}]
         finding = Finding(
             vulnerability=vulnerability["id"],
             severity=str(vulnerability.get("severity") or "Unknown"),
@@ -237,8 +250,9 @@ def load_findings(path: Path) -> dict[tuple[str, str], Finding]:
             installed=artifact["version"],
             fixed_in=tuple(fix.get("versions") or ()),
         )
-        findings[finding.vulnerability, finding.package] = finding
-    return findings
+        location = str(locations[0].get("path", ""))
+        findings[finding.vulnerability, finding.package, location] = finding
+    return Report(labels={k: str(v) for k, v in labels.items()}, findings=findings)
 
 
 def code_list(items: list[str]) -> str:
@@ -367,17 +381,19 @@ def cmd_plan(args: argparse.Namespace) -> None:
     which can trail the highest tag (a burned version, or a rehearsal against
     an older image). The CHANGELOG names that image and diffs against it.
     """
-    revision = image_label(args.candidate, "org.opencontainers.image.revision")
+    released_report = load_report(args.released)
+    candidate_report = load_report(args.candidate)
+    revision = candidate_report.label("org.opencontainers.image.revision")
     if args.expect_revision and revision != args.expect_revision:
         fail(
             f"the scanned :main image was built from {revision or 'an unknown commit'},"
             f" not {args.expect_revision}; another push replaced it, retry later"
         )
-    shipped = image_label(args.released, "org.opencontainers.image.version")
+    shipped = released_report.label("org.opencontainers.image.version")
     if not FINAL_VERSION_RE.match(shipped):
         fail(f"the released image has no final version label (got {shipped!r})")
-    released = load_findings(args.released)
-    candidate = load_findings(args.candidate)
+    released = released_report.findings
+    candidate = candidate_report.findings
     fixed = [finding for key, finding in released.items() if key not in candidate]
     for key, finding in candidate.items():
         if key not in released:
@@ -409,8 +425,9 @@ def replace_version_pins(new: str) -> None:
     """Point the documented example version at the new release.
 
     The old version is whatever the README pins now, which need not be the
-    previous release. Only pin-shaped occurrences change, so prose that
-    mentions an old version stays as written.
+    previous release. Only pin-shaped occurrences change (image references,
+    ``VERSION=``, the tag list entry and the issue template example), so prose
+    that mentions an old version stays as written.
     """
     readme = PINNED_VERSION_FILES[0].read_text(encoding="utf-8")
     current = PIN_RE.search(readme)
@@ -420,8 +437,10 @@ def replace_version_pins(new: str) -> None:
     pattern = re.compile(
         rf"(?<=\b{re.escape(PROJECT_NAME)}:){old}(?!\d)"
         rf"|(?<=\bVERSION=){old}(?!\d)"
-        rf"|(?<=`){old}(?=`)"
-        rf"|(?<=\[e\.g\. ){old}(?=\])"
+        rf"|(?<=^- `){old}(?=`: This tag points to the specific `)"
+        rf"|(?<=This tag points to the specific `){old}(?=` release)"
+        rf"|(?<=\[e\.g\. ){old}(?=\])",
+        re.MULTILINE,
     )
     for path in PINNED_VERSION_FILES:
         text, count = pattern.subn(new, path.read_text(encoding="utf-8"))
@@ -497,16 +516,14 @@ def cmd_apply_dev_cycle(args: argparse.Namespace) -> None:
     """
     text = CHANGELOG.read_text(encoding="utf-8")
     if DEV_VERSION_RE.match(project_version()) or CHANGELOG_UNRELEASED_RE.search(text):
-        write_outputs(changed="false")
         return
     major, minor, patch = parse_final(args.version)
     upcoming = format_version((major, minor, patch + 1))
     set_project_version(f"{upcoming}.dev1")
-    first = CHANGELOG_HEADING_RE.search(text)
-    position = first.start() if first else len(text)
+    # Without an Unreleased section this is the spot before the first release.
+    position, _ = unreleased_span(text)
     section = f"## [v{upcoming}] {DASH} Unreleased\n\n{DEV_CYCLE_BULLET}\n\n"
     CHANGELOG.write_text(text[:position] + section + text[position:], encoding="utf-8")
-    write_outputs(changed="true")
 
 
 def cmd_notes(args: argparse.Namespace) -> None:
@@ -531,11 +548,15 @@ def gh_api(*args: str, payload: object = None) -> dict[str, object]:
     stdin_args = ["--input", "-"] if payload is not None else []
     result = subprocess.run(  # ruff: ignore[subprocess-without-shell-equals-true]
         ["gh", "api", *args, *stdin_args],  # ruff: ignore[start-process-with-partial-path]
-        check=True,
+        check=False,
         capture_output=True,
         text=True,
         input=json.dumps(payload) if payload is not None else None,
     )
+    if result.returncode != 0:
+        # gh prints the API's error (including GraphQL errors) here.
+        details = " ".join((result.stderr + result.stdout).split())
+        fail(f"gh api {args[0]} failed: {details}")
     return json.loads(result.stdout)
 
 

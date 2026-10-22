@@ -96,8 +96,13 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          # An annotated tag, like `git tag -s` makes for hand-cut releases,
+          # minus the signature: the API cannot sign tag objects.
+          tag_sha="$(gh api "repos/$GH_REPO/git/tags" --method POST \
+            -f tag="$TAG" -f message="$TAG" -f object="$MERGE_SHA" -f type=commit \
+            --jq .sha)"
           gh api "repos/$GH_REPO/git/refs" --method POST \
-            -f ref="refs/tags/$TAG" -f sha="$MERGE_SHA" >/dev/null
+            -f ref="refs/tags/$TAG" -f sha="$tag_sha" >/dev/null
           echo "::notice::Tagged $MERGE_SHA as $TAG"
 
       - name: Wait for publish runs
@@ -127,9 +132,20 @@ jobs:
             echo "$workflow succeeded for $TAG (run $run_id)"
           done
 
+      # App installation tokens expire after an hour, which the wait above can
+      # exceed; the remaining steps get a fresh one.
+      - name: Create App token for publishing
+        id: app-token-late
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          client-id: ${{ vars.RELEASE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+          permission-contents: write
+          permission-pull-requests: write
+
       - name: Publish GitHub release
         env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          GH_TOKEN: ${{ steps.app-token-late.outputs.token }}
           TAG: v${{ steps.version.outputs.version }}
         shell: bash
         run: |
@@ -143,8 +159,8 @@ jobs:
       - name: Commit dev-cycle edits
         id: commit
         env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
-          APP_SLUG: ${{ steps.app-token.outputs.app-slug }}
+          GH_TOKEN: ${{ steps.app-token-late.outputs.token }}
+          APP_SLUG: ${{ steps.app-token-late.outputs.app-slug }}
           VERSION: ${{ steps.version.outputs.version }}
         shell: bash
         run: |
@@ -164,7 +180,7 @@ jobs:
       - name: Open dev-cycle PR
         if: ${{ steps.commit.outputs.sha != '' }}
         env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          GH_TOKEN: ${{ steps.app-token-late.outputs.token }}
           SIGNOFF: ${{ steps.commit.outputs.signoff }}
           VERSION: ${{ steps.version.outputs.version }}
         shell: bash
