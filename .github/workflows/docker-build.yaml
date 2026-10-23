@@ -42,6 +42,12 @@ jobs:
     outputs:
       digest: ${{ steps.build-and-push.outputs.digest }}
 
+    # The SBOM generator is an image the build pulls, so the build policy
+    # check below resolves it too. Defined once here for that check and the
+    # push build; Renovate's custom manager updates it in place.
+    env:
+      SBOM_GENERATOR: generator=docker/scout-sbom-indexer:1.24.0@sha256:4b67f29eb0d1244ab0f62de867ac5dafd7262fcd7ebbdefa6ec8aacd6b15252d
+
     steps:
       - name: Harden runner
         uses: step-security/harden-runner@dc2769abcc0fcfbadfc1df54081c1608579ef6b2 # v2.22.2
@@ -269,6 +275,16 @@ jobs:
           # the builder itself). Keep the cache for main/PR speed.
           cache-binary: ${{ !startsWith(github.ref, 'refs/tags/') }}
 
+      # Buildx loads Dockerfile.rego by itself, but skips it silently when it
+      # can't, and build-push-action has no input for --policy strict=true.
+      # A --call=check run resolves every image through the policy in strict
+      # mode, so a policy that didn't load, or an unpinned or unlisted image,
+      # fails here before the real build. Passing the SBOM generator covers it
+      # on PR builds too, which never run it.
+      - name: Check build policy
+        shell: bash
+        run: docker buildx build --call=check --policy strict=true --sbom "$SBOM_GENERATOR" .
+
       # Timestamps come from the source commit, not the clock, so rebuilding a
       # given commit reproduces the same image. Read from the checkout above;
       # the default fetch-depth of 1 is enough for the tip commit's date.
@@ -300,7 +316,7 @@ jobs:
           # `type=docker` is what `load: true` expands to, for the PR/Dependabot
           # path that builds without pushing.
           outputs: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' && 'type=image,push=true,rewrite-timestamp=true' || 'type=docker' }}
-          sbom: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' && 'generator=docker/scout-sbom-indexer:1.24.0@sha256:4b67f29eb0d1244ab0f62de867ac5dafd7262fcd7ebbdefa6ec8aacd6b15252d' || '' }}
+          sbom: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' && env.SBOM_GENERATOR || '' }}
           provenance: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' && 'mode=max,version=v1' || '' }}
           tags: ${{ steps.docker-meta.outputs.tags }}
           labels: ${{ steps.docker-meta.outputs.labels }}
