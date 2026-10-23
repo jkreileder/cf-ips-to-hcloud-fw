@@ -39,6 +39,12 @@ Read the actual diff (`git --no-pager diff HEAD`) enough to understand what
 changed — you need this to pick the right Conventional Commit `type`/`scope` and
 write an accurate message. Never invent changes you didn't verify.
 
+Then decide whether the change needs a `CHANGELOG.md` entry, using the rule in
+`AGENTS.md` ("Commits & PRs"). If it does and the diff has none, add a bullet to
+the `## [vX.Y.Z] – Unreleased` section before staging, in the style of the
+existing entries. Automated security releases publish that section as-is, so a
+missing entry never reaches the release notes.
+
 ### 2. Decide the branch
 
 - **On the default branch** (`main`): create a feature branch. Derive the name
@@ -161,6 +167,7 @@ compare URL: `https://github.com/jkreileder/cf-ips-to-hcloud-fw/compare/main...<
 
 - [ ] On a feature branch (never committed straight to `main`).
 - [ ] Commit message is valid Conventional Commits, accurately describes the diff.
+- [ ] A user- or operator-visible change has its `CHANGELOG.md` Unreleased bullet.
 - [ ] Commit has a `Signed-off-by:` line (DCO) and a verified GPG/SSH signature.
 - [ ] Branch pushed to `origin`.
 - [ ] PR opened with a Conventional Commits title and a filled-out body.
