@@ -162,9 +162,9 @@ def project_version() -> str:
 def next_release(last: Version, current: str) -> Version:
     """Choose the patch release that follows the highest tag.
 
-    Automated releases are security patches only. A dev version heading for a
-    new minor or major means feature work is on main, and a final version above
-    the highest tag means a release merged but was never tagged; both need a
+    Automated releases are patch releases only. A dev version heading for a new
+    minor or major means feature work is on main, and a final version above the
+    highest tag means a release merged but was never tagged; both need a
     person. The result always sorts after every existing tag: a version whose
     publish failed is burned (Docker Hub tags are immutable).
 
@@ -206,7 +206,7 @@ def unreleased_span(text: str) -> tuple[int, int]:
 
 
 def unreleased_entries(text: str) -> str:
-    """Read the hand-written part of the CHANGELOG's Unreleased section.
+    """Read the entries PRs added to the CHANGELOG's Unreleased section.
 
     Returns:
         str: The section's entries other than the dev-cycle bullet.
@@ -491,12 +491,6 @@ def cmd_plan(args: argparse.Namespace) -> None:
         write_outputs(release="false", previous=shipped)
         return
     version = next_release(versions[-1], project_version())
-    hand_written = unreleased_entries(CHANGELOG.read_text(encoding="utf-8"))
-    if hand_written:
-        fail(
-            "the CHANGELOG's Unreleased section has hand-written entries; "
-            "automated releases only ship security fixes, so cut this one by hand"
-        )
     args.fixed_out.write_text(
         json.dumps([asdict(finding) for finding in fixed], indent=2) + "\n",
         encoding="utf-8",
@@ -577,11 +571,15 @@ def cmd_apply_release(args: argparse.Namespace) -> None:
     version, previous = args.version, args.previous
     bullets = security_bullets(read_fixed(args.fixed), previous)
 
-    # The Unreleased section holds only the dev-cycle bullet (plan refuses to
-    # release over hand-written entries), so the release entry replaces it.
+    # The release entry replaces the Unreleased section and keeps the entries
+    # PRs wrote there, after the generated security bullets.
     text = CHANGELOG.read_text(encoding="utf-8")
     start, end = unreleased_span(text)
-    for extra in (dependency_bullet(f"v{previous}"), base_image_bullet(f"v{previous}")):
+    for extra in (
+        unreleased_entries(text),
+        dependency_bullet(f"v{previous}"),
+        base_image_bullet(f"v{previous}"),
+    ):
         if extra:
             bullets.append(extra)
     section = f"## [v{version}] {DASH} {args.date}\n\n" + "\n".join(bullets) + "\n\n"

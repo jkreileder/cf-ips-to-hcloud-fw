@@ -83,6 +83,15 @@
 - Commit messages and PR titles follow Conventional Commits
   (`<type>[optional scope]: <description>`), e.g. `chore(deps): bump ruff to
   v0.14.6`. Merges are squash-only, so the PR title becomes the commit on `main`.
+- A change users or operators would notice (CLI behavior, the container image or
+  how it is built, a security fix, anything breaking) adds a bullet to the
+  `## [vX.Y.Z] – Unreleased` section of `CHANGELOG.md` in the same PR. Match the
+  existing entries, with `**Security:**` and `**Breaking:**` prefixes where they
+  apply. CI-only, docs-only and dev-tooling changes need no entry, and neither do
+  Renovate PRs: dependency and base-image bullets are written at release time.
+- Work that calls for a minor or major release also bumps the dev version in
+  `pyproject.toml` (and `uv.lock`) to that release, e.g. `1.6.0.dev1`. Automated
+  security releases only cut patches and stop at such a version.
 - pre-commit hooks (`pre-commit install` or `prek install`) run ruff, ty, the
   uv lock check, gitleaks, markdownlint-cli2, actionlint, zizmor, the Renovate
   config validator, and basic file hygiene checks.

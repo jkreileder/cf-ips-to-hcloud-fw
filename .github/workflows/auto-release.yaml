@@ -16,9 +16,10 @@ name: Auto-release security fixes
 #    open the PR and enable auto-merge. auto-release-publish.yaml tags the
 #    merge commit and publishes.
 #
-# Automated releases are security patches only: auto_release.py refuses (and
-# the run fails, notifying a person) when main carries feature work, i.e. a
-# dev version for a new minor/major or hand-written CHANGELOG entries.
+# Automated releases are patch releases only: auto_release.py refuses (and the
+# run fails, notifying a person) when main's dev version heads for a new minor
+# or major, which is how feature work is marked. The CHANGELOG entries PRs
+# added to the Unreleased section go into the release entry.
 #
 # Writes use the App token, not GITHUB_TOKEN: events caused by GITHUB_TOKEN do
 # not trigger workflows, so its PR would never get the required checks.

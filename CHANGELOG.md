@@ -5,6 +5,9 @@
 ## [v1.5.3] – Unreleased
 
 - Start new development cycle
+- The container image build now enforces a buildx policy (`Dockerfile.rego`): it accepts only
+  digest-pinned images from Docker Hub's `astral/uv`, `library/python`, `docker/dockerfile` and
+  `docker/scout-sbom-indexer`, and no URL or git sources
 
 ## [v1.5.2] – 2026-10-22
 
