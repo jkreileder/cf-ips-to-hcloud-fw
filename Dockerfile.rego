@@ -41,4 +41,11 @@ deny_msg contains msg if {
 	msg := sprintf("image %s is not pinned by digest", [input.image.ref])
 }
 
-decision := {"allow": allow, "deny_msg": deny_msg}
+deny_msg contains msg if {
+	not allow
+	not input.image
+	not input.local
+	msg := "only the build context and allowlisted images are allowed (no ADD of URLs or git repositories)"
+}
+
+decision :={"allow": allow, "deny_msg": deny_msg}
