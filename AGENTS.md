@@ -52,6 +52,10 @@
 - `.dockerignore` whitelists the build context: `src/`, `tests/`, `LICENSE`,
   `pyproject.toml`, `README.md`, `uv.lock`. A file the image needs must be added
   there.
+- `Dockerfile.rego` is a buildx build policy: every image a build pulls (base
+  images, the `# syntax=` frontend, the SBOM generator) must come from its
+  allowlisted repositories and be pinned by digest. A new image repository must
+  be added there.
 
 ## CI & Quality Gates
 
