@@ -514,6 +514,14 @@ releases also carry a `multiple.intoto.jsonl` asset, but it was produced by
 verified with [slsa-verifier](https://github.com/slsa-framework/slsa-verifier) rather than
 with the `gh attestation verify --bundle` command shown below.
 
+Verify the artifacts rather than the git tag.
+Every release tag points at the release's merge commit on `main`, which GitHub signs.
+Releases cut by hand also have a GPG-signed tag.
+Automated security releases, which the repository's release GitHub App opens and tags, have an
+unsigned annotated tag, because GitHub's API cannot sign tag objects.
+The attestations name the exact commit and workflow each artifact was built from, so they verify
+a release either way.
+
 ### Verifying Python Wheels and Source Code
 
 ```shell
