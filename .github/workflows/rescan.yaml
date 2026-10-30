@@ -65,8 +65,9 @@ jobs:
             release-assets.githubusercontent.com:443
             uploads.github.com:443
 
-      # Grype auto-detects .grype.yaml in the workspace; without the checkout
-      # the rescan would ignore fewer findings than the build-time scan.
+      # Grype auto-detects .grype.yaml in the workspace and Scout reads the VEX
+      # statements in .vex/; without the checkout the rescan would ignore
+      # fewer findings than the build-time scans.
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -85,6 +86,10 @@ jobs:
           image: registry://${{ vars.DOCKERHUB_USERNAME }}/cf-ips-to-hcloud-fw:1
           only-fixed: true
           exit-code: true
+          # Same VEX statements as the build-time scan; see .vex/README.md.
+          vex-location: .vex
+          vex-author: <jk@blackdown.de>
+          only-vex-affected: true
           sarif-file: sarif.output.json
           organization: ${{ vars.DOCKERHUB_USERNAME }}
 

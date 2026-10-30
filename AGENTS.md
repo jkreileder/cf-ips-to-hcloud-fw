@@ -66,6 +66,9 @@
 - `docker.yaml` builds the multi-arch image via `docker-build.yaml`, scans it
   (Docker Scout + Grype), signs it, and attaches SLSA provenance. `rescan.yaml`
   rescans the released `:1` image daily.
+- Scanner false positives are suppressed per exact package version: OpenVEX
+  statements in `.vex/` for Scout, `.grype.yaml` for Grype. Each one records its
+  removal condition (`.vex/README.md` for VEX); remove it once that holds.
 - Also: CodeQL, dependency review, Scorecard, TruffleHog, pre-commit, PR-title
   check, pytest result publication, uv dependency submission, Docker Hub
   description sync.
