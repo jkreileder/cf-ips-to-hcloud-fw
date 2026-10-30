@@ -46,7 +46,7 @@ jobs:
     # check below resolves it too. Defined once here for that check and the
     # push build; Renovate's custom manager updates it in place.
     env:
-      SBOM_GENERATOR: generator=docker/scout-sbom-indexer:1.24.0@sha256:4b67f29eb0d1244ab0f62de867ac5dafd7262fcd7ebbdefa6ec8aacd6b15252d
+      SBOM_GENERATOR: generator=docker/scout-sbom-indexer:1.29.0@sha256:cdf69767d010bd4e8d33001fbb629cdc5210e37a67cdecc800bdcacf3bc996b0
 
     steps:
       - name: Harden runner
