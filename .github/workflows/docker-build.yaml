@@ -359,6 +359,11 @@ jobs:
           # resolved by the next Renovate digest bump. Trade-off: disclosure of
           # an unfixed critical isn't flagged here until a fix exists.
           only-fixed: true
+          # Scout drops findings that a VEX statement in .vex/ marks as not
+          # affecting the exact package version; see .vex/README.md.
+          vex-location: .vex
+          vex-author: <jk@blackdown.de>
+          only-vex-affected: true
           sarif-file: sarif.output.json
           organization: ${{ vars.DOCKERHUB_USERNAME }}
           to: registry://${{ vars.DOCKERHUB_USERNAME }}/cf-ips-to-hcloud-fw:1
