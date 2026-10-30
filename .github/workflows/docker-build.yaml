@@ -62,6 +62,10 @@ jobs:
           # storage that `gh attestation verify` fetches from in the base-image
           # provenance check; if GitHub rotates the storage account, update it
           # from the failing run's harden-runner insights.
+          # Docker Hub serves image layers from two blob stores and picks one
+          # per request: Cloudflare R2 (docker-images-prod.<id>.r2...) and S3
+          # (docker-images-prod.s3.dualstack...). Every workflow that pulls
+          # from Docker Hub allows both.
           allowed-endpoints: >
             api.dso.docker.com:443
             api.github.com:443
@@ -74,6 +78,7 @@ jobs:
             d5l0dvt14r5h8.cloudfront.net:443
             dl-cdn.alpinelinux.org:443
             docker-images-prod.6aa30f8b08e16409b46e0173d6de2f56.r2.cloudflarestorage.com:443
+            docker-images-prod.s3.dualstack.us-east-1.amazonaws.com:443
             files.pythonhosted.org:443
             fulcio.sigstore.dev:443
             get.anchore.io:443
