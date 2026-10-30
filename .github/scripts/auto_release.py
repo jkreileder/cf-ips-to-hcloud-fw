@@ -298,6 +298,28 @@ def bullet(text: str) -> str:
     )
 
 
+def series_fixes(installed: str, fixed_in: tuple[str, ...]) -> list[str]:
+    """Keep the fix versions in the installed versions' release series.
+
+    Advisories list a fix for every maintained branch (CPython: 3.11.18, …,
+    3.15.2), but only the one in the series the image ships is relevant. The
+    series is the first two dot-separated parts after dropping a ``-rN``
+    package revision, so ``3.15.1`` keeps ``3.15.2``, ``1.2.6-r2`` keeps
+    ``1.2.6-r3`` and ``1.2-r2`` keeps ``1.2-r3`` but not ``1.3-r0``. When no fix
+    shares a series with any installed version, all of them are kept.
+
+    Returns:
+        list[str]: The relevant fix versions.
+    """
+
+    def series_of(version: str) -> tuple[str, ...]:
+        return tuple(version.split("-", 1)[0].split(".")[:2])
+
+    series = {series_of(version) for version in installed.split(", ")}
+    relevant = [fix for fix in fixed_in if series_of(fix) in series]
+    return relevant or list(fixed_in)
+
+
 def security_bullets(fixed: list[Finding], previous: str) -> list[str]:
     """Describe fixed findings, one bullet per vulnerability.
 
@@ -316,7 +338,11 @@ def security_bullets(fixed: list[Finding], previous: str) -> list[str]:
         packages = code_list(sorted({finding.package for finding in findings}))
         installed = ", ".join(sorted({finding.installed for finding in findings}))
         fixed_in = ", ".join(
-            sorted({version for finding in findings for version in finding.fixed_in})
+            sorted({
+                version
+                for finding in findings
+                for version in series_fixes(finding.installed, finding.fixed_in)
+            })
         )
         text = (
             f"**Security:** Fixed {label} in {packages}, "
