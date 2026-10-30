@@ -303,17 +303,20 @@ def series_fixes(installed: str, fixed_in: tuple[str, ...]) -> list[str]:
 
     Advisories list a fix for every maintained branch (CPython: 3.11.18, …,
     3.15.2), but only the one in the series the image ships is relevant. The
-    series is the first two dot-separated parts, so ``3.15.1`` keeps ``3.15.2``
-    and ``1.2.6-r2`` keeps ``1.2.6-r3``. When no fix shares a series with any
-    installed version, all of them are kept.
+    series is the first two dot-separated parts after dropping a ``-rN``
+    package revision, so ``3.15.1`` keeps ``3.15.2``, ``1.2.6-r2`` keeps
+    ``1.2.6-r3`` and ``1.2-r2`` keeps ``1.2-r3`` but not ``1.3-r0``. When no fix
+    shares a series with any installed version, all of them are kept.
 
     Returns:
         list[str]: The relevant fix versions.
     """
-    series = {
-        ".".join(version.split(".")[:2]) + "." for version in installed.split(", ")
-    }
-    relevant = [fix for fix in fixed_in if any(fix.startswith(s) for s in series)]
+
+    def series_of(version: str) -> tuple[str, ...]:
+        return tuple(version.split("-", 1)[0].split(".")[:2])
+
+    series = {series_of(version) for version in installed.split(", ")}
+    relevant = [fix for fix in fixed_in if series_of(fix) in series]
     return relevant or list(fixed_in)
 
 
