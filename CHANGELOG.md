@@ -2,6 +2,10 @@
 
 <!-- markdownlint-disable MD024 -->
 
+## [v1.5.4] – Unreleased
+
+- Start new development cycle
+
 ## [v1.5.3] – 2026-10-30
 
 - **Security:** Fixed CVE-2026-114583 (medium) in `python`, which the v1.5.2 image shipped at 3.15.1

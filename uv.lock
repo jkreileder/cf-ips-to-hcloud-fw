@@ -35,7 +35,7 @@ wheels = [
 
 [[package]]
 name = "cf-ips-to-hcloud-fw"
-version = "1.5.3"
+version = "1.5.4.dev1"
 source = { editable = "." }
 dependencies = [
     { name = "certifi" },
