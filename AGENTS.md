@@ -69,6 +69,9 @@
 - Scanner false positives are suppressed per exact package version: OpenVEX
   statements in `.vex/` for Scout, `.grype.yaml` for Grype. Each one records its
   removal condition (`.vex/README.md` for VEX); remove it once that holds.
+  Issue #1584 tracks them all; update it whenever one is added or removed.
+- An issue that only reminds us to undo a workaround once an upstream condition
+  holds (#1584, #1512) gets the `tracking` label, so it doesn't read as a bug.
 - Also: CodeQL, dependency review, Scorecard, TruffleHog, pre-commit, PR-title
   check, pytest result publication, uv dependency submission, Docker Hub
   description sync.
