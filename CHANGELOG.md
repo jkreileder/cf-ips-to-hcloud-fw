@@ -2,12 +2,18 @@
 
 <!-- markdownlint-disable MD024 -->
 
-## [v1.5.3] – Unreleased
+## [v1.5.3] – 2026-10-30
 
-- Start new development cycle
+- **Security:** Fixed CVE-2026-114583 (medium) in `python`, which the v1.5.2 image shipped at 3.15.1
+  (fixed in 3.11.18, 3.12.16, 3.13.18, 3.14.10, 3.15.2, 3.16.0)
+- **Security:** Fixed CVE-2026-115557 (critical) in `python`, which the v1.5.2 image shipped at
+  3.15.1 (fixed in 3.11.18, 3.12.16, 3.13.18, 3.14.10, 3.15.2, 3.16.0)
 - The container image build now enforces a buildx policy (`Dockerfile.rego`): it accepts only
   digest-pinned images from Docker Hub's `astral/uv`, `library/python`, `docker/dockerfile` and
   `docker/scout-sbom-indexer`, and no URL or git sources
+- Updated the runtime dependencies (`certifi` 2026.10.19 → 2026.10.23, `pydantic` 2.14.1 → 2.14.2,
+  `pydantic-core` 2.50.1 → 2.50.2, `tzdata` 2026.5 → 2026.6)
+- Refreshed the pinned base images (`astral/uv` 0.13.5 → 0.13.6, `python` 3.15.1 → 3.15.2)
 
 ## [v1.5.2] – 2026-10-22
 
