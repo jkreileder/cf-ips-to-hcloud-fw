@@ -12,6 +12,8 @@ Grype does not read these files; its suppressions, if any, live in `.grype.yaml`
 Each statement names exact package versions (`pkg:apk/...@<version>`), so it stops applying as
 soon as the image ships a different version, and a genuinely vulnerable version is still reported.
 Every statement must state its removal condition below.
+Issue [#1584](https://github.com/jkreileder/cf-ips-to-hcloud-fw/issues/1584) tracks all scanner
+suppressions, Scout's and Grype's; update it whenever a statement is added or removed.
 
 | File | Vulnerability | Why it is suppressed | Remove when |
 | --- | --- | --- | --- |
