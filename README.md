@@ -310,6 +310,16 @@ limit exposure operationally instead:
   no other changes needed.
 - **Use a separate token per deployment** rather than sharing one across hosts,
   so a single revocation doesn't take down everything else.
+- **Delay new dependency releases on hosts that resolve at run time.** `pipx`, `uvx` and `pip`
+  install the newest release of every dependency that satisfies the version ranges, so a
+  compromised upstream release would run with access to the token. The Docker image installs the
+  versions locked in `uv.lock` instead. With `uvx`, `--exclude-newer "3 days"` only considers
+  releases at least three days old, which skips the window in which most malicious releases are
+  found and pulled:
+
+  ```shell
+  uvx --exclude-newer "3 days" cf-ips-to-hcloud-fw -c config.yaml
+  ```
 
 ### Configuring the Application
 
@@ -403,6 +413,12 @@ Add a line to your crontab (`crontab -e`) to run every hour:
 
 ```shell
 0 * * * * /path/to/cf-ips-to-hcloud-fw -c /path/to/config.yaml
+```
+
+With `uvx`, add a release delay (see [Securing the API Token](#securing-the-api-token)):
+
+```shell
+0 * * * * /path/to/uvx --exclude-newer "3 days" cf-ips-to-hcloud-fw -c /path/to/config.yaml
 ```
 
 ### systemd timer
