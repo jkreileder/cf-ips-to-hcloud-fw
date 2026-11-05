@@ -385,15 +385,19 @@ jobs:
           no-cache-filters: ${{ !startsWith(github.ref, 'refs/tags/') && 'final-image' || '' }}
 
       # The attest job skips when there is no digest, which is right for PR
-      # and Dependabot builds that only load the image. On a release build a
-      # missing digest would mean the images were pushed but nothing attests
-      # them, while docker.yaml still reports success and the auto-release
-      # publish goes ahead. Fail here instead, before anything downstream.
-      - name: Require a pushed digest on release builds
-        if: ${{ startsWith(github.ref, 'refs/tags/') && steps.build-and-push.outputs.digest == '' }}
+      # and Dependabot builds that only load the image. On a build that pushed
+      # (main, the auto-release rebuild of :main and release tags alike) a
+      # missing digest would mean the images are on the registries but nothing
+      # attests them, while docker.yaml still reports success and the
+      # auto-release publish goes ahead. Fail here instead, before anything
+      # downstream. The push has happened by then: on a release tag the
+      # version is burned (cut-release skill, step 8b), so never re-run or
+      # re-push.
+      - name: Require a digest from the push
+        if: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' && steps.build-and-push.outputs.digest == '' }}
         shell: bash
         run: |
-          echo "::error::Build and push returned no image digest, so the release cannot be attested"
+          echo "::error::Build and push returned no image digest, so the images it already pushed cannot be attested. Do not re-run or re-push; on a release tag the version is burned (cut-release skill, step 8b)"
           exit 1
 
       # No unscoped `docker login` after the build any more: the attestations
