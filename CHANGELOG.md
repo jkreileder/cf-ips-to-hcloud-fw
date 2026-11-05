@@ -20,6 +20,10 @@
   validated networks rather than the strings Cloudflare sent, so a non-canonical spelling that
   Python's parser accepts (a dotted netmask, a zero-padded prefix length, upper-case IPv6) can no
   longer reach the Hetzner API, whose reading of it the validator could not vouch for
+- **Security:** The container image build now refuses to publish from any ref other than `main`
+  or a `v*` tag, so a manually dispatched build of another branch can no longer push that
+  branch's image under a release-looking tag (a branch named `1` would have retargeted the
+  floating `:1` tag) with attestations
 - Start new development cycle
 
 ## [v1.5.3] – 2026-10-30

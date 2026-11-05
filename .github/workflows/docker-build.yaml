@@ -114,6 +114,30 @@ jobs:
             tuf-repo-cdn.sigstore.dev:443
             uploads.github.com:443
 
+      # Publication is bound to the ref here, not only to the event. Every
+      # login, push and attest gate below keys on the event alone, and
+      # docker.yaml's trigger filters are the caller's business: workflow_dispatch
+      # accepts any ref, and a dispatch on a branch named `1` would otherwise
+      # publish that branch's image under the floating :1 tag on all three
+      # registries, with attestations. So every non-PR run, whatever its event
+      # and whoever calls this workflow, must be on main (the auto-release
+      # rebuild of :main dispatches there, auto-release.yaml) or be the push
+      # of a v* tag (which the version check below then validates). A tag is
+      # allowed only on its push: a dispatch on an existing release tag would
+      # rebuild, re-push and re-attest a published release, which the
+      # cut-release procedure forbids (see the attest job's header on why a
+      # rebuild never reproduces the pushed digest). This is the first step
+      # after the runner hardening, before any checkout or registry work.
+      - name: Refuse to publish from an unexpected ref
+        if: ${{ github.event_name != 'pull_request' && !(github.ref == 'refs/heads/main' || (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v'))) }}
+        env:
+          REF: ${{ github.ref }}
+          EVENT: ${{ github.event_name }}
+        shell: bash
+        run: |
+          echo "::error::This run would publish images; only refs/heads/main and the push of a v* tag may, not $EVENT on $REF"
+          exit 1
+
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -123,7 +147,8 @@ jobs:
       # mistaken tag can't publish images whose semver tags (derived from the
       # git tag) disagree with the packaged version, or ship a non-final
       # (.dev/pre-release/local) version. Only meaningful on tag pushes; runs
-      # first so a bad tag stops the build before any registry work.
+      # right after the checkout so a bad tag stops the build before any
+      # registry work.
       - name: Verify tag matches project version
         if: startsWith(github.ref, 'refs/tags/')
         env:
@@ -424,7 +449,9 @@ jobs:
   attest:
     name: Attest
     needs: build
-    # The event/actor guard mirrors the build job's push guard. The digest
+    # The event/actor guard mirrors the build job's push guard; the build
+    # job's ref guard is not repeated here and holds only because a refused
+    # ref fails `build`, which `needs` turns into a skip of this job. The digest
     # check is what actually has to hold: PR and Dependabot builds use
     # `load:` instead of `push:`, so there is no pushed digest to attest and
     # `actions/attest` would fail obscurely on an empty subject-digest.
