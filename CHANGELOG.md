@@ -12,6 +12,10 @@
   with no space after the colon, or a token pasted on a line of its own as `<TOKEN>: x`) no longer
   writes the token to the error log: unknown keys in the validation error are now reported as
   `<unknown key>`, matching the redaction already applied to values and YAML snippets
+- **Security:** The release build's smoke test, which resolves the wheel's dependencies from PyPI
+  without `uv.lock`, now runs in its own job on a downloaded copy of the distribution, and the
+  attestation job verifies the distribution against the hashes recorded at build time, so
+  third-party code can no longer touch the files that get attested and published
 - Start new development cycle
 
 ## [v1.5.3] – 2026-10-30
