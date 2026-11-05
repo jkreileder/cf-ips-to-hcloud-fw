@@ -22,8 +22,12 @@ permissions:
 jobs:
   build-dist:
     name: Build distribution
-    # Builds the publishable sdist/wheel, read-only. The privileged attestation
-    # happens in attest-dist, which only downloads these artifacts.
+    # Builds the publishable sdist/wheel, read-only, from the locked tree and
+    # nothing else: no third-party code outside uv.lock runs here. The smoke
+    # test, which resolves the wheel's dependencies from PyPI without the
+    # lock, runs in its own job on a downloaded copy, and the privileged
+    # attestation happens in attest-dist, which only downloads these
+    # artifacts and checks them against the hashes recorded at build time.
     runs-on: ubuntu-26.04
     timeout-minutes: 20
     permissions:
@@ -59,14 +63,14 @@ jobs:
           # Keep the published artifacts hermetic: never restore caches here.
           enable-cache: false
 
-      # The hashes printed here are the identity of the release: compare them
-      # with the uploaded artifact, the attestation subjects and the files on
-      # PyPI to confirm that nothing touched dist/ after the build.
+      # The hashes recorded here are the identity of the release: the smoke
+      # test and attest-dist verify their downloaded copies against them, so
+      # the bytes that get attested and published are the ones uv build wrote.
       - name: Build
         run: |
           rm -rf dist
           uv build
-          sha256sum dist/*
+          sha256sum dist/* | tee SHA256SUMS
 
       # Write the SBOM to the repo root only; attest-dist re-uploads it under a
       # name we control (below), so we upload once, explicitly, with the same
@@ -93,13 +97,67 @@ jobs:
           path: dist/
           retention-days: 14
 
-      # Last, after dist/ and the SBOM are uploaded. `--no-project` keeps
-      # uv.lock out of this resolution, so the wheel's dependencies come from
-      # PyPI at whatever versions resolve today, and their import-time code
-      # runs in this job. Running it after the upload means the bytes that
-      # attest-dist signs and the publish jobs ship are exactly what uv build
-      # wrote above, whatever that code does to the workspace. A failure here
-      # still fails the job, so attest-dist (needs: build-dist) never runs.
+      # Separate from dist/: everything under dist/ is published, and the
+      # checksum file must not be.
+      - name: Store the distribution hashes
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: python-package-sha256sums
+          path: SHA256SUMS
+          retention-days: 14
+
+  smoke-test-dist:
+    name: Smoke test distribution
+    # `--no-project` keeps uv.lock out of this resolution, so the wheel's
+    # dependencies come from PyPI at whatever versions resolve today, and
+    # their import-time code runs here. That is why this is its own job on a
+    # downloaded copy: whatever that code does to its workspace, the artifact
+    # that attest-dist signs and the publish jobs ship was uploaded by
+    # build-dist before it ran. A transient PyPI failure can also be retried
+    # with "Re-run failed jobs" without rebuilding.
+    needs:
+      - build-dist
+    runs-on: ubuntu-26.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@46b06cea07f9e64621fdf066ba77ac6915163d43 # v2.22.3
+        with:
+          disable-sudo: true
+          egress-policy: block
+          allowed-endpoints: >
+            api.github.com:443
+            files.pythonhosted.org:443
+            github.com:443
+            objects.githubusercontent.com:443
+            pypi.org:443
+            release-assets.githubusercontent.com:443
+            releases.astral.sh:443
+
+      - name: Set up Python and install uv
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          python-version: "3.11"
+          version: "0.13.7"
+          enable-cache: false
+
+      - name: Download the distribution packages
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: python-package-distributions
+          path: dist
+
+      - name: Download the distribution hashes
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: python-package-sha256sums
+
+      - name: Verify the downloaded distribution
+        run: sha256sum -c SHA256SUMS
+
       - name: Smoke test built wheel
         run: |
           uv run --isolated --no-project --with dist/*.whl \
@@ -108,7 +166,8 @@ jobs:
   attest-dist:
     name: Attest distribution
     # Minimal privileged job: it only downloads the already-built distribution
-    # and SBOM and attests them. It never checks out or runs repository code, so
+    # and SBOM, checks the distribution against the build-time hashes, and
+    # attests them. It never checks out or runs repository code, so
     # id-token/attestations write never touches a build step. The dependabot
     # guard mirrors the original attestation steps and the repo's policy of not
     # running privileged jobs as dependabot; the calling workflow's triggers
@@ -117,6 +176,7 @@ jobs:
     if: ${{ github.actor != 'dependabot[bot]' }}
     needs:
       - build-dist
+      - smoke-test-dist
     runs-on: ubuntu-26.04
     timeout-minutes: 10
     permissions:
@@ -143,6 +203,15 @@ jobs:
         with:
           name: python-package-distributions
           path: dist
+
+      - name: Download the distribution hashes
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: python-package-sha256sums
+
+      # The subjects attested below must be the bytes uv build wrote.
+      - name: Verify the downloaded distribution
+        run: sha256sum -c SHA256SUMS
 
       - name: Download the SBOM
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
