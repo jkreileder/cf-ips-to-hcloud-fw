@@ -7,6 +7,7 @@ covered here; the git and gh paths run in the auto-release workflows.
 from __future__ import annotations
 
 import importlib.util
+import sys
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -22,13 +23,23 @@ SCRIPT = Path(__file__).resolve().parents[1] / ".github" / "scripts" / "auto_rel
 def auto_release() -> ModuleType:
     """Load the script as a module.
 
+    The container image build runs the tests from a context that holds
+    ``tests/`` but not ``.github/``, so the script may be absent; skip then.
+    The module is registered in ``sys.modules`` before it executes because
+    ``dataclasses`` resolves the script's string annotations (it uses
+    ``from __future__ import annotations``) through the module's entry there
+    on Python 3.11 to 3.14.
+
     Returns:
         ModuleType: The executed script module.
     """
+    if not SCRIPT.exists():
+        pytest.skip("the release script is not part of this checkout")
     spec = importlib.util.spec_from_file_location("auto_release", SCRIPT)
     assert spec is not None
     assert spec.loader is not None
     module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
     spec.loader.exec_module(module)
     return module
 
