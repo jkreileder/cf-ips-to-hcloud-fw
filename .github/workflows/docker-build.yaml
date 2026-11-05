@@ -380,6 +380,18 @@ jobs:
           # wheel) stays cached. Tag builds run cache-free regardless.
           no-cache-filters: ${{ !startsWith(github.ref, 'refs/tags/') && 'final-image' || '' }}
 
+      # The attest job skips when there is no digest, which is right for PR
+      # and Dependabot builds that only load the image. On a release build a
+      # missing digest would mean the images were pushed but nothing attests
+      # them, while docker.yaml still reports success and the auto-release
+      # publish goes ahead. Fail here instead, before anything downstream.
+      - name: Require a pushed digest on release builds
+        if: ${{ startsWith(github.ref, 'refs/tags/') && steps.build-and-push.outputs.digest == '' }}
+        shell: bash
+        run: |
+          echo "::error::Build and push returned no image digest, so the release cannot be attested"
+          exit 1
+
       # No unscoped `docker login` after the build any more: the attestations
       # that needed one moved to the attest job below. Grype pulls the freshly
       # pushed image with the runner's embedded pull token, which is
