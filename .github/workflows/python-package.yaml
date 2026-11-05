@@ -289,7 +289,17 @@ jobs:
             echo "::error::Refusing to publish non-final version '$version' from tag $TAG"
             exit 1
           fi
-          echo "Release version '$version' matches tag $TAG"
+          # Everything on main arrived through a reviewed pull request, so a
+          # tag that points at a commit not on main (pushed together with the
+          # tag, say) must not become a release. Fetch main's history: the
+          # checkout is depth 1, and the ancestry test needs the path from
+          # main's tip down to the tagged commit.
+          git fetch --no-tags --quiet origin main
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" FETCH_HEAD; then
+            echo "::error::Tag $TAG points at $GITHUB_SHA, which is not on main; only commits merged to main are released"
+            exit 1
+          fi
+          echo "Release version '$version' matches tag $TAG, and the tagged commit is on main"
 
   build-and-attest-dist:
     name: Build and attest distribution
