@@ -50,8 +50,11 @@ DEV_CYCLE_BULLET = "- Start new development cycle"
 # CHANGELOG headings separate the version and the date with an en dash.
 DASH = "\N{EN DASH}"
 
-FINAL_VERSION_RE = re.compile(r"^(\d+)\.(\d+)\.(\d+)$")
-DEV_VERSION_RE = re.compile(r"^(\d+)\.(\d+)\.(\d+)\.dev\d+$")
+# Used only with fullmatch(), which anchors both ends itself: a `$` anchor would
+# accept a trailing newline, which is exactly how a mangled image label used to
+# slip through. Components refuse leading zeros so "01.2.3" is not read as 1.2.3.
+FINAL_VERSION_RE = re.compile(r"(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)")
+DEV_VERSION_RE = re.compile(r"(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)\.dev\d+")
 PYPROJECT_VERSION_RE = re.compile(r'^version = "([^"]+)"$', re.MULTILINE)
 UV_LOCK_VERSION_RE = re.compile(
     rf'(^name = "{re.escape(PROJECT_NAME)}"\nversion = ")[^"]+(")', re.MULTILINE
@@ -164,7 +167,10 @@ def released_versions() -> list[Version]:
     """
     tags = git("tag", "--list", "v*").splitlines()
     return sorted(
-        parse_final(tag[1:]) for tag in tags if FINAL_VERSION_RE.fullmatch(tag[1:])
+        (int(major), int(minor), int(patch))
+        for tag in tags
+        if (match := FINAL_VERSION_RE.fullmatch(tag[1:]))
+        for major, minor, patch in [match.groups()]
     )
 
 
@@ -497,7 +503,16 @@ def dependency_bullet(previous_tag: str) -> str | None:
 
 
 def write_outputs(**values: str) -> None:
-    """Append step outputs for later workflow steps and echo them."""
+    """Append step outputs for later workflow steps and echo them.
+
+    One ``key=value`` line per output: a line break inside a value would start
+    a second output, and the workflow gates its commit and PR steps on these.
+    Every current caller passes regex-bound or GitHub-generated values; this
+    keeps the invariant at the sink rather than in each caller.
+    """
+    for key, value in values.items():
+        if "\n" in key or "\r" in key or "\n" in value or "\r" in value:
+            fail(f"step output {key!r} would span more than one line")
     lines = "".join(f"{key}={value}\n" for key, value in values.items())
     output = os.environ.get("GITHUB_OUTPUT")
     if output:

@@ -176,7 +176,8 @@ jobs:
                 then .createdAt < $auto else .createdAt < $manual end)
             | .url' <<<"$prs")"
           if [ -n "$stale" ]; then
-            echo "::error::Release PR stuck open, blocking security releases: $stale"
+            # One URL per line from jq; an annotation ends at the first line break.
+            echo "::error::Release PR stuck open, blocking security releases: ${stale//$'\n'/ }"
             exit 1
           fi
           if [ "$(jq length <<<"$prs")" != 0 ]; then
