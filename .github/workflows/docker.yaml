@@ -40,4 +40,5 @@ jobs:
     uses: $/.github/workflows/docker-build.yaml
     secrets:
       DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+      DOCKERHUB_READ_TOKEN: ${{ secrets.DOCKERHUB_READ_TOKEN }}
       QUAY_TOKEN: ${{ secrets.QUAY_TOKEN }}

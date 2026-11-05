@@ -13,13 +13,22 @@ name: Docker build
 #
 # Triggers and concurrency live in the calling workflow (docker.yaml).
 # The secrets are optional so fork PR and Dependabot runs (which have no
-# access to them) can still call this workflow; every step that needs them
-# is guarded to non-PR, non-Dependabot events.
+# access to them) can still call this workflow; every step that needs a
+# write credential is guarded to non-PR, non-Dependabot events.
+#
+# Two Docker Hub tokens: DOCKERHUB_TOKEN can push and is used only by the
+# push-scoped buildx login and the attest job, which never run on
+# pull_request. DOCKERHUB_READ_TOKEN is a read-only access token for the
+# Docker Scout API; it is the only Hub credential a same-repository PR run
+# (including Renovate's action bumps, whose freshly pinned upstream commits
+# run here before merge) ever sees, so that run cannot push to the registry.
 
 on:
   workflow_call:
     secrets:
       DOCKERHUB_TOKEN:
+        required: false
+      DOCKERHUB_READ_TOKEN:
         required: false
       QUAY_TOKEN:
         required: false
@@ -343,7 +352,8 @@ jobs:
       # Scout needs Docker Hub credentials for its API (organization + stream
       # compare), which the embedded pull token doesn't provide. Pass them as
       # inputs so the step works on non-fork PR builds too, where no docker
-      # login has happened.
+      # login has happened. Read-only token: this step runs on PR builds, so
+      # the push token must not reach it (see the header).
       - name: Analyze for critical and high CVEs with Docker Scout
         if: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.head.repo.fork) && github.actor != 'dependabot[bot]' }}
         id: docker-scout-cves
@@ -351,7 +361,7 @@ jobs:
         uses: docker/scout-action@e7e2a72bf1485d10a58f30696b6c513b261ce4fa # v1.29.0
         with:
           dockerhub-user: ${{ vars.DOCKERHUB_USERNAME }}
-          dockerhub-password: ${{ secrets.DOCKERHUB_TOKEN }}
+          dockerhub-password: ${{ secrets.DOCKERHUB_READ_TOKEN }}
           command: cves${{ !startsWith(github.ref, 'refs/tags/') && ',recommendations,compare' || '' }}
           image: ${{ vars.DOCKERHUB_USERNAME }}/cf-ips-to-hcloud-fw:${{ steps.docker-meta.outputs.version }}
           # Match Grype's only-fixed policy: report only actionable findings.

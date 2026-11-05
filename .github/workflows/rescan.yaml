@@ -75,13 +75,14 @@ jobs:
 
       # Scout needs Docker Hub credentials for its API; no docker login has
       # happened in this workflow, so pass them as inputs (same pattern as
-      # docker.yaml). exit-code makes fixable findings fail the step.
+      # docker-build.yaml). This workflow only reads, so it gets the read-only
+      # token. exit-code makes fixable findings fail the step.
       - name: Rescan with Docker Scout
         id: docker-scout-cves
         uses: docker/scout-action@e7e2a72bf1485d10a58f30696b6c513b261ce4fa # v1.29.0
         with:
           dockerhub-user: ${{ vars.DOCKERHUB_USERNAME }}
-          dockerhub-password: ${{ secrets.DOCKERHUB_TOKEN }}
+          dockerhub-password: ${{ secrets.DOCKERHUB_READ_TOKEN }}
           command: cves
           image: registry://${{ vars.DOCKERHUB_USERNAME }}/cf-ips-to-hcloud-fw:1
           only-fixed: true
