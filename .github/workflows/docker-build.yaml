@@ -114,6 +114,24 @@ jobs:
             tuf-repo-cdn.sigstore.dev:443
             uploads.github.com:443
 
+      # Publication is bound to the ref, not only to the event. docker.yaml
+      # limits push events to main and v* tags, but workflow_dispatch accepts
+      # any ref, and every login, push and attest gate below keys on the event
+      # alone: a dispatch on a branch named `1` would publish that branch's
+      # image under the floating :1 tag on all three registries, with
+      # attestations. The only dispatch this workflow is designed for is the
+      # auto-release rebuild of :main (auto-release.yaml), so main is the one
+      # ref a dispatch may run on. Runs first, before any checkout or
+      # registry work.
+      - name: Refuse to publish from an unexpected ref
+        if: ${{ github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/main' }}
+        env:
+          REF: ${{ github.ref }}
+        shell: bash
+        run: |
+          echo "::error::A workflow_dispatch run publishes images and is only allowed on refs/heads/main, not on $REF"
+          exit 1
+
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
