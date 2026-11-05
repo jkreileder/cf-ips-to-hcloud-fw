@@ -38,7 +38,12 @@ jobs:
       pull-requests: write
       attestations: write
     uses: $/.github/workflows/docker-build.yaml
+    # The write tokens are withheld from pull_request runs altogether: no step
+    # in the reusable workflow uses them there, and a same-repository PR run
+    # (Renovate's action bumps included) executes the PR's own pinned action
+    # commits, so the push credentials must not be in its reach at all. The
+    # read-only token is what Docker Scout needs, on every event.
     secrets:
-      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+      DOCKERHUB_TOKEN: ${{ github.event_name != 'pull_request' && secrets.DOCKERHUB_TOKEN || '' }}
       DOCKERHUB_READ_TOKEN: ${{ secrets.DOCKERHUB_READ_TOKEN }}
-      QUAY_TOKEN: ${{ secrets.QUAY_TOKEN }}
+      QUAY_TOKEN: ${{ github.event_name != 'pull_request' && secrets.QUAY_TOKEN || '' }}

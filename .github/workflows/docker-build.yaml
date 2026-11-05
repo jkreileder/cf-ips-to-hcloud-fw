@@ -18,10 +18,11 @@ name: Docker build
 #
 # Two Docker Hub tokens: DOCKERHUB_TOKEN can push and is used only by the
 # push-scoped buildx login and the attest job, which never run on
-# pull_request. DOCKERHUB_READ_TOKEN is a read-only access token for the
-# Docker Scout API; it is the only Hub credential a same-repository PR run
+# pull_request; docker.yaml does not even forward it (or QUAY_TOKEN) on that
+# event. DOCKERHUB_READ_TOKEN is a read-only access token for the Docker
+# Scout API and is the only Hub credential a same-repository PR run receives
 # (including Renovate's action bumps, whose freshly pinned upstream commits
-# run here before merge) ever sees, so that run cannot push to the registry.
+# run here before merge), so that run cannot push to the registry.
 
 on:
   workflow_call:
