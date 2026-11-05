@@ -62,6 +62,10 @@ def _describe_sdk_error(e: Exception) -> str:
     Blanking those too would cost the detail that makes a failed sync
     diagnosable, since nothing else in the package logs a traceback.
 
+    Control characters are escaped, though: that text is composed by the API
+    or whatever sits between us and it, and a newline in it would end the log
+    line and let the rest of the message pose as a log entry of its own.
+
     Args:
         e: The exception raised by the hcloud SDK call.
 
@@ -70,7 +74,7 @@ def _describe_sdk_error(e: Exception) -> str:
     """
     if isinstance(e, InvalidHeader):
         return type(e).__name__
-    return str(e)
+    return "".join(ch if ch.isprintable() else repr(ch)[1:-1] for ch in str(e))
 
 
 def update_project(

@@ -213,6 +213,23 @@ def test_read_config_empty_list(mock_logging: MagicMock) -> None:
     )
 
 
+@patch("logging.error")
+def test_read_config_non_utf8_file(mock_logging: MagicMock, tmp_path: Path) -> None:
+    """A file that is not UTF-8 is reported by byte offset, not as a traceback."""
+    config_file = tmp_path / "config.yaml"
+    config_file.write_bytes(b"- token: \xff\xfeSUPER_SECRET\n  firewalls: [fw-1]\n")
+    config_file.chmod(0o600)
+
+    with pytest.raises(SystemExit) as e:
+        _read_config(str(config_file))
+
+    assert e.value.code == 1
+    mock_logging.assert_called_once()
+    error_msg = mock_logging.call_args[0][0]
+    assert error_msg.endswith("is not valid UTF-8 (byte 9).")
+    assert "SUPER_SECRET" not in error_msg
+
+
 @patch("builtins.open", mock_open(read_data="v: ]["))
 @patch("logging.error")
 def test_read_config_broken_yaml(mock_logging: MagicMock) -> None:

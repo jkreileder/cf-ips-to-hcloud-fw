@@ -174,6 +174,13 @@ def _read_config(config_file: str) -> list[Project]:
         log_error_and_exit(f"Config file {config_file!r} is a directory.")
     except PermissionError:
         log_error_and_exit(f"Config file {config_file!r} is unreadable.")
+    except UnicodeDecodeError as e:
+        # Raised by the text stream, not the parser, so it is not a YAMLError.
+        # The byte offset is enough to find the problem; the bytes themselves
+        # might be the token.
+        log_error_and_exit(
+            f"Config file {config_file!r} is not valid UTF-8 (byte {e.start})."
+        )
     except yaml.YAMLError as e:
         log_error_and_exit(
             f"Error reading config file {config_file!r}: {_describe_yaml_error(e)}"

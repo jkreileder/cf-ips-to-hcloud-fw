@@ -343,6 +343,25 @@ def test_fw_set_rules_transport_fail(
     )
 
 
+@patch("cf_ips_to_hcloud_fw.firewall.Client")
+@patch("logging.error")
+def test_fw_set_rules_error_text_cannot_forge_log_lines(
+    mock_logging: MagicMock, mock_client: MagicMock
+) -> None:
+    """Control characters in SDK error text are escaped, so the line stays one line."""
+    fw = Firewall(name="fw-1", rules=[])
+    mock_client.firewalls.set_rules.side_effect = RequestsConnectionError(
+        "boom\n2026-01-01 00:00:00,000 INFO     forged entry\tdone"
+    )
+    assert fw_set_rules(mock_client, fw, 1) is False
+    logged = mock_logging.call_args.args[0]
+    assert "\n" not in logged
+    assert "\t" not in logged
+    assert logged.endswith(
+        "boom\\n2026-01-01 00:00:00,000 INFO     forged entry\\tdone"
+    )
+
+
 @patch("cf_ips_to_hcloud_fw.firewall.update_firewall_rule", wraps=update_firewall_rule)
 @patch("cf_ips_to_hcloud_fw.firewall.fw_set_rules")
 def test_update_firewall_no_rules(
