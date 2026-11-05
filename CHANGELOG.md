@@ -24,6 +24,9 @@
   or a `v*` tag, so a manually dispatched build of another branch can no longer push that
   branch's image under a release-looking tag (a branch named `1` would have retargeted the
   floating `:1` tag) with attestations
+- **Security:** The release workflows now require the tagged commit to be on `main` before
+  building and publishing, so a `v*` tag pushed together with an unreviewed commit can no longer
+  release it
 - Start new development cycle
 
 ## [v1.5.3] – 2026-10-30
