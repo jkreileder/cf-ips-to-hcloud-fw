@@ -121,16 +121,21 @@ jobs:
       # publish that branch's image under the floating :1 tag on all three
       # registries, with attestations. So every non-PR run, whatever its event
       # and whoever calls this workflow, must be on main (the auto-release
-      # rebuild of :main dispatches there, auto-release.yaml) or on a v* tag
-      # (which the version check below then validates). This is the first
-      # step after the runner hardening, before any checkout or registry work.
+      # rebuild of :main dispatches there, auto-release.yaml) or be the push
+      # of a v* tag (which the version check below then validates). A tag is
+      # allowed only on its push: a dispatch on an existing release tag would
+      # rebuild, re-push and re-attest a published release, which the
+      # cut-release procedure forbids (see the attest job's header on why a
+      # rebuild never reproduces the pushed digest). This is the first step
+      # after the runner hardening, before any checkout or registry work.
       - name: Refuse to publish from an unexpected ref
-        if: ${{ github.event_name != 'pull_request' && github.ref != 'refs/heads/main' && !startsWith(github.ref, 'refs/tags/v') }}
+        if: ${{ github.event_name != 'pull_request' && !(github.ref == 'refs/heads/main' || (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v'))) }}
         env:
           REF: ${{ github.ref }}
+          EVENT: ${{ github.event_name }}
         shell: bash
         run: |
-          echo "::error::This run would publish images; only refs/heads/main and v* tags may, not $REF"
+          echo "::error::This run would publish images; only refs/heads/main and the push of a v* tag may, not $EVENT on $REF"
           exit 1
 
       - name: Checkout repository
