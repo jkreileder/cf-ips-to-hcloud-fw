@@ -256,7 +256,10 @@ gh run view "$run_id" --json jobs --jq '.jobs[] | "\(.name): \(.conclusion)"'
   is not re-run, and `Attest` still reads its `outputs.digest` from that attempt.
 
 - **`Build` failed *after* the push step** — that version is burned. Do not retag,
-  do not delete the tag, do not re-run. Cut the next patch instead.
+  do not delete the tag, do not re-run. Cut the next patch instead. This includes
+  the `Require a digest from the push` step directly below `Build and push`: it
+  can only fail once the push has happened, and it means the images are on the
+  registries without attestations.
 
 **Never re-run the whole workflow once the push has happened.** A rebuild cannot
 reproduce the published digest: buildx provenance (`mode=max`) stamps a fresh

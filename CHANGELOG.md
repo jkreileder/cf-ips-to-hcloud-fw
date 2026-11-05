@@ -27,6 +27,8 @@
 - **Security:** The release workflows now require the tagged commit to be on `main` before
   building and publishing, so a `v*` tag pushed together with an unreviewed commit can no longer
   release it
+- **Security:** A container image build that pushed but returned no image digest now fails
+  instead of leaving the pushed images unattested while the run reports success
 - Start new development cycle
 
 ## [v1.5.3] – 2026-10-30
