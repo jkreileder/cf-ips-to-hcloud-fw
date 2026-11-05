@@ -88,6 +88,43 @@ def _describe_yaml_error(e: yaml.YAMLError) -> str:
     return f"{type(e).__name__}{location}"
 
 
+def _describe_validation_errors(e: ValidationError) -> list[dict[str, object]]:
+    """Summarize validation errors without echoing file-derived strings.
+
+    ``include_input=False`` keeps the offending *values* out of the message,
+    but every ``loc`` still names the mapping keys on the way to the error,
+    and because :class:`Project` forbids unknown keys, an unknown key is
+    reported verbatim. A mistyped config can put the token in key position -
+    ``{token:<TOKEN>, …}`` with no space after the colon is a single flow-mapping
+    key, and a token pasted on a line of its own as ``<TOKEN>: x`` is a key too -
+    so the key names are file contents just as much as the values are. Keep the
+    list indices and the names of known ``Project`` fields, which carry no
+    file-derived text, and replace every other key with a fixed placeholder.
+    ``type`` and ``msg`` are Pydantic's own fixed strings.
+
+    Args:
+        e: The validation error raised for the parsed config.
+
+    Returns:
+        list[dict[str, object]]: One entry per error (``type``, ``loc``,
+        ``msg``), with ``loc`` sanitized.
+    """
+    known = Project.model_fields.keys()
+    return [
+        {
+            "type": err["type"],
+            "loc": tuple(
+                part if isinstance(part, int) or part in known else "<unknown key>"
+                for part in err["loc"]
+            ),
+            "msg": err["msg"],
+        }
+        for err in e.errors(
+            include_url=False, include_context=False, include_input=False
+        )
+    ]
+
+
 def _read_config(config_file: str) -> list[Project]:
     """Load and validate project definitions from a YAML file.
 
@@ -116,12 +153,9 @@ def _read_config(config_file: str) -> list[Project]:
     try:
         projects = TypeAdapter(list[Project]).validate_python(config)
     except ValidationError as e:
-        sanitized_errors = e.errors(
-            include_url=False,
-            include_context=False,
-            include_input=False,
+        log_error_and_exit(
+            f"Config file {config_file!r} is broken: {_describe_validation_errors(e)}"
         )
-        log_error_and_exit(f"Config file {config_file!r} is broken: {sanitized_errors}")
 
     if not projects:
         # Non-zero, not a clean exit. An empty list is a valid YAML document, so
