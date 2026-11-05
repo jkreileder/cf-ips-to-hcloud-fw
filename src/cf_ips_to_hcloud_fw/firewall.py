@@ -62,6 +62,10 @@ def _describe_sdk_error(e: Exception) -> str:
     Blanking those too would cost the detail that makes a failed sync
     diagnosable, since nothing else in the package logs a traceback.
 
+    That text is composed by the API or whatever sits between us and it, so
+    :func:`custom_logging.log_error` escapes any control characters in it
+    before the line is written; nothing is withheld here on that account.
+
     Args:
         e: The exception raised by the hcloud SDK call.
 

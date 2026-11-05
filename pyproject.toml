@@ -143,7 +143,12 @@ ignore = [
 # config.py intentionally uses os-level file APIs (os.path.exists, os.stat via
 # _os_stat, builtins.open) so tests can patch them; the _os_stat indirection
 # also avoids intercepting the Python 3.14 coverage tracer's own os.stat calls.
-"src/cf_ips_to_hcloud_fw/config.py" = ["os-path-exists", "os-stat", "builtin-open"]
+"src/cf_ips_to_hcloud_fw/config.py" = [
+    "os-path-exists",
+    "os-stat",
+    "builtin-open",
+    "read-whole-file",
+]
 
 [tool.ruff.lint.flake8-type-checking]
 runtime-evaluated-base-classes = ["pydantic.BaseModel"]

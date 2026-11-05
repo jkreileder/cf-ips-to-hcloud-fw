@@ -77,15 +77,44 @@ def _describe_yaml_error(e: yaml.YAMLError) -> str:
     Returns:
         str: What failed and where, free of file contents.
     """
-    # ReaderError and bare YAMLErrors carry no marks; fall back to the position
-    # being unknown rather than raising while handling an error.
+    # ReaderError (a control character in otherwise valid text) carries a
+    # character position instead of marks, and a bare YAMLError carries
+    # neither; fall back to the position being unknown rather than raising
+    # while handling an error.
     mark = getattr(e, "problem_mark", None) or getattr(e, "context_mark", None)
-    location = (
-        f" at line {mark.line + 1}, column {mark.column + 1}"
-        if mark is not None
-        else ""
-    )
+    position = getattr(e, "position", None)
+    if mark is not None:
+        location = f" at line {mark.line + 1}, column {mark.column + 1}"
+    elif position is not None:
+        location = f" at character {position}"
+    else:
+        location = ""
     return f"{type(e).__name__}{location}"
+
+
+def _utf8_error_offset(text: str) -> int | None:
+    """Find the file offset of the first byte that was not valid UTF-8.
+
+    The config file is read with ``errors="surrogateescape"``, which turns
+    each undecodable byte into a lone surrogate instead of raising, so the
+    file is read exactly once and the offset comes from that same buffer
+    (a strict text stream would raise with an offset relative to its current
+    decoder chunk, and reopening the file to measure it would race with a
+    replaced or removed file). Encoding the text strictly fails at the first
+    such surrogate; the byte offset is the UTF-8 length of everything before.
+
+    Args:
+        text: The file contents as read leniently.
+
+    Returns:
+        int | None: Offset of the first invalid byte, or None when the text
+        is valid UTF-8 throughout.
+    """
+    try:
+        text.encode("utf-8")
+    except UnicodeEncodeError as e:
+        return len(text[: e.start].encode("utf-8", "surrogateescape"))
+    return None
 
 
 def _describe_validation_errors(e: ValidationError) -> list[dict[str, object]]:
@@ -166,14 +195,26 @@ def _read_config(config_file: str) -> list[Project]:
     _validate_config_permissions(config_file)
 
     try:
-        with open(config_file, encoding="utf-8") as file:
-            config = yaml.safe_load(file)
+        with open(config_file, encoding="utf-8", errors="surrogateescape") as file:
+            text = file.read()
     except FileNotFoundError:
         log_error_and_exit(f"Config file {config_file!r} not found.")
     except IsADirectoryError:
         log_error_and_exit(f"Config file {config_file!r} is a directory.")
     except PermissionError:
         log_error_and_exit(f"Config file {config_file!r} is unreadable.")
+
+    # Undecodable bytes survived the lenient read as lone surrogates; refuse
+    # the file before the parser sees them. The byte offset is enough to find
+    # the problem; the bytes themselves might be the token.
+    bad_byte = _utf8_error_offset(text)
+    if bad_byte is not None:
+        log_error_and_exit(
+            f"Config file {config_file!r} is not valid UTF-8 (byte {bad_byte})."
+        )
+
+    try:
+        config = yaml.safe_load(text)
     except yaml.YAMLError as e:
         log_error_and_exit(
             f"Error reading config file {config_file!r}: {_describe_yaml_error(e)}"
