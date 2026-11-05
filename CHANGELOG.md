@@ -29,9 +29,10 @@
   release it
 - **Security:** A container image build that pushed but returned no image digest now fails
   instead of leaving the pushed images unattested while the run reports success
-- Hetzner SDK error text in log lines has its control characters escaped, so an error message
-  cannot pose as a second log entry, and a config file that is not valid UTF-8 is reported as a
-  one-line error with the byte offset instead of a traceback
+- Error log lines have their control characters and backslashes escaped, so text from an API
+  response or an OS error cannot pose as a second log entry; a config file that is not valid
+  UTF-8 is reported with the offset of the offending byte instead of a traceback, and a control
+  character in the file is reported with its position
 - Start new development cycle
 
 ## [v1.5.3] – 2026-10-30

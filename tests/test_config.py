@@ -213,11 +213,20 @@ def test_read_config_empty_list(mock_logging: MagicMock) -> None:
     )
 
 
+# The text stream decodes in chunks of 8 KiB, so an offset taken from its error
+# is only right inside the first chunk; the second case puts the bad byte past
+# that boundary.
+@pytest.mark.parametrize("padding", [0, 2000], ids=["first-chunk", "later-chunk"])
 @patch("logging.error")
-def test_read_config_non_utf8_file(mock_logging: MagicMock, tmp_path: Path) -> None:
-    """A file that is not UTF-8 is reported by byte offset, not as a traceback."""
+def test_read_config_non_utf8_file(
+    mock_logging: MagicMock, padding: int, tmp_path: Path
+) -> None:
+    """A file that is not UTF-8 is reported by file offset, not as a traceback."""
+    prefix = b"# padding\n" * padding
     config_file = tmp_path / "config.yaml"
-    config_file.write_bytes(b"- token: \xff\xfeSUPER_SECRET\n  firewalls: [fw-1]\n")
+    config_file.write_bytes(
+        prefix + b"- token: \xff\xfeSUPER_SECRET\n  firewalls: [fw-1]\n"
+    )
     config_file.chmod(0o600)
 
     with pytest.raises(SystemExit) as e:
@@ -226,8 +235,27 @@ def test_read_config_non_utf8_file(mock_logging: MagicMock, tmp_path: Path) -> N
     assert e.value.code == 1
     mock_logging.assert_called_once()
     error_msg = mock_logging.call_args[0][0]
-    assert error_msg.endswith("is not valid UTF-8 (byte 9).")
+    assert error_msg.endswith(f"is not valid UTF-8 (byte {len(prefix) + 9}).")
     assert "SUPER_SECRET" not in error_msg
+
+
+@patch(
+    "builtins.open",
+    mock_open(read_data="- token: t\x00SUPER_SECRET\n  firewalls: [fw-1]\n"),
+)
+@patch("logging.error")
+def test_read_config_control_character_reports_position(
+    mock_logging: MagicMock,
+) -> None:
+    """PyYAML's ReaderError carries a character position, not marks; report it."""
+    with pytest.raises(SystemExit) as e:
+        _read_config("config.yaml")
+
+    assert e.value.code == 1
+    error_msg = mock_logging.call_args[0][0]
+    assert error_msg == (
+        "Error reading config file 'config.yaml': ReaderError at character 10"
+    )
 
 
 @patch("builtins.open", mock_open(read_data="v: ]["))
