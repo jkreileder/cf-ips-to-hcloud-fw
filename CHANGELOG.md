@@ -24,6 +24,9 @@
   or a `v*` tag, so a manually dispatched build of another branch can no longer push that
   branch's image under a release-looking tag (a branch named `1` would have retargeted the
   floating `:1` tag) with attestations
+- Hetzner SDK error text in log lines has its control characters escaped, so an error message
+  cannot pose as a second log entry, and a config file that is not valid UTF-8 is reported as a
+  one-line error with the byte offset instead of a traceback
 - Start new development cycle
 
 ## [v1.5.3] – 2026-10-30
