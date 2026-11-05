@@ -226,21 +226,30 @@ def test_get_cloudflare_cidrs() -> None:
     MagicMock(
         return_value=cloudflare.types.ips.ip_list_response.PublicIPIPs(
             # Spellings Python's parser accepts that are not canonical CIDR
-            # text: netmask, hostmask, zero-padded prefix, and an expanded,
-            # upper-case IPv6 address with a zero-padded prefix.
+            # text: netmask, hostmask, zero-padded prefix, a bare address
+            # (a host route), and an expanded, upper-case IPv6 address with a
+            # zero-padded prefix. The two 198.27.128.0 spellings name one
+            # network and must come out as one entry.
             ipv4_cidrs=[
                 "199.27.128.0/255.255.248.0",
                 "198.27.128.0/0.0.7.255",
+                "198.27.128.0/21",
                 "197.234.240.0/022",
+                "162.158.0.1",
             ],
             ipv6_cidrs=["2606:4700::/32", "2400:CB00:0000:0000::/032"],
         )
     ),
 )
 def test_get_cloudflare_cidrs_writes_canonical_text() -> None:
-    """Non-canonical input spellings come out as the canonical network text."""
+    """Non-canonical spellings come out as canonical network text, deduplicated."""
     result = get_cloudflare_cidrs()
     assert result == CloudflareCIDRs(
-        ipv4_cidrs=["197.234.240.0/22", "198.27.128.0/21", "199.27.128.0/21"],
+        ipv4_cidrs=[
+            "162.158.0.1/32",
+            "197.234.240.0/22",
+            "198.27.128.0/21",
+            "199.27.128.0/21",
+        ],
         ipv6_cidrs=["2400:cb00::/32", "2606:4700::/32"],
     )

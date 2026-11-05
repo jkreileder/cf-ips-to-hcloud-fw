@@ -102,6 +102,10 @@ def test_cloudflare_ip_networks_rejects_unroutable_ipv4(cidr: str) -> None:
         "2001:db8::/32",  # documentation
         "2002::/16",  # 6to4
         "3fff::/20",  # documentation (RFC 9637)
+        # Global unicast bits, but scoped to a local link; the parser keeps
+        # the zone index and str() reproduces it.
+        "2400:cb00::%eth0/32",
+        "2400:cb00::%25eth0/32",
     ],
 )
 def test_cloudflare_ip_networks_rejects_unroutable_ipv6(cidr: str) -> None:
