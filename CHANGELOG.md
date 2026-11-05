@@ -16,6 +16,10 @@
   without `uv.lock`, now runs in its own job on a downloaded copy of the distribution, and the
   attestation job verifies the distribution against the hashes recorded at build time, so
   third-party code can no longer touch the files that get attested and published
+- **Security:** The CIDRs written to the firewall rules are now the canonical text of the
+  validated networks rather than the strings Cloudflare sent, so a non-canonical spelling that
+  Python's parser accepts (a dotted netmask, a zero-padded prefix length, upper-case IPv6) can no
+  longer reach the Hetzner API, whose reading of it the validator could not vouch for
 - Start new development cycle
 
 ## [v1.5.3] – 2026-10-30

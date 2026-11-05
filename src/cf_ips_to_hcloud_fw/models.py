@@ -117,6 +117,14 @@ def _require_globally_routable(network: _Network) -> _Network:
         reserved = _RESERVED_IPV6
         floor = _MIN_PREFIXLEN_IPV6
 
+    # A zone index ("%eth0") names a link on the local host, not a network on
+    # the internet. The parser keeps it, the containment and overlap checks
+    # below compare only the address bits and so ignore it, and str(network)
+    # reproduces it, so it would be written to the firewall rule verbatim.
+    if isinstance(network, IPv6Network) and network.network_address.scope_id:
+        msg = f"{network} is not globally routable: carries a zone index"
+        raise ValueError(msg)
+
     # Containment is checked before the floor so the message names the real
     # reason: fc00::/7, fe80::/10 and ff00::/8 are all shorter than the /16
     # floor, and reporting them as merely "too broad" would send an operator
