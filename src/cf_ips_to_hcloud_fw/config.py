@@ -88,6 +88,72 @@ def _describe_yaml_error(e: yaml.YAMLError) -> str:
     return f"{type(e).__name__}{location}"
 
 
+def _describe_validation_errors(e: ValidationError) -> list[dict[str, object]]:
+    """Summarize validation errors without echoing file-derived strings.
+
+    ``include_input=False`` keeps the offending *values* out of the message,
+    but every ``loc`` still names the mapping keys on the way to the error,
+    and because :class:`Project` forbids unknown keys, an unknown key is
+    reported verbatim. A mistyped config can put the token in key position -
+    ``{token:<TOKEN>, …}`` with no space after the colon is a single flow-mapping
+    key, and a token pasted on a line of its own as ``<TOKEN>: x`` is a key too -
+    so the key names are file contents just as much as the values are.
+
+    The config is a ``list[Project]``, so a ``loc`` has at most three parts:
+    the project's index, a ``Project`` field name, and for ``firewalls`` the
+    entry's index. Keep exactly those, which carry no file-derived text, and
+    replace everything else with a fixed placeholder. Filtering by position
+    rather than by type matters because YAML keys need not be strings: a key
+    the parser reads as an int or a bool is reported in ``loc`` as that value,
+    so an all-digit token in key position would otherwise pass as an "index".
+
+    ``type`` is one of Pydantic's fixed identifiers. ``msg`` is fixed too for
+    every error ``Project`` can raise today, but a ``value_error`` or
+    ``assertion_error`` carries the validator's own message, which the
+    validator idiom in :mod:`models` builds from the input; withhold those so
+    the invariant does not depend on how a future validator phrases its error.
+
+    Args:
+        e: The validation error raised for the parsed config.
+
+    Returns:
+        list[dict[str, object]]: One entry per error (``type``, ``loc``,
+        ``msg``), with ``loc`` and ``msg`` sanitized.
+    """
+    known = Project.model_fields.keys()
+
+    def is_index(part: object) -> bool:
+        return isinstance(part, int) and not isinstance(part, bool)
+
+    def sanitize_loc(loc: tuple[int | str, ...]) -> tuple[int | str, ...]:
+        # One predicate per position: project index, field name, firewall index.
+        keep = (
+            is_index,
+            lambda part: isinstance(part, str) and part in known,
+            lambda part: loc[1] == "firewalls" and is_index(part),
+        )
+        return tuple(
+            part if position < len(keep) and keep[position](part) else "<unknown key>"
+            for position, part in enumerate(loc)
+        )
+
+    def sanitize_msg(err_type: str, msg: str) -> str:
+        if err_type in {"value_error", "assertion_error"}:
+            return "<message withheld: may quote the input>"
+        return msg
+
+    return [
+        {
+            "type": err["type"],
+            "loc": sanitize_loc(err["loc"]),
+            "msg": sanitize_msg(err["type"], err["msg"]),
+        }
+        for err in e.errors(
+            include_url=False, include_context=False, include_input=False
+        )
+    ]
+
+
 def _read_config(config_file: str) -> list[Project]:
     """Load and validate project definitions from a YAML file.
 
@@ -116,12 +182,9 @@ def _read_config(config_file: str) -> list[Project]:
     try:
         projects = TypeAdapter(list[Project]).validate_python(config)
     except ValidationError as e:
-        sanitized_errors = e.errors(
-            include_url=False,
-            include_context=False,
-            include_input=False,
+        log_error_and_exit(
+            f"Config file {config_file!r} is broken: {_describe_validation_errors(e)}"
         )
-        log_error_and_exit(f"Config file {config_file!r} is broken: {sanitized_errors}")
 
     if not projects:
         # Non-zero, not a clean exit. An empty list is a valid YAML document, so

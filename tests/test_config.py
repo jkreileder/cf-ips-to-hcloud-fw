@@ -3,15 +3,16 @@
 from __future__ import annotations
 
 import os
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Annotated
 from unittest.mock import MagicMock, mock_open, patch
 
 import pytest
 import yaml
-from pydantic import SecretStr
+from pydantic import AfterValidator, BaseModel, SecretStr, ValidationError
 
 from cf_ips_to_hcloud_fw.config import (
     ENV_TOKEN,
+    _describe_validation_errors,
     _read_config,
     _read_config_from_env,
     load_projects,
@@ -331,7 +332,10 @@ def test_read_config_extra_field_rejected(mock_logging: MagicMock) -> None:
     error_msg = mock_logging.call_args[0][0]
     assert "Config file 'config.yaml' is broken:" in error_msg
     assert "Extra inputs are not permitted" in error_msg
-    assert "firewall_names" in error_msg
+    # Unknown keys are file contents (a token can end up in key position), so
+    # the message names the position but not the key itself.
+    assert "'loc': (0, '<unknown key>')" in error_msg
+    assert "firewall_names" not in error_msg
 
 
 @patch(
@@ -355,7 +359,8 @@ def test_read_config_unknown_key_rejected(mock_logging: MagicMock) -> None:
     error_msg = mock_logging.call_args[0][0]
     assert "Config file 'config.yaml' is broken:" in error_msg
     assert "Extra inputs are not permitted" in error_msg
-    assert "extra_key" in error_msg
+    assert "'loc': (0, '<unknown key>')" in error_msg
+    assert "extra_key" not in error_msg
 
 
 @patch(
@@ -423,6 +428,147 @@ def test_read_config_validation_error_redacts_secret_value(
     error_msg = mock_logging.call_args[0][0]
     assert "Config file 'config.yaml' is broken:" in error_msg
     assert "SUPER_SECRET_TOKEN_VALUE" not in error_msg
+
+
+# Typos that turn the token into a mapping *key*: a flow mapping with no space
+# after the colon makes "token:<TOKEN>" one key, and a token pasted on its own
+# line is a key with whatever follows the colon as its value. Pydantic reports
+# unknown keys in the error `loc`, which include_input=False does not touch.
+_TOKEN_AS_KEY_CONFIGS = {
+    "flow-mapping-no-space": "- {token:SUPER_SECRET_TOKEN_VALUE, firewalls: [fw-1]}\n",
+    "token-as-key": "- SUPER_SECRET_TOKEN_VALUE: x\n  firewalls: [fw-1]\n",
+}
+
+
+@pytest.mark.parametrize(
+    "config_text", _TOKEN_AS_KEY_CONFIGS.values(), ids=_TOKEN_AS_KEY_CONFIGS.keys()
+)
+@patch("cf_ips_to_hcloud_fw.config.os.name", "nt")
+@patch("logging.error")
+def test_read_config_validation_error_redacts_token_in_mapping_key(
+    mock_logging: MagicMock, config_text: str
+) -> None:
+    """A token that lands in key position must not reach the log through `loc`."""
+    with (
+        patch("builtins.open", mock_open(read_data=config_text)),
+        pytest.raises(SystemExit) as e,
+    ):
+        _read_config("config.yaml")
+
+    assert e.value.code == 1
+    mock_logging.assert_called_once()
+    error_msg = mock_logging.call_args[0][0]
+    assert "Config file 'config.yaml' is broken:" in error_msg
+    assert "SUPER_SECRET_TOKEN_VALUE" not in error_msg
+    assert "<unknown key>" in error_msg
+    assert "extra_forbidden" in error_msg
+
+
+# Keys YAML reads as something other than a string: Pydantic reports them in
+# `loc` as that value, so a numeric secret in key position would look like a
+# list index and a bool key like the second project. The sanitizer filters by
+# position, not by type.
+_NON_STRING_KEY_CONFIGS = {
+    "int-key": "- 1234567890123456: x\n  token: t\n  firewalls: [fw-1]\n",
+    "hex-key": "- 0xDEADBEEFCAFE: x\n  token: t\n  firewalls: [fw-1]\n",
+    "bool-key": "- yes: x\n  token: t\n  firewalls: [fw-1]\n",
+}
+
+
+@pytest.mark.parametrize(
+    "config_text",
+    _NON_STRING_KEY_CONFIGS.values(),
+    ids=_NON_STRING_KEY_CONFIGS.keys(),
+)
+@patch("cf_ips_to_hcloud_fw.config.os.name", "nt")
+@patch("logging.error")
+def test_read_config_validation_error_redacts_non_string_keys(
+    mock_logging: MagicMock, config_text: str
+) -> None:
+    """An int or bool key in `loc` is file content too, not a list index."""
+    with (
+        patch("builtins.open", mock_open(read_data=config_text)),
+        pytest.raises(SystemExit) as e,
+    ):
+        _read_config("config.yaml")
+
+    assert e.value.code == 1
+    error_msg = mock_logging.call_args[0][0]
+    assert "'loc': (0, '<unknown key>')" in error_msg
+    assert "1234567890123456" not in error_msg
+    assert "244837814094590" not in error_msg  # 0xDEADBEEFCAFE as decimal
+    assert "'loc': (0, 1)" not in error_msg  # True would read as an index
+    assert "'loc': (0, True)" not in error_msg
+
+
+@patch("cf_ips_to_hcloud_fw.config.os.name", "nt")
+@patch(
+    "builtins.open",
+    mock_open(
+        read_data="""
+- token: SUPER_SECRET_TOKEN_VALUE
+  firewall: [fw-1]
+""",
+    ),
+)
+@patch("logging.error")
+def test_read_config_validation_error_keeps_known_field_names(
+    mock_logging: MagicMock,
+) -> None:
+    """Sanitizing `loc` keeps indices and known field names so errors stay useful."""
+    with pytest.raises(SystemExit) as e:
+        _read_config("config.yaml")
+
+    assert e.value.code == 1
+    error_msg = mock_logging.call_args[0][0]
+    assert "'loc': (0, 'firewalls')" in error_msg  # the missing known field
+    assert "'loc': (0, '<unknown key>')" in error_msg  # the mistyped one
+    assert "firewall'" not in error_msg
+
+
+@patch("cf_ips_to_hcloud_fw.config.os.name", "nt")
+@patch(
+    "builtins.open",
+    mock_open(
+        read_data="""
+- token: t
+  firewalls: [fw-1, 2]
+""",
+    ),
+)
+@patch("logging.error")
+def test_read_config_validation_error_keeps_firewall_entry_index(
+    mock_logging: MagicMock,
+) -> None:
+    """The index of a bad `firewalls` entry survives, so the operator can find it."""
+    with pytest.raises(SystemExit):
+        _read_config("config.yaml")
+
+    error_msg = mock_logging.call_args[0][0]
+    assert "'loc': (0, 'firewalls', 1)" in error_msg
+
+
+def test_describe_validation_errors_withholds_validator_messages() -> None:
+    """A validator's own message may quote the input, so it is not forwarded."""
+
+    def reject(value: str) -> str:
+        msg = f"bad value {value!r}"
+        raise ValueError(msg)
+
+    class Model(BaseModel):
+        value: Annotated[str, AfterValidator(reject)]
+
+    with pytest.raises(ValidationError) as e:
+        Model(value="SUPER_SECRET_TOKEN_VALUE")
+
+    described = _describe_validation_errors(e.value)
+    assert described == [
+        {
+            "type": "value_error",
+            "loc": ("<unknown key>",),
+            "msg": "<message withheld: may quote the input>",
+        }
+    ]
 
 
 @patch.dict(

@@ -4,6 +4,14 @@
 
 ## [v1.5.4] – Unreleased
 
+- **Security:** Docker Scout now authenticates with a separate read-only Docker Hub token, and
+  pull-request builds no longer receive the push-capable Docker Hub and Quay tokens at all. The
+  Scout step runs on same-repository pull requests, including Renovate's action bumps, so the
+  freshly pinned upstream action code used to run with a registry push credential before merge
+- **Security:** A config file typo that turns the token into a mapping key (`{token:<TOKEN>, …}`
+  with no space after the colon, or a token pasted on a line of its own as `<TOKEN>: x`) no longer
+  writes the token to the error log: unknown keys in the validation error are now reported as
+  `<unknown key>`, matching the redaction already applied to values and YAML snippets
 - Start new development cycle
 
 ## [v1.5.3] – 2026-10-30
