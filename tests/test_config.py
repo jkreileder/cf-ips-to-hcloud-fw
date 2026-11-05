@@ -154,7 +154,9 @@ def test_read_config_file_not_found(
     with pytest.raises(SystemExit) as e:
         _read_config("config.yaml")
     assert e.value.code == 1
-    mock_open.assert_called_once_with("config.yaml", encoding="utf-8")
+    mock_open.assert_called_once_with(
+        "config.yaml", encoding="utf-8", errors="surrogateescape"
+    )
     mock_logging.assert_called_once_with("Config file 'config.yaml' not found.")
 
 
@@ -167,7 +169,9 @@ def test_read_config_file_is_a_directory(
     with pytest.raises(SystemExit) as e:
         _read_config("config.yaml")
     assert e.value.code == 1
-    mock_open.assert_called_once_with("config.yaml", encoding="utf-8")
+    mock_open.assert_called_once_with(
+        "config.yaml", encoding="utf-8", errors="surrogateescape"
+    )
     mock_logging.assert_called_once_with("Config file 'config.yaml' is a directory.")
 
 
@@ -180,7 +184,9 @@ def test_read_config_file_is_unreadable(
     with pytest.raises(SystemExit) as e:
         _read_config("config.yaml")
     assert e.value.code == 1
-    mock_open.assert_called_once_with("config.yaml", encoding="utf-8")
+    mock_open.assert_called_once_with(
+        "config.yaml", encoding="utf-8", errors="surrogateescape"
+    )
     mock_logging.assert_called_once_with("Config file 'config.yaml' is unreadable.")
 
 
