@@ -50,8 +50,11 @@ DEV_CYCLE_BULLET = "- Start new development cycle"
 # CHANGELOG headings separate the version and the date with an en dash.
 DASH = "\N{EN DASH}"
 
-FINAL_VERSION_RE = re.compile(r"^(\d+)\.(\d+)\.(\d+)$")
-DEV_VERSION_RE = re.compile(r"^(\d+)\.(\d+)\.(\d+)\.dev\d+$")
+# Used only with fullmatch(), which anchors both ends itself: a `$` anchor would
+# accept a trailing newline, which is exactly how a mangled image label used to
+# slip through. Components refuse leading zeros so "01.2.3" is not read as 1.2.3.
+FINAL_VERSION_RE = re.compile(r"(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)")
+DEV_VERSION_RE = re.compile(r"(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)\.dev\d+")
 PYPROJECT_VERSION_RE = re.compile(r'^version = "([^"]+)"$', re.MULTILINE)
 UV_LOCK_VERSION_RE = re.compile(
     rf'(^name = "{re.escape(PROJECT_NAME)}"\nversion = ")[^"]+(")', re.MULTILINE
@@ -88,13 +91,34 @@ class Finding:
     fixed_in: tuple[str, ...]
 
 
+def annotation(level: str, message: str) -> str:
+    """Format a GitHub Actions workflow command for text from outside the script.
+
+    The runner parses ``::level::`` at the start of a line, so a message that
+    contains a newline would end the annotation early and let the rest of the
+    text start a command of its own. The messages here carry Grype output
+    (vulnerability ids, package names, versions) and image labels, which the
+    script does not otherwise constrain. Encode the three characters the
+    command syntax reserves, as the runner's own toolkit does.
+
+    Args:
+        level: ``error``, ``warning`` or ``notice``.
+        message: The annotation text.
+
+    Returns:
+        str: The command line, newline-terminated.
+    """
+    escaped = message.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
+    return f"::{level}::{escaped}\n"
+
+
 def fail(message: str) -> NoReturn:
     """Exit with a GitHub Actions error annotation.
 
     Raises:
         SystemExit: Always, with status 1.
     """
-    sys.stderr.write(f"::error::{message}\n")
+    sys.stderr.write(annotation("error", message))
     raise SystemExit(1)
 
 
@@ -104,7 +128,7 @@ def parse_final(version: str) -> Version:
     Returns:
         Version: The major, minor and patch numbers.
     """
-    match = FINAL_VERSION_RE.match(version)
+    match = FINAL_VERSION_RE.fullmatch(version)
     if match is None:
         fail(f"not a final X.Y.Z version: {version!r}")
     major, minor, patch = match.groups()
@@ -143,7 +167,10 @@ def released_versions() -> list[Version]:
     """
     tags = git("tag", "--list", "v*").splitlines()
     return sorted(
-        parse_final(tag[1:]) for tag in tags if FINAL_VERSION_RE.match(tag[1:])
+        (int(major), int(minor), int(patch))
+        for tag in tags
+        if (match := FINAL_VERSION_RE.fullmatch(tag[1:]))
+        for major, minor, patch in [match.groups()]
     )
 
 
@@ -172,7 +199,7 @@ def next_release(last: Version, current: str) -> Version:
         Version: The version to release.
     """
     following = (last[0], last[1], last[2] + 1)
-    dev = DEV_VERSION_RE.match(current)
+    dev = DEV_VERSION_RE.fullmatch(current)
     if dev is not None:
         major, minor, patch = (int(part) for part in dev.groups())
         if (major, minor) != last[:2]:
@@ -476,7 +503,16 @@ def dependency_bullet(previous_tag: str) -> str | None:
 
 
 def write_outputs(**values: str) -> None:
-    """Append step outputs for later workflow steps and echo them."""
+    """Append step outputs for later workflow steps and echo them.
+
+    One ``key=value`` line per output: a line break inside a value would start
+    a second output, and the workflow gates its commit and PR steps on these.
+    Every current caller passes regex-bound or GitHub-generated values; this
+    keeps the invariant at the sink rather than in each caller.
+    """
+    for key, value in values.items():
+        if "\n" in key or "\r" in key or "\n" in value or "\r" in value:
+            fail(f"step output {key!r} would span more than one line")
     lines = "".join(f"{key}={value}\n" for key, value in values.items())
     output = os.environ.get("GITHUB_OUTPUT")
     if output:
@@ -499,7 +535,7 @@ def cmd_plan(args: argparse.Namespace) -> None:
     released_report = load_report(args.released)
     candidate_report = load_report(args.candidate)
     shipped = released_report.label("org.opencontainers.image.version")
-    if not FINAL_VERSION_RE.match(shipped):
+    if not FINAL_VERSION_RE.fullmatch(shipped):
         fail(f"the released image has no final version label (got {shipped!r})")
     released = released_report.findings
     candidate = candidate_report.findings
@@ -507,8 +543,11 @@ def cmd_plan(args: argparse.Namespace) -> None:
     for key, finding in candidate.items():
         if key not in released and finding.fixed_in:
             sys.stderr.write(
-                "::warning::main has a fixable finding the release does not: "
-                f"{finding.vulnerability} in {finding.package} {finding.installed}\n"
+                annotation(
+                    "warning",
+                    "main has a fixable finding the release does not: "
+                    f"{finding.vulnerability} in {finding.package} {finding.installed}",
+                )
             )
     versions = released_versions()
     if not versions:
@@ -871,7 +910,7 @@ def cmd_await_merge(args: argparse.Namespace) -> None:
 def cmd_version(args: argparse.Namespace) -> None:
     """Print the project version, optionally requiring a final release."""
     version = project_version()
-    if args.require_final and not FINAL_VERSION_RE.match(version):
+    if args.require_final and not FINAL_VERSION_RE.fullmatch(version):
         fail(f"pyproject.toml has non-final version {version!r}")
     sys.stdout.write(version + "\n")
 
