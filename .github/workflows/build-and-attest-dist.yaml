@@ -59,15 +59,14 @@ jobs:
           # Keep the published artifacts hermetic: never restore caches here.
           enable-cache: false
 
+      # The hashes printed here are the identity of the release: compare them
+      # with the uploaded artifact, the attestation subjects and the files on
+      # PyPI to confirm that nothing touched dist/ after the build.
       - name: Build
         run: |
           rm -rf dist
           uv build
-
-      - name: Smoke test built wheel
-        run: |
-          uv run --isolated --no-project --with dist/*.whl \
-            cf-ips-to-hcloud-fw --version
+          sha256sum dist/*
 
       # Write the SBOM to the repo root only; attest-dist re-uploads it under a
       # name we control (below), so we upload once, explicitly, with the same
@@ -93,6 +92,18 @@ jobs:
           name: python-package-distributions
           path: dist/
           retention-days: 14
+
+      # Last, after dist/ and the SBOM are uploaded. `--no-project` keeps
+      # uv.lock out of this resolution, so the wheel's dependencies come from
+      # PyPI at whatever versions resolve today, and their import-time code
+      # runs in this job. Running it after the upload means the bytes that
+      # attest-dist signs and the publish jobs ship are exactly what uv build
+      # wrote above, whatever that code does to the workspace. A failure here
+      # still fails the job, so attest-dist (needs: build-dist) never runs.
+      - name: Smoke test built wheel
+        run: |
+          uv run --isolated --no-project --with dist/*.whl \
+            cf-ips-to-hcloud-fw --version
 
   attest-dist:
     name: Attest distribution
