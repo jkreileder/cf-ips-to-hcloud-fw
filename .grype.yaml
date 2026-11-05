@@ -1,19 +1,13 @@
-# Grype ignore rules — every entry MUST state its removal condition.
+# Grype configuration for the container image scans. Every Grype run in CI
+# starts from a checkout of this repository (docker-build.yaml, rescan.yaml,
+# auto-release.yaml, auto-release-publish.yaml), and Grype picks this file up
+# from the working directory, so a rule here applies to all of them: the
+# build-time gate, the daily rescan, the auto-release plan and the release
+# verification. That reach is why the file exists even while it is empty:
+# a suppression is a reviewed change to a tracked file, not a file that
+# appears one day and is read without anyone noticing.
 #
-# Tracking issue for clearing this list: #1584. Do not let entries outlive
-# their condition.
-ignore:
-  # socket: getaddrinfo() accepts null bytes in host and port and silently
-  # truncates them (CVE-2026-116566, medium). The fix is only on main
-  # (python/cpython#160899); the 3.15 backport (python/cpython#160925) is
-  # open, so no 3.15.x release carries it yet and grype's only listed fix is
-  # 3.16.0. Pinned to the interpreter version in the base image: the next
-  # Python patch bump either carries the backport and this entry goes, or it
-  # does not and the pin has to move along with it.
-  # REMOVE when the base image reaches a 3.15.x release that includes
-  # python/cpython#160925.
-  - vulnerability: CVE-2026-116566
-    package:
-      name: python
-      version: 3.15.2
-      type: binary
+# A suppression names an exact package version and records why it is a false
+# positive and when to remove it, and issue #1584 lists it. .vex/README.md
+# holds the same rules for Docker Scout.
+ignore: []
