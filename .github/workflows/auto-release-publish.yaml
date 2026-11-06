@@ -113,6 +113,10 @@ jobs:
       cancel-in-progress: false
     runs-on: ubuntu-26.04
     timeout-minutes: 150
+    # The release App's private key is an environment secret, and the
+    # environment deploys from main only, so no run on another ref can mint
+    # an App token.
+    environment: release
     permissions:
       contents: read
       # Find and watch the publish runs on the tag.

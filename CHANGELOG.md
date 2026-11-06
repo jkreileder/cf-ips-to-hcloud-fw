@@ -37,6 +37,9 @@
   `pyproject.toml`): a PyPI release younger than that is not locked, so Renovate's automerged
   lock-file maintenance can no longer build an hours-old release into the published image. The
   Renovate waiting period never applied to lock-file maintenance, which runs uv's own resolver
+- **Security:** The release App's private key now lives in a deployment environment that only
+  `main` can use, and the automated publish workflow runs on the push to `main` instead of the
+  closed pull request, so no workflow run on another branch or tag can mint an App token
 - Start new development cycle
 
 ## [v1.5.3] – 2026-10-30

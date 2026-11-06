@@ -26,8 +26,10 @@ name: Auto-release security fixes
 #
 # Inert until configured: scheduled runs need the AUTO_RELEASE variable set to
 # "enabled", and manual runs default to a dry run that stops before writing.
-# Setup: vars RELEASE_APP_CLIENT_ID and RELEASE_APP_SLUG, secret
-# RELEASE_APP_PRIVATE_KEY.
+# Setup: vars RELEASE_APP_CLIENT_ID and RELEASE_APP_SLUG, and the "release"
+# environment (deployments restricted to main) holding the secret
+# RELEASE_APP_PRIVATE_KEY. The environment also means a dispatch on any other
+# ref is refused before the first step, dry run or not.
 
 on:
   schedule:
@@ -61,6 +63,8 @@ jobs:
     runs-on: ubuntu-26.04
     # The :main rebuild and waiting for the release PR to merge.
     timeout-minutes: 150
+    # Holds the App's private key; see the header.
+    environment: release
     permissions:
       contents: read
       # Dispatch and watch the docker.yaml rebuild of :main.
