@@ -1,0 +1,56 @@
+name: Verify release tag
+description: >-
+  On a v* tag push, checks that the tag matches the final version in
+  pyproject.toml and that the tagged commit is on main. On any other ref it
+  is a no-op. Needs a checkout of the repository (any depth, credentials not
+  persisted); it fetches main anonymously, which a public repository allows.
+
+# Fail closed when a release tag doesn't match the project version, so a
+# mistaken tag can't publish images or distributions whose version tags
+# (derived from the git tag) disagree with the packaged version, or ship a
+# non-final (.dev/pre-release/local) version. Everything on main arrived
+# through a reviewed pull request, so a tag that points at a commit not on
+# main (pushed together with the tag, say) must not become a release either.
+# Callers run this right after their checkout so a bad tag stops the job
+# before any build or registry work.
+runs:
+  using: composite
+  steps:
+    - name: Verify tag matches project version
+      env:
+        TAG: ${{ github.ref_name }}
+      shell: bash
+      run: |
+        set -euo pipefail
+        case "$GITHUB_REF" in
+          refs/tags/*) ;;
+          *)
+            echo "Not a tag push (ref: $GITHUB_REF); release-version check not applicable."
+            exit 0
+            ;;
+        esac
+        version="$(sed -nE 's/^version = "([^"]+)"$/\1/p' pyproject.toml)"
+        if [ -z "$version" ]; then
+          echo "::error::Could not read version from pyproject.toml"
+          exit 1
+        fi
+        expected="${TAG#v}"
+        if [ "$version" != "$expected" ]; then
+          echo "::error::Tag $TAG (version '$expected') does not match pyproject.toml version '$version'"
+          exit 1
+        fi
+        if ! printf '%s' "$version" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+          echo "::error::Refusing to publish non-final version '$version' from tag $TAG"
+          exit 1
+        fi
+        # The checkout may be depth 1, and the ancestry test needs the path
+        # from main's tip down to the tagged commit.
+        if ! git fetch --no-tags --quiet origin main; then
+          echo "::error::Could not fetch main to check that tag $TAG is on it; re-run the failed job"
+          exit 1
+        fi
+        if ! git merge-base --is-ancestor "$GITHUB_SHA" FETCH_HEAD; then
+          echo "::error::Tag $TAG points at $GITHUB_SHA, which is not on main; only commits merged to main are released"
+          exit 1
+        fi
+        echo "Release version '$version' matches tag $TAG, and the tagged commit is on main"
