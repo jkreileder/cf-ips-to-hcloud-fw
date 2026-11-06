@@ -1,9 +1,10 @@
 name: Verify release tag
 description: >-
-  On a v* tag push, checks that the tag matches the final version in
-  pyproject.toml and that the tagged commit is on main. On any other ref it
-  is a no-op. Needs a checkout of the repository (any depth, credentials not
-  persisted); it fetches main anonymously, which a public repository allows.
+  On a tag push, checks that the tag is v<version> for the final version in
+  pyproject.toml and that the tagged commit is on main; any other tag fails.
+  On a branch it is a no-op. Needs a checkout of the repository (any depth,
+  credentials not persisted); it fetches main anonymously, which a public
+  repository allows.
 
 # Fail closed when a release tag doesn't match the project version, so a
 # mistaken tag can't publish images or distributions whose version tags
