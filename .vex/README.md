@@ -9,6 +9,10 @@ Scout only accepts statements whose `author` matches the workflows' `vex-author`
 
 Grype does not read these files; its suppressions, if any, live in `.grype.yaml`.
 
+The statements take effect on `main` and tag builds, which scan the pushed image. A pull-request
+build scans the image it loaded locally, and Scout still lists the finding there, so a new
+statement is only seen to work on the first `main` build after it merges.
+
 Each statement names exact package versions (`pkg:apk/...@<version>`), so it stops applying as
 soon as the image ships a different version, and a genuinely vulnerable version is still reported.
 Every statement must state its removal condition below.
