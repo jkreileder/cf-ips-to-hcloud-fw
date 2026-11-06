@@ -4,6 +4,10 @@
 
 ## [v1.5.4] – Unreleased
 
+- **Security:** The dependency lock is now resolved with a three-day cooldown (`exclude-newer` in
+  `pyproject.toml`): a PyPI release younger than that is not locked, so Renovate's automerged
+  lock-file maintenance can no longer build an hours-old release into the published image. The
+  Renovate waiting period never applied to lock-file maintenance, which runs uv's own resolver
 - **Security:** Docker Scout now authenticates with a separate read-only Docker Hub token, and
   pull-request builds no longer receive the push-capable Docker Hub and Quay tokens at all. The
   Scout step runs on same-repository pull requests, including Renovate's action bumps, so the

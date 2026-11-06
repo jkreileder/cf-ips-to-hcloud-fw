@@ -2,6 +2,15 @@
 requires = ["uv_build>=0.13,<0.14"]
 build-backend = "uv_build"
 
+[tool.uv]
+# Dependency cooldown: resolution ignores distributions uploaded to PyPI in the
+# last three days, so a release is only locked once the window in which most
+# malicious uploads are found and pulled has passed. Renovate's lock-file
+# maintenance runs `uv lock --upgrade` under this setting; its own
+# minimumReleaseAge does not cover lock-file maintenance. The locked timestamp
+# is recorded in uv.lock and moves only when a new resolution is performed.
+exclude-newer = "3 days"
+
 [tool.uv.build-backend]
 source-include = ["uv.lock", "tests/**"]
 
