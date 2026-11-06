@@ -52,10 +52,17 @@ jobs:
     outputs:
       digest: ${{ steps.build-and-push.outputs.digest }}
 
-    # The SBOM generator is an image the build pulls, so the build policy
-    # check below resolves it too. Defined once here for that check and the
-    # push build; Renovate's custom manager updates it in place.
     env:
+      # Whether this run publishes: every registry login, the multi-arch push
+      # build with SBOM and provenance, and the digest check key on this one
+      # value. Pull-request and Dependabot runs build a single-arch image
+      # without pushing and never hold a push credential (see the header).
+      # The attest job repeats the expression: a job-level `if` cannot read
+      # another job's env.
+      PUBLISH: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' }}
+      # The SBOM generator is an image the build pulls, so the build policy
+      # check below resolves it too. Defined once here for that check and the
+      # push build; Renovate's custom manager updates it in place.
       SBOM_GENERATOR: generator=docker/scout-sbom-indexer:1.29.0@sha256:cdf69767d010bd4e8d33001fbb629cdc5210e37a67cdecc800bdcacf3bc996b0
 
     steps:
@@ -233,7 +240,7 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
         env:
-          DOCKER_METADATA_ANNOTATIONS_LEVELS: manifest${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' && ',index' || '' }}
+          DOCKER_METADATA_ANNOTATIONS_LEVELS: manifest${{ env.PUBLISH == 'true' && ',index' || '' }}
 
       # Scoped login (requires buildx >= 0.31, pinned below): credentials land
       # in the buildx-only config, not the default docker config, so the
@@ -241,7 +248,7 @@ jobs:
       # build stay rate-limit-free. Buildx uses these credentials solely to
       # push our repo.
       - name: Login to DockerHub (buildx push scope)
-        if: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' }}
+        if: ${{ env.PUBLISH == 'true' }}
         uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
         with:
           username: ${{ vars.DOCKERHUB_USERNAME }}
@@ -249,7 +256,7 @@ jobs:
           scope: ${{ vars.DOCKERHUB_USERNAME }}/cf-ips-to-hcloud-fw@push
 
       - name: Login to Quay
-        if: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' }}
+        if: ${{ env.PUBLISH == 'true' }}
         uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
         with:
           registry: quay.io
@@ -257,7 +264,7 @@ jobs:
           password: ${{ secrets.QUAY_TOKEN }}
 
       - name: Login to GitHub Container Registry
-        if: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' }}
+        if: ${{ env.PUBLISH == 'true' }}
         uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
         with:
           registry: ghcr.io
@@ -269,7 +276,7 @@ jobs:
       # builds are single-arch amd64; main and tag pushes build (and publish)
       # amd64+arm64, matching the platforms expression on the build step below.
       - name: Set up QEMU
-        if: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' }}
+        if: ${{ env.PUBLISH == 'true' }}
         uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
         with:
           image: tonistiigi/binfmt:qemu-v10.2.3-68@sha256:400a4873b838d1b89194d982c45e5fb3cda4593fbfd7e08a02e76b03b21166f0
@@ -327,7 +334,7 @@ jobs:
           SOURCE_DATE_EPOCH: ${{ env.SOURCE_DATE_EPOCH }}
         with:
           context: .
-          platforms: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' && 'linux/amd64,linux/arm64' || '' }}
+          platforms: ${{ env.PUBLISH == 'true' && 'linux/amd64,linux/arm64' || '' }}
           # Spelled as `outputs` rather than push/load because rewrite-timestamp
           # is an image-exporter attribute and the `push` input cannot carry one.
           # SOURCE_DATE_EPOCH on its own only clamps the config, history and
@@ -335,9 +342,9 @@ jobs:
           # inside the layers, and without it the image is not reproducible.
           # `type=docker` is what `load: true` expands to, for the PR/Dependabot
           # path that builds without pushing.
-          outputs: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' && 'type=image,push=true,rewrite-timestamp=true' || 'type=docker' }}
-          sbom: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' && env.SBOM_GENERATOR || '' }}
-          provenance: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' && 'mode=max,version=v1' || '' }}
+          outputs: ${{ env.PUBLISH == 'true' && 'type=image,push=true,rewrite-timestamp=true' || 'type=docker' }}
+          sbom: ${{ env.PUBLISH == 'true' && env.SBOM_GENERATOR || '' }}
+          provenance: ${{ env.PUBLISH == 'true' && 'mode=max,version=v1' || '' }}
           tags: ${{ steps.docker-meta.outputs.tags }}
           labels: ${{ steps.docker-meta.outputs.labels }}
           annotations: ${{ steps.docker-meta.outputs.annotations }}
@@ -360,7 +367,7 @@ jobs:
       # version is burned (cut-release skill, step 8b), so never re-run or
       # re-push.
       - name: Require a digest from the push
-        if: ${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' && steps.build-and-push.outputs.digest == '' }}
+        if: ${{ env.PUBLISH == 'true' && steps.build-and-push.outputs.digest == '' }}
         shell: bash
         run: |
           echo "::error::Build and push returned no image digest, so the images it already pushed cannot be attested. Do not re-run or re-push; on a release tag the version is burned (cut-release skill, step 8b)"
