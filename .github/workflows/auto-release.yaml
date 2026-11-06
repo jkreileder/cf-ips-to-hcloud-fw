@@ -65,7 +65,9 @@ jobs:
     timeout-minutes: 150
     # Holds the App's private key; see the header. The branch policy still
     # applies without deployment tracking, and the daily scan would otherwise
-    # record a deployment that deploys nothing.
+    # record a deployment that deploys nothing. A custom (App-based)
+    # deployment protection rule on the environment would be incompatible
+    # with this and fail the job at start.
     environment:
       name: release
       deployment: false

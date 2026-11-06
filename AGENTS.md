@@ -79,10 +79,11 @@
   a rebuilt `:main` image fixes Grype findings that the released `:1` image
   still has; `auto-release-publish.yaml` tags the merged commit, waits for the
   publish runs, publishes the GitHub release, and opens the dev-cycle PR. The
-  edits come from `.github/scripts/auto_release.py`. Both jobs run in the
-  `release` environment (deployments restricted to `main`), which holds the
-  App's private key. Before cutting a release by hand, check for an open
-  `auto-release/*` PR.
+  edits come from `.github/scripts/auto_release.py`. The `release` job of
+  `auto-release.yaml` and the `publish` job of `auto-release-publish.yaml`
+  run in the `release` environment (deployments restricted to `main`), which
+  holds the App's private key. Before cutting a release by hand, check for an
+  open `auto-release/*` PR.
 
 ## Commits & PRs
 
