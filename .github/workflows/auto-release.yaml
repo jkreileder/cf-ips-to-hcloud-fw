@@ -63,8 +63,12 @@ jobs:
     runs-on: ubuntu-26.04
     # The :main rebuild and waiting for the release PR to merge.
     timeout-minutes: 150
-    # Holds the App's private key; see the header.
-    environment: release
+    # Holds the App's private key; see the header. The branch policy still
+    # applies without deployment tracking, and the daily scan would otherwise
+    # record a deployment that deploys nothing.
+    environment:
+      name: release
+      deployment: false
     permissions:
       contents: read
       # Dispatch and watch the docker.yaml rebuild of :main.
