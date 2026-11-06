@@ -43,7 +43,7 @@ release you want out before the next daily run.
   ```
 
   If one is open, let it finish, or ask the user before closing it.
-  Also make sure no publish run is active. Every closed PR starts a (skipped) run of that
+  Also make sure no publish run is active. Every push to main starts a (skipped) run of that
   workflow, so filter by status instead of looking at the latest run:
 
   ```bash

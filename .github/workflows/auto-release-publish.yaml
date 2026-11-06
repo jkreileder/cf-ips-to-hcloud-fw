@@ -16,10 +16,15 @@ name: Auto-release publish
 # or cut the next patch). That decision is left to a person; see the
 # cut-release skill, step 8b.
 
+# Runs on the push to main, not on the closed pull request: a pull_request
+# run belongs to the PR's merge ref, which a deployment environment restricted
+# to main refuses, and the secrets this workflow needs live in such an
+# environment. The gate below relies on main taking squash-merged pull
+# requests only (the default-branch ruleset): the pushed commit is then the
+# merge of exactly one PR. A merge queue or another merge method would break
+# that assumption.
 on:
-  pull_request:
-    types:
-      - closed
+  push:
     branches:
       - main
 
@@ -27,16 +32,81 @@ permissions:
   contents: read
 
 jobs:
+  gate:
+    name: Identify a release merge
+    # Runs on every push to main, on purpose: a prefilter on the commit
+    # message would skip silently when a release PR is merged under an edited
+    # subject, and the decision here must come from the pull-request API.
+    runs-on: ubuntu-26.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      publish: ${{ steps.check.outputs.publish }}
+
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@46b06cea07f9e64621fdf066ba77ac6915163d43 # v2.22.3
+        with:
+          disable-sudo: true
+          egress-policy: block
+          allowed-endpoints: >
+            api.github.com:443
+
+      # Publish only the squash merge of a PR that the release App opened from
+      # its own branch prefix in this repository. A hand-cut release PR with
+      # the same headline is skipped here; the cut-release procedure tags it.
+      #
+      # main takes pull requests only, so a release commit with no associated
+      # PR at all can only mean the API has not indexed the merge yet. That
+      # case is retried and then fails loudly: a quiet skip would leave main
+      # at a final version with no tag and no one told.
+      - name: Check the merged pull request
+        id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+          APP_LOGIN: ${{ vars.RELEASE_APP_SLUG }}[bot]
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "$APP_LOGIN" = "[bot]" ]; then
+            echo "::error::RELEASE_APP_SLUG is not set; a release merge could not be recognized."
+            exit 1
+          fi
+          # A failed API call counts like an empty answer and is retried.
+          pulls="[]"
+          for _ in $(seq 12); do
+            pulls="$(gh api "repos/$GH_REPO/commits/$SHA/pulls")" || pulls="[]"
+            [ "$(jq length <<<"$pulls")" != 0 ] && break
+            sleep 10
+          done
+          if [ "$(jq length <<<"$pulls")" = 0 ]; then
+            echo "::error::No pull request is associated with $SHA; cannot tell whether it is a release merge."
+            exit 1
+          fi
+          matches="$(jq '[.[] | select(.merged_at != null
+              and .merge_commit_sha == env.SHA
+              and .base.ref == "main"
+              and (.head.ref | startswith("auto-release/"))
+              and .head.repo.full_name == env.GH_REPO
+              and .user.login == env.APP_LOGIN)] | length' <<<"$pulls")"
+          if [ "$matches" = 1 ]; then
+            echo "publish=true" >>"$GITHUB_OUTPUT"
+          else
+            echo "::notice::$SHA is not the merge of a release PR opened by $APP_LOGIN; nothing to publish."
+            echo "publish=false" >>"$GITHUB_OUTPUT"
+          fi
+
   publish:
     name: Tag and publish release
-    # Only merged PRs that the release App opened from its own branch prefix.
-    if: >-
-      ${{ github.event.pull_request.merged
-      && startsWith(github.event.pull_request.head.ref, 'auto-release/')
-      && github.event.pull_request.head.repo.full_name == github.repository
-      && github.event.pull_request.user.login == format('{0}[bot]', vars.RELEASE_APP_SLUG) }}
-    # Job-level, below the `if`: every closed PR starts this workflow, and a
-    # workflow-level group would let those no-op runs cancel a pending
+    needs:
+      - gate
+    if: ${{ needs.gate.outputs.publish == 'true' }}
+    # Job-level, below the `if`: every push to main starts this workflow, and
+    # a workflow-level group would let those no-op runs cancel a pending
     # publish (a group keeps only one pending run).
     concurrency:
       group: ${{ github.workflow }}
@@ -49,7 +119,7 @@ jobs:
       actions: read
     env:
       GH_REPO: ${{ github.repository }}
-      MERGE_SHA: ${{ github.event.pull_request.merge_commit_sha }}
+      MERGE_SHA: ${{ github.sha }}
 
     steps:
       - name: Harden runner
@@ -78,7 +148,7 @@ jobs:
       - name: Checkout merge commit
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.event.pull_request.merge_commit_sha }}
+          ref: ${{ github.sha }}
           fetch-depth: 0
           persist-credentials: false
 

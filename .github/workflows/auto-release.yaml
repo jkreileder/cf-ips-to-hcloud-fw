@@ -136,8 +136,8 @@ jobs:
             echo "::error::released-image is only allowed in dry runs."
             exit 1
           fi
-          # Every closed PR starts a (skipped) run of the publish workflow, so
-          # filter by status rather than looking at the latest runs only.
+          # Every push to main starts a (skipped) run of the publish workflow,
+          # so filter by status rather than looking at the latest runs only.
           publishing="$(gh run list --workflow auto-release-publish.yaml --limit 100 \
             --json status --jq '[.[] | select(.status != "completed")] | length')"
           if [ "$publishing" != 0 ]; then
