@@ -235,6 +235,13 @@ jobs:
         env:
           DOCKER_METADATA_ANNOTATIONS_LEVELS: manifest${{ github.event_name != 'pull_request' && github.actor != 'dependabot[bot]' && ',index' || '' }}
 
+      # The publish predicate (not a pull request, not Dependabot) is spelled
+      # out at every login, push and digest gate below on purpose. A job-level
+      # env value would read the same, but any earlier step can rewrite it
+      # through GITHUB_ENV, including the third-party actions whose freshly
+      # pinned commits a Renovate PR runs here, whereas a step cannot change
+      # the github context. The attest job repeats it for the same reason.
+      #
       # Scoped login (requires buildx >= 0.31, pinned below): credentials land
       # in the buildx-only config, not the default docker config, so the
       # runner's embedded pull token survives and base-image pulls during the
