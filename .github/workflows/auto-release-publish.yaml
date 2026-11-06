@@ -19,7 +19,10 @@ name: Auto-release publish
 # Runs on the push to main, not on the closed pull request: a pull_request
 # run belongs to the PR's merge ref, which a deployment environment restricted
 # to main refuses, and the secrets this workflow needs live in such an
-# environment.
+# environment. The gate below relies on main taking squash-merged pull
+# requests only (the default-branch ruleset): the pushed commit is then the
+# merge of exactly one PR. A merge queue or another merge method would break
+# that assumption.
 on:
   push:
     branches:
@@ -31,11 +34,9 @@ permissions:
 jobs:
   gate:
     name: Identify a release merge
-    # Cheap prefilter so ordinary pushes skip without a runner: a release PR's
-    # squash commit starts with the headline auto-release.yaml gives it. The
-    # decision itself comes from the pull-request API below, not from the
-    # commit message.
-    if: "${{ startsWith(github.event.head_commit.message, 'chore(release): v') }}"
+    # Runs on every push to main, on purpose: a prefilter on the commit
+    # message would skip silently when a release PR is merged under an edited
+    # subject, and the decision here must come from the pull-request API.
     runs-on: ubuntu-26.04
     timeout-minutes: 5
     permissions:
@@ -71,9 +72,14 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          if [ "$APP_LOGIN" = "[bot]" ]; then
+            echo "::error::RELEASE_APP_SLUG is not set; a release merge could not be recognized."
+            exit 1
+          fi
+          # A failed API call counts like an empty answer and is retried.
           pulls="[]"
           for _ in $(seq 12); do
-            pulls="$(gh api "repos/$GH_REPO/commits/$SHA/pulls")"
+            pulls="$(gh api "repos/$GH_REPO/commits/$SHA/pulls")" || pulls="[]"
             [ "$(jq length <<<"$pulls")" != 0 ] && break
             sleep 10
           done
