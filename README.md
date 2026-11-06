@@ -313,9 +313,10 @@ limit exposure operationally instead:
 - **Delay new dependency releases on hosts that resolve at run time.** `pipx`, `uvx` and `pip`
   install the newest release of every dependency that satisfies the version ranges, so a
   compromised upstream release would run with access to the token. The Docker image installs the
-  versions locked in `uv.lock` instead. With `uvx`, `--exclude-newer "3 days"` only considers
-  releases at least three days old, which skips the window in which most malicious releases are
-  found and pulled:
+  versions locked in `uv.lock` instead, and that lock is itself resolved with a three-day
+  cooldown (`exclude-newer` in `pyproject.toml`), so a release only reaches the image once the
+  window in which most malicious releases are found and pulled has passed. With `uvx`,
+  `--exclude-newer "3 days"` applies the same cooldown:
 
   ```shell
   uvx --exclude-newer "3 days" cf-ips-to-hcloud-fw -c config.yaml

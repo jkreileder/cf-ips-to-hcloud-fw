@@ -33,6 +33,10 @@
   from an API response or an OS error cannot pose as a second log entry
 - A config file that is not valid UTF-8 is reported with the offset of the offending byte instead
   of a traceback, and a control character in the file is reported with its position
+- **Security:** The dependency lock is now resolved with a three-day cooldown (`exclude-newer` in
+  `pyproject.toml`): a PyPI release younger than that is not locked, so Renovate's automerged
+  lock-file maintenance can no longer build an hours-old release into the published image. The
+  Renovate waiting period never applied to lock-file maintenance, which runs uv's own resolver
 - Start new development cycle
 
 ## [v1.5.3] – 2026-10-30
