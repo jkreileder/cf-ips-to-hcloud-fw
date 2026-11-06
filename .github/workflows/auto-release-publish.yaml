@@ -56,6 +56,11 @@ jobs:
       # Publish only the squash merge of a PR that the release App opened from
       # its own branch prefix in this repository. A hand-cut release PR with
       # the same headline is skipped here; the cut-release procedure tags it.
+      #
+      # main takes pull requests only, so a release commit with no associated
+      # PR at all can only mean the API has not indexed the merge yet. That
+      # case is retried and then fails loudly: a quiet skip would leave main
+      # at a final version with no tag and no one told.
       - name: Check the merged pull request
         id: check
         env:
@@ -66,13 +71,22 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          matches="$(gh api "repos/$GH_REPO/commits/$SHA/pulls" \
-            --jq '[.[] | select(.merged_at != null
+          pulls="[]"
+          for _ in $(seq 12); do
+            pulls="$(gh api "repos/$GH_REPO/commits/$SHA/pulls")"
+            [ "$(jq length <<<"$pulls")" != 0 ] && break
+            sleep 10
+          done
+          if [ "$(jq length <<<"$pulls")" = 0 ]; then
+            echo "::error::No pull request is associated with $SHA; cannot tell whether it is a release merge."
+            exit 1
+          fi
+          matches="$(jq '[.[] | select(.merged_at != null
               and .merge_commit_sha == env.SHA
               and .base.ref == "main"
               and (.head.ref | startswith("auto-release/"))
               and .head.repo.full_name == env.GH_REPO
-              and .user.login == env.APP_LOGIN)] | length')"
+              and .user.login == env.APP_LOGIN)] | length' <<<"$pulls")"
           if [ "$matches" = 1 ]; then
             echo "publish=true" >>"$GITHUB_OUTPUT"
           else
