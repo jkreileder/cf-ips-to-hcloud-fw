@@ -2,6 +2,10 @@
 
 <!-- markdownlint-disable MD024 -->
 
+## [v1.5.5] – Unreleased
+
+- Start new development cycle
+
 ## [v1.5.4] – 2026-11-07
 
 - **Security:** Fixed CVE-2026-4738 (critical) in `zlib`, which the v1.5.3 image shipped at 1.3.2-r1
