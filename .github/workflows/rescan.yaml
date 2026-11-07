@@ -2,15 +2,26 @@ name: Rescan released image
 
 # The build-time scans in docker.yaml only see an image at release time; new
 # advisories land against the released digest afterwards. Rescan the rolling
-# major tag (:1, updated on every release) daily with the same only-fixed
-# policy and upload SARIF to the Security tab. Unlike the build-time scans
-# this workflow gates nothing, so findings are allowed to fail the run — a
-# red run is the notification that a fixable CVE affects the released image.
+# major tag (:1, updated on every release) daily, and right after each
+# release, with the same only-fixed policy and upload SARIF to the Security
+# tab. Unlike the build-time scans this workflow gates nothing, so findings
+# are allowed to fail the run — a red run is the notification that a fixable
+# CVE affects the released image, and it starts auto-release.yaml.
 
 on:
   workflow_dispatch:
   schedule:
     - cron: "17 5 * * *"
+  # After a release: the tag build of docker.yaml pushes the new :1, and this
+  # rescan is what clears (or confirms) the findings recorded against the
+  # previous one. Main builds complete the same workflow, so the job filters
+  # on the run's ref below. The trigger reads nothing from the completed run
+  # but its conclusion and ref.
+  workflow_run: # zizmor: ignore[dangerous-triggers]
+    workflows:
+      - "Docker build, push, sign, and scan"
+    types:
+      - completed
 
 permissions:
   contents: read
@@ -22,6 +33,16 @@ concurrency:
 jobs:
   rescan:
     name: Rescan released image
+    # From the workflow_run trigger, only after a successful tag build: a
+    # push event from this repository whose head_branch is the tag name.
+    # Main builds and failed runs leave :1 as it was, and a pull-request
+    # build of the same workflow could carry any branch name.
+    if: >-
+      ${{ github.event_name != 'workflow_run'
+      || (github.event.workflow_run.conclusion == 'success'
+      && github.event.workflow_run.event == 'push'
+      && github.event.workflow_run.head_repository.full_name == github.repository
+      && startsWith(github.event.workflow_run.head_branch, 'v')) }}
     runs-on: ubuntu-26.04
     timeout-minutes: 15
     permissions:

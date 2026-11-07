@@ -1,7 +1,9 @@
 name: Auto-release security fixes
 
 # Opens a release PR when main fixes vulnerabilities that the released image
-# still has. Runs after the daily rescan (rescan.yaml, 05:17 UTC):
+# still has. Runs when the daily rescan (rescan.yaml) fails, which is its
+# signal that the released image has a fixable finding, and on its own
+# schedule as a fallback:
 #
 # 1. Scan the released image (the floating major tag, e.g. :1) with Grype,
 #    only-fixed. Nothing to fix, done.
@@ -34,6 +36,15 @@ name: Auto-release security fixes
 on:
   schedule:
     - cron: "47 5 * * *"
+  # GitHub runs this repository's schedules hours late, so a failed rescan
+  # starts the release directly instead of waiting for the next slot. A green
+  # rescan has nothing to release; the job skips it below. The trigger reads
+  # nothing from the completed run but its conclusion.
+  workflow_run: # zizmor: ignore[dangerous-triggers]
+    workflows:
+      - "Rescan released image"
+    types:
+      - completed
   workflow_dispatch:
     inputs:
       dry-run:
@@ -59,7 +70,11 @@ concurrency:
 jobs:
   release:
     name: Detect fixes and open release PR
-    if: ${{ github.event_name == 'workflow_dispatch' || vars.AUTO_RELEASE == 'enabled' }}
+    if: >-
+      ${{ (github.event_name == 'workflow_dispatch' || vars.AUTO_RELEASE == 'enabled')
+      && (github.event_name != 'workflow_run'
+      || (github.event.workflow_run.conclusion == 'failure'
+      && github.event.workflow_run.head_repository.full_name == github.repository)) }}
     runs-on: ubuntu-26.04
     # The :main rebuild and waiting for the release PR to merge.
     timeout-minutes: 150
