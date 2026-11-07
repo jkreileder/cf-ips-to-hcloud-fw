@@ -65,7 +65,8 @@
   `build-and-attest-dist.yaml`.
 - `docker.yaml` builds the multi-arch image via `docker-build.yaml`, scans it
   (Docker Scout + Grype), signs it, and attaches SLSA provenance. `rescan.yaml`
-  rescans the released `:1` image daily.
+  rescans the released `:1` image daily and after each release; a failed
+  rescan starts `auto-release.yaml`.
 - Scanner false positives are suppressed per exact package version: OpenVEX
   statements in `.vex/` for Scout, `.grype.yaml` for Grype. Each one records its
   removal condition (`.vex/README.md` for VEX); remove it once that holds.
