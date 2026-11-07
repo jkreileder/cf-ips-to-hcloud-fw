@@ -33,12 +33,15 @@ concurrency:
 jobs:
   rescan:
     name: Rescan released image
-    # From the workflow_run trigger, only after a successful tag build (the
-    # run's head_branch is the tag name); main builds and failed runs leave
-    # :1 as it was.
+    # From the workflow_run trigger, only after a successful tag build: a
+    # push event from this repository whose head_branch is the tag name.
+    # Main builds and failed runs leave :1 as it was, and a pull-request
+    # build of the same workflow could carry any branch name.
     if: >-
       ${{ github.event_name != 'workflow_run'
       || (github.event.workflow_run.conclusion == 'success'
+      && github.event.workflow_run.event == 'push'
+      && github.event.workflow_run.head_repository.full_name == github.repository
       && startsWith(github.event.workflow_run.head_branch, 'v')) }}
     runs-on: ubuntu-26.04
     timeout-minutes: 15

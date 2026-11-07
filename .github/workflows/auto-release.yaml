@@ -73,7 +73,8 @@ jobs:
     if: >-
       ${{ (github.event_name == 'workflow_dispatch' || vars.AUTO_RELEASE == 'enabled')
       && (github.event_name != 'workflow_run'
-      || github.event.workflow_run.conclusion == 'failure') }}
+      || (github.event.workflow_run.conclusion == 'failure'
+      && github.event.workflow_run.head_repository.full_name == github.repository)) }}
     runs-on: ubuntu-26.04
     # The :main rebuild and waiting for the release PR to merge.
     timeout-minutes: 150
