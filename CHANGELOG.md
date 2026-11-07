@@ -2,8 +2,10 @@
 
 <!-- markdownlint-disable MD024 -->
 
-## [v1.5.4] – Unreleased
+## [v1.5.4] – 2026-11-07
 
+- **Security:** Fixed CVE-2026-4738 (critical) in `zlib`, which the v1.5.3 image shipped at 1.3.2-r1
+  (fixed in 1.4-r0)
 - **Security:** Docker Scout now authenticates with a separate read-only Docker Hub token, and
   pull-request builds no longer receive the push-capable Docker Hub and Quay tokens at all. The
   Scout step runs on same-repository pull requests, including Renovate's action bumps, so the
@@ -41,7 +43,9 @@
   policy admits only `main`, so no workflow run on another branch or tag can mint an App token;
   the automated publish workflow runs on the push to `main` instead of the closed pull request
   because that policy refuses a pull request's merge ref
-- Start new development cycle
+- Updated the runtime dependencies (`anyio` 4.15.1 → 4.16.0, `python-dateutil` 3.0.0 → 4.0.0, `six`
+  (removed))
+- Refreshed the pinned base images (`astral/uv` 0.13.6 → 0.13.7, new `python:3.15.2` digests)
 
 ## [v1.5.3] – 2026-10-30
 
