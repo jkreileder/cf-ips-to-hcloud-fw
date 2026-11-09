@@ -119,7 +119,7 @@ jobs:
       # build-time scans, which upload under the default tool category.
       - name: Upload Docker Scout scan result to GitHub Security tab
         if: ${{ !cancelled() }}
-        uses: github/codeql-action/upload-sarif@1fc58d04a4d4374f921bdac573c3811c240f9c26 # v4.39.2
+        uses: github/codeql-action/upload-sarif@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
         with:
           sarif_file: sarif.output.json
           category: rescan-scout
@@ -135,7 +135,7 @@ jobs:
 
       - name: Upload Grype scan result to GitHub Security tab
         if: ${{ !cancelled() && steps.grype-scan.outputs.sarif != '' }}
-        uses: github/codeql-action/upload-sarif@1fc58d04a4d4374f921bdac573c3811c240f9c26 # v4.39.2
+        uses: github/codeql-action/upload-sarif@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
         with:
           sarif_file: ${{ steps.grype-scan.outputs.sarif }}
           category: rescan-grype
