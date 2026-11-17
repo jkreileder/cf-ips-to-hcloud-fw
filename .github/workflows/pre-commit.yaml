@@ -52,8 +52,8 @@ jobs:
       - name: Run prek
         uses: j178/prek-action@44924fe9ef4a6f88253c4b6b1bf11c689d3ce53d # v3.1.0
         env:
-          # ruff/ty run via `make lint`; uv-lock needs uv and is covered by
-          # Renovate lockfile maintenance plus the local hook.
+          # ruff/ty run via `make lint`; uv-lock needs uv, and the
+          # `uv sync --locked` step in python-package.yaml checks the lock.
           # Pin prek's internal uv source to PyPI (already allowlisted) so it
           # doesn't auto-probe mirrors — keeps egress deterministic under block.
           PREK_UV_SOURCE: pypi
