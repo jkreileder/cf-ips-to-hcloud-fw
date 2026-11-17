@@ -67,11 +67,14 @@ jobs:
 
       # Scan the locked deps against OSV's malware advisories on every PR/push
       # sync. Kept off the hermetic release path (build-dist) on purpose so a
-      # publish never depends on OSV availability.
+      # publish never depends on OSV availability. --locked fails when uv.lock
+      # no longer matches pyproject.toml; this is the only CI job that checks
+      # it, since the other syncs use --frozen and the pre-commit job skips
+      # the uv-lock hook.
       - name: Sync dependencies
         env:
           UV_MALWARE_CHECK: "1"
-        run: uv sync --group dev --frozen --preview-features malware-check
+        run: uv sync --group dev --locked --preview-features malware-check
 
       - name: Lint (ruff)
         run: uv run --no-sync ruff check --output-format=github
