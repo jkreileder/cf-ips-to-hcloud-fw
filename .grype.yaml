@@ -2,17 +2,78 @@
 #
 # Tracking issue for clearing this list: #1584. Do not let entries outlive
 # their condition.
+#
+# Every entry below is a CPython CVE whose fix is on main and whose only
+# version grype lists as fixed is a 3.16 release, so `only-fixed` does not
+# filter it. Each is pinned to the interpreter version in the base image:
+# the next Python patch bump either carries the 3.15 backport and the entry
+# goes, or it does not and the pin has to move along with it.
 ignore:
   # socket: getaddrinfo() accepts null bytes in host and port and silently
-  # truncates them (CVE-2026-116566, medium). The fix is only on main
-  # (python/cpython#160899); the 3.15 backport (python/cpython#160925) is
-  # open, so no 3.15.x release carries it yet and grype's only listed fix is
-  # 3.16.0. Pinned to the interpreter version in the base image: the next
-  # Python patch bump either carries the backport and this entry goes, or it
-  # does not and the pin has to move along with it.
+  # truncates them (CVE-2026-116566, medium). The 3.15 backport
+  # (python/cpython#160925) is merged but postdates 3.15.2.
   # REMOVE when the base image reaches a 3.15.x release that includes
   # python/cpython#160925.
   - vulnerability: CVE-2026-116566
+    package:
+      name: python
+      version: 3.15.2
+      type: binary
+  # http.cookiejar: an expired Set-Cookie deletes a stored cookie without
+  # consulting the cookie policy, so a server can delete another domain's
+  # cookies from a shared jar (CVE-2026-124249, medium). Reachable: requests
+  # (hcloud) and httpx (Cloudflare) store response cookies in a CookieJar.
+  # No impact: each client talks only to its own API host, and neither API
+  # authenticates with cookies. The 3.15 backport (python/cpython#161579) is
+  # merged but postdates 3.15.2.
+  # REMOVE when the base image reaches a 3.15.x release that includes
+  # python/cpython#161579.
+  - vulnerability: CVE-2026-124249
+    package:
+      name: python
+      version: 3.15.2
+      type: binary
+  # http.client: response Content-Length and chunk-size parsing accepts
+  # non-hex and negative values, which can misframe a response body
+  # (CVE-2026-103995, low). Reachable: requests (hcloud) runs on urllib3,
+  # which builds on http.client. No practical impact: responses come only
+  # from the Hetzner API over verified TLS. The 3.15 backport
+  # (python/cpython#159021) is merged but postdates 3.15.2.
+  # REMOVE when the base image reaches a 3.15.x release that includes
+  # python/cpython#159021.
+  - vulnerability: CVE-2026-103995
+    package:
+      name: python
+      version: 3.15.2
+      type: binary
+  # tarfile/zipfile/gzip CLI: `python -m tarfile` extracting into the current
+  # directory can plant a module that shadows the stdlib and runs on a later
+  # error (CVE-2026-115791, medium). The image never runs these CLIs. The
+  # 3.15 backport (python/cpython#161717) is merged but postdates 3.15.2.
+  # REMOVE when the base image reaches a 3.15.x release that includes
+  # python/cpython#161717.
+  - vulnerability: CVE-2026-115791
+    package:
+      name: python
+      version: 3.15.2
+      type: binary
+  # imaplib: IMAP4.starttls() keeps plaintext bytes buffered before the
+  # handshake and returns them as protected responses (CVE-2026-115559,
+  # medium). Nothing in the image imports imaplib. The 3.15 backport
+  # (python/cpython#161761) is open.
+  # REMOVE when the base image reaches a 3.15.x release that includes
+  # python/cpython#161761.
+  - vulnerability: CVE-2026-115559
+    package:
+      name: python
+      version: 3.15.2
+      type: binary
+  # ssl: get_server_certificate() with ca_certs does not check the
+  # certificate's hostname (CVE-2026-19552, low). Nothing in the image calls
+  # it. The 3.15 backport (python/cpython#161574) is open.
+  # REMOVE when the base image reaches a 3.15.x release that includes
+  # python/cpython#161574.
+  - vulnerability: CVE-2026-19552
     package:
       name: python
       version: 3.15.2
