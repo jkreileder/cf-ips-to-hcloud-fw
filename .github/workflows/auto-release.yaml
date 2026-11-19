@@ -7,9 +7,10 @@ name: Auto-release security fixes
 #
 # 1. Scan the released image (the floating major tag, e.g. :1) with Grype,
 #    only-fixed. Nothing to fix, done.
-# 2. Make sure :main is fresh: if it was last pushed more than 20 hours ago,
-#    rebuild it through docker.yaml. The final stage runs `apk upgrade`, so a
-#    rebuild picks up Alpine fixes even without a base-image bump.
+# 2. Rebuild :main through docker.yaml. The final stage runs `apk upgrade`, so
+#    a rebuild picks up Alpine fixes even without a base-image bump. Alpine
+#    can publish a fix at any time after the last push, so the age of :main
+#    says nothing about whether it has the fix; the rebuild always runs.
 # 3. Scan :main and compare. Release only if main clears findings that the
 #    release has. Gating on Grype alone keeps scanner disagreements (Scout
 #    reporting a fix version that does not exist) from triggering releases.
@@ -49,8 +50,9 @@ on:
     inputs:
       dry-run:
         description: >-
-          Plan and show the release edits without opening a PR (may still
-          rebuild and push :main, as any push to main does)
+          Plan and show the release edits without opening a PR (still
+          rebuilds and pushes :main when the released image has fixable
+          findings, as any push to main does)
         type: boolean
         default: true
       released-image:
@@ -104,9 +106,8 @@ jobs:
         with:
           disable-sudo: true
           egress-policy: block
-          # Docker Hub pulls, tag metadata, and the Grype installer, binary and
-          # DB (as in rescan.yaml), plus the GitHub API for the dispatch and
-          # the PR.
+          # Docker Hub pulls and the Grype installer, binary and DB (as in
+          # rescan.yaml), plus the GitHub API for the dispatch and the PR.
           allowed-endpoints: >
             api.github.com:443
             auth.docker.io:443
@@ -115,7 +116,6 @@ jobs:
             get.anchore.io:443
             github.com:443
             grype.anchore.io:443
-            hub.docker.com:443
             index.docker.io:443
             objects.githubusercontent.com:443
             production.cloudflare.docker.com:443
@@ -242,17 +242,6 @@ jobs:
             exit 0
           fi
           echo "fixable=true" >>"$GITHUB_OUTPUT"
-          # A :main pushed within the last 20 hours already carries the
-          # Alpine packages a rebuild would pull; skip the rebuild then.
-          pushed="$(curl -fsS "https://hub.docker.com/v2/repositories/$IMAGE_REPO/tags/main" \
-            | jq -r .tag_last_pushed)"
-          if [ "$(date -u -d "$pushed" +%s)" -gt "$(date -u -d '20 hours ago' +%s)" ]; then
-            echo ":main was pushed at $pushed; using it as is."
-            echo "rebuild=false" >>"$GITHUB_OUTPUT"
-          else
-            echo ":main was pushed at $pushed; rebuilding it."
-            echo "rebuild=true" >>"$GITHUB_OUTPUT"
-          fi
 
       # docker.yaml cancels superseded main runs in both directions: a push to
       # main during the rebuild cancels it (the job then fails and the next
@@ -261,8 +250,12 @@ jobs:
       # The run is found by creation time with a minute of slack for clock
       # skew. Picking up a different main rebuild is harmless: only a :main
       # built from the rebuilt commit or a later one is accepted below.
+      # Runs whenever the released image has fixable findings, however recent
+      # :main is: an Alpine fix published after its last push only reaches
+      # :main through a rebuild. Runs are serialized (cancel-in-progress is
+      # off), and a queued run skips once the first has opened a release PR.
       - name: Rebuild :main
-        if: ${{ steps.released.outputs.rebuild == 'true' }}
+        if: ${{ steps.released.outputs.fixable == 'true' }}
         id: rebuild
         env:
           GH_TOKEN: ${{ github.token }}
