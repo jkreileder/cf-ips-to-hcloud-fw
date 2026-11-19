@@ -2,6 +2,10 @@
 
 <!-- markdownlint-disable MD024 -->
 
+## [v1.5.6] – Unreleased
+
+- Start new development cycle
+
 ## [v1.5.5] – 2026-11-19
 
 - **Security:** Fixed CVE-2026-107496 (high) in `libcrypto3` and `libssl3`, which the v1.5.4 image
