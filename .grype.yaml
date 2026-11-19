@@ -78,3 +78,15 @@ ignore:
       name: python
       version: 3.15.2
       type: binary
+  # http.cookies: Morsel accepts semicolons in attribute values and emits
+  # them verbatim, so a controlled value can relax a Set-Cookie's Domain or
+  # SameSite (CVE-2026-16052, low). Nothing in the image builds cookies with
+  # http.cookies; it only receives API responses. The 3.15 backport
+  # (python/cpython#161894) is open.
+  # REMOVE when the base image reaches a 3.15.x release that includes
+  # python/cpython#161894.
+  - vulnerability: CVE-2026-16052
+    package:
+      name: python
+      version: 3.15.2
+      type: binary
