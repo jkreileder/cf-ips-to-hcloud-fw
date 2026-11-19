@@ -2,9 +2,21 @@
 
 <!-- markdownlint-disable MD024 -->
 
-## [v1.5.5] – Unreleased
+## [v1.5.5] – 2026-11-19
 
-- Start new development cycle
+- **Security:** Fixed CVE-2026-107496 (high) in `libcrypto3` and `libssl3`, which the v1.5.4 image
+  shipped at 3.5.9-r0 (fixed in 3.5.9-r1)
+- **Security:** Fixed CVE-2026-88822 (medium) in `libcrypto3` and `libssl3`, which the v1.5.4 image
+  shipped at 3.5.9-r0 (fixed in 3.5.9-r1)
+- **Security:** Fixed CVE-2026-88823 (high) in `libcrypto3` and `libssl3`, which the v1.5.4 image
+  shipped at 3.5.9-r0 (fixed in 3.5.9-r1)
+- **Security:** Fixed CVE-2026-95691 (high) in `libcrypto3` and `libssl3`, which the v1.5.4 image
+  shipped at 3.5.9-r0 (fixed in 3.5.9-r1)
+- **Security:** Fixed CVE-2026-95692 (high) in `libcrypto3` and `libssl3`, which the v1.5.4 image
+  shipped at 3.5.9-r0 (fixed in 3.5.9-r1)
+- Updated the runtime dependencies (`cloudflare` 5.9.0 → 5.10.0, `pydantic` 2.14.2 → 2.14.3,
+  `pydantic-core` 2.50.2 → 2.50.4, `typing-inspection` 0.4.4 → 0.4.5)
+- Refreshed the pinned base images (new `python:3.15.2` digests)
 
 ## [v1.5.4] – 2026-11-07
 
