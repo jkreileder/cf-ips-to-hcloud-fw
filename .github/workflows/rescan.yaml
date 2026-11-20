@@ -94,6 +94,13 @@ jobs:
         with:
           persist-credentials: false
 
+      # The Scout action downloads its binary anonymously and can hit a 403
+      # rate limit; see the script.
+      - name: Prefetch the Docker Scout action binary
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: sh .github/scripts/prefetch-scout-binary.sh
+
       # Scout needs Docker Hub credentials for its API; no docker login has
       # happened in this workflow, so pass them as inputs (same pattern as
       # docker-build.yaml). This workflow only reads, so it gets the read-only
