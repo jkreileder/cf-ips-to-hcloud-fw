@@ -383,6 +383,15 @@ jobs:
       # inputs so the step works on non-fork PR builds too, where no docker
       # login has happened. Read-only token: this step runs on PR builds, so
       # the push token must not reach it (see the header).
+      #
+      # The Scout action downloads its binary anonymously and can hit a 403
+      # rate limit; the prefetch step avoids that (see the script).
+      - name: Prefetch the Docker Scout action binary
+        if: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.head.repo.fork) && github.actor != 'dependabot[bot]' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: sh .github/scripts/prefetch-scout-binary.sh
+
       - name: Analyze for critical and high CVEs with Docker Scout
         if: ${{ (github.event_name != 'pull_request' || !github.event.pull_request.head.repo.fork) && github.actor != 'dependabot[bot]' }}
         id: docker-scout-cves
