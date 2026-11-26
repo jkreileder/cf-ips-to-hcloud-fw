@@ -59,7 +59,9 @@ jobs:
         uses: astral-sh/setup-uv@1db35dd8eee11c5894872e0b383ae6c406cf738d # v10.4.0 # zizmor: ignore[cache-poisoning]
         with:
           python-version: ${{ matrix.python-version }}
+          # renovate: datasource=github-release-attachments depName=astral-sh/uv
           version: "0.13.9"
+          checksum: "a7fbaff2b9a271d85c1bdb540941090fd1ce011797b4abeb48e4dcd39c2471d5"
           require-checksums: true
           # No cache restore on tag runs so the release path can't be tainted
           # by a poisoned cache (cache-poisoning audit). zizmor cannot evaluate
@@ -144,7 +146,9 @@ jobs:
         uses: astral-sh/setup-uv@1db35dd8eee11c5894872e0b383ae6c406cf738d # v10.4.0
         with:
           python-version: "3.11"
+          # renovate: datasource=github-release-attachments depName=astral-sh/uv
           version: "0.13.9"
+          checksum: "a7fbaff2b9a271d85c1bdb540941090fd1ce011797b4abeb48e4dcd39c2471d5"
           require-checksums: true
           # PR-only feedback build: caching disabled. It gains little for a
           # single build and keeps this job off the cache-poisoning surface.
