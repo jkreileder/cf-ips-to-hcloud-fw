@@ -38,6 +38,17 @@
         },
         {
             "customType": "regex",
+            "datasourceTemplate": "github-release-attachments",
+            "description": "Keep the uv version input of astral-sh/setup-uv and its checksum input in step. The checksum is that of the x86_64 Linux archive, which Renovate looks up in the uv release's checksum files. Marked by a '# renovate:' comment directly above version and checksum.",
+            "managerFilePatterns": [
+                "/(^|/)\\.github/workflows/.+\\.ya?ml$/"
+            ],
+            "matchStrings": [
+                "# renovate: datasource=github-release-attachments depName=(?<depName>\\S+)\\s+version:\\s*\"(?<currentValue>[^\"]+)\"\\s+checksum:\\s*\"(?<currentDigest>[a-f0-9]{64})\""
+            ]
+        },
+        {
+            "customType": "regex",
             "datasourceTemplate": "docker",
             "depNameTemplate": "ghcr.io/trufflesecurity/trufflehog",
             "description": "Pin the TruffleHog scanner image (version input of trufflesecurity/trufflehog) by version + digest.",
@@ -67,6 +78,16 @@
     "osvVulnerabilityAlerts": true,
     "packageRules": [
         {
+            "description": "Renovate's built-in setup-uv support reads the uv version input but not the checksum input next to it, so it would bump one without the other. The custom regex manager above updates both.",
+            "enabled": false,
+            "matchManagers": [
+                "github-actions"
+            ],
+            "matchPackageNames": [
+                "astral-sh/uv"
+            ]
+        },
+        {
             "automerge": true,
             "description": "Group GitHub Actions minor/patch into one PR; majors get their own PR.",
             "groupName": "github-actions",
@@ -80,7 +101,7 @@
         },
         {
             "automerge": true,
-            "description": "Group container/image minor/patch into one PR; majors get their own PR.",
+            "description": "Group container/image minor/patch into one PR; majors get their own PR. The uv group rule below takes astral/uv and the custom-managed setup-uv version input back out.",
             "groupName": "docker",
             "matchManagers": [
                 "dockerfile",
@@ -92,12 +113,13 @@
             ]
         },
         {
-            "description": "Check container images daily instead of only on Mondays: base-image fixes (CPython, Alpine packages) are not vulnerability alerts, so they would otherwise wait for the weekly window on top of minimumReleaseAge. astral/uv version bumps are excluded because the uv group also holds the setup-uv action and uv-pre-commit hook, which stay weekly.",
+            "description": "Check container images daily instead of only on Mondays: base-image fixes (CPython, Alpine packages) are not vulnerability alerts, so they would otherwise wait for the weekly window on top of minimumReleaseAge. uv version bumps are excluded because the uv group also holds the setup-uv version input and the uv-pre-commit hook, which stay weekly.",
             "matchManagers": [
                 "dockerfile",
                 "custom.regex"
             ],
             "matchPackageNames": [
+                "!astral-sh/uv",
                 "!astral/uv",
                 "!docker.io/astral/uv"
             ],
@@ -171,10 +193,9 @@
         },
         {
             "automerge": true,
-            "description": "Keep uv together in one PR (the setup-uv action and its version input, the Docker uv image, the uv-pre-commit hook, and - via the build-system rule above - the uv_build backend). The action has to move with uv: it runs with require-checksums, so a uv version newer than the checksums the action bundles fails CI until a setup-uv release that knows it lands in the same PR.",
+            "description": "Keep uv together in one PR (the setup-uv version and checksum inputs, the Docker uv image, the uv-pre-commit hook, and - via the build-system rule above - the uv_build backend).",
             "groupName": "uv",
             "matchPackageNames": [
-                "astral-sh/setup-uv",
                 "astral-sh/uv",
                 "astral-sh/uv-pre-commit",
                 "astral/uv",
@@ -185,7 +206,6 @@
             "automerge": false,
             "description": "uv majors (across managers) get their own manual PR; the uv group otherwise has no update-type filter. A uv_build major is not covered by the rule above either, so it defaults to manual as well.",
             "matchPackageNames": [
-                "astral-sh/setup-uv",
                 "astral-sh/uv",
                 "astral-sh/uv-pre-commit",
                 "astral/uv",
