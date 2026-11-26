@@ -59,10 +59,11 @@ jobs:
           persist-credentials: false
 
       - name: Set up Python and install uv
-        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        uses: astral-sh/setup-uv@1db35dd8eee11c5894872e0b383ae6c406cf738d # v10.4.0
         with:
           python-version: "3.11"
-          version: "0.13.7"
+          version: "0.13.9"
+          require-checksums: true
           # Keep the published artifacts hermetic: never restore caches here.
           enable-cache: false
 
@@ -144,10 +145,11 @@ jobs:
       # so the workdir is empty when uv is set up; tell the action so it
       # stops warning about it on every run.
       - name: Set up Python and install uv
-        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        uses: astral-sh/setup-uv@1db35dd8eee11c5894872e0b383ae6c406cf738d # v10.4.0
         with:
           python-version: "3.11"
-          version: "0.13.7"
+          version: "0.13.9"
+          require-checksums: true
           enable-cache: false
           ignore-empty-workdir: true
 

@@ -171,9 +171,10 @@
         },
         {
             "automerge": true,
-            "description": "Keep uv together in one PR (the setup-uv input, the Docker uv image, the uv-pre-commit hook, and - via the build-system rule above - the uv_build backend).",
+            "description": "Keep uv together in one PR (the setup-uv action and its version input, the Docker uv image, the uv-pre-commit hook, and - via the build-system rule above - the uv_build backend). The action has to move with uv: it runs with require-checksums, so a uv version newer than the checksums the action bundles fails CI until a setup-uv release that knows it lands in the same PR.",
             "groupName": "uv",
             "matchPackageNames": [
+                "astral-sh/setup-uv",
                 "astral-sh/uv",
                 "astral-sh/uv-pre-commit",
                 "astral/uv",
@@ -184,6 +185,7 @@
             "automerge": false,
             "description": "uv majors (across managers) get their own manual PR; the uv group otherwise has no update-type filter. A uv_build major is not covered by the rule above either, so it defaults to manual as well.",
             "matchPackageNames": [
+                "astral-sh/setup-uv",
                 "astral-sh/uv",
                 "astral-sh/uv-pre-commit",
                 "astral/uv",
