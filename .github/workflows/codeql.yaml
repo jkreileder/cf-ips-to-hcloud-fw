@@ -64,8 +64,8 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           # renovate: datasource=github-release-attachments depName=astral-sh/uv
-          version: "0.13.9"
-          checksum: "a7fbaff2b9a271d85c1bdb540941090fd1ce011797b4abeb48e4dcd39c2471d5"
+          version: "0.13.10"
+          checksum: "bf65ac1a0af10f92c522d91ac096c7c0a39657647b155577e7836c2cbbb4526c"
           require-checksums: true
 
       - name: Sync dependencies
