@@ -56,10 +56,11 @@ jobs:
           persist-credentials: false
 
       - name: Set up Python ${{ matrix.python-version }} and install uv
-        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3 # zizmor: ignore[cache-poisoning]
+        uses: astral-sh/setup-uv@1db35dd8eee11c5894872e0b383ae6c406cf738d # v10.4.0 # zizmor: ignore[cache-poisoning]
         with:
           python-version: ${{ matrix.python-version }}
-          version: "0.13.7"
+          version: "0.13.9"
+          require-checksums: true
           # No cache restore on tag runs so the release path can't be tainted
           # by a poisoned cache (cache-poisoning audit). zizmor cannot evaluate
           # the expression, hence the ignore on the step.
@@ -140,10 +141,11 @@ jobs:
           persist-credentials: false
 
       - name: Set up Python and install uv
-        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        uses: astral-sh/setup-uv@1db35dd8eee11c5894872e0b383ae6c406cf738d # v10.4.0
         with:
           python-version: "3.11"
-          version: "0.13.7"
+          version: "0.13.9"
+          require-checksums: true
           # PR-only feedback build: caching disabled. It gains little for a
           # single build and keeps this job off the cache-poisoning surface.
           enable-cache: false
